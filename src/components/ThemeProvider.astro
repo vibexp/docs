@@ -1,0 +1,72 @@
+---
+/**
+ * Overrides Starlight's ThemeProvider to bridge the design-system dark-mode
+ * model onto Starlight's (#1649).
+ *
+ * @vibexp/design-system flips every token on the `.dark` CLASS
+ * (`@custom-variant dark (&:is(.dark *))`), but Starlight toggles light/dark via
+ * a `data-theme` ATTRIBUTE on <html>. Without a bridge the package's `.dark`
+ * token values never fire under Starlight's native toggle. This component keeps
+ * the two in lockstep: it sets `data-theme` exactly as upstream (so Starlight,
+ * Expressive Code, and the `--sl-*` mappings keep working) AND mirrors it onto a
+ * `.dark` class so the package tokens re-resolve. Both happen in the inlined,
+ * pre-paint script to avoid FOUC, and a MutationObserver keeps the class synced
+ * when ThemeSelect (or a system-scheme change) later rewrites `data-theme`.
+ *
+ * Based on @astrojs/starlight/components/ThemeProvider.astro: keep
+ * `window.StarlightThemeProvider` (ThemeSelect.astro calls `updatePickers`) and
+ * the `#theme-icons` template intact when upgrading Starlight — only the
+ * `data-theme` → `.dark` mirror below is local.
+ */
+import { Icon } from '@astrojs/starlight/components'
+---
+
+{/* Inlined to avoid FOUC. */}
+<script is:inline>
+  window.StarlightThemeProvider = (() => {
+    const storedTheme =
+      typeof localStorage !== 'undefined' &&
+      localStorage.getItem('starlight-theme')
+    const theme =
+      storedTheme ||
+      (window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark')
+    const root = document.documentElement
+    root.dataset.theme = theme === 'light' ? 'light' : 'dark'
+    // Bridge: mirror Starlight's `data-theme` onto the `.dark` class that the
+    // @vibexp/design-system tokens key off. Run once now (pre-paint) and
+    // on every later `data-theme` change so the toggle and system-scheme
+    // reactivity stay in sync without a flash.
+    const syncDarkClass = () =>
+      root.classList.toggle('dark', root.dataset.theme === 'dark')
+    syncDarkClass()
+    new MutationObserver(syncDarkClass).observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+    return {
+      updatePickers(theme = storedTheme || 'auto') {
+        document.querySelectorAll('starlight-theme-select').forEach(picker => {
+          const select = picker.querySelector('select')
+          if (select) select.value = theme
+          /** @type {HTMLTemplateElement | null} */
+          const tmpl = document.querySelector('#theme-icons')
+          const newIcon = tmpl && tmpl.content.querySelector('.' + theme)
+          if (newIcon) {
+            const oldIcon = picker.querySelector('svg.label-icon')
+            if (oldIcon) {
+              oldIcon.replaceChildren(...newIcon.cloneNode(true).childNodes)
+            }
+          }
+        })
+      },
+    }
+  })()
+</script>
+
+<template id="theme-icons">
+  <Icon name="sun" class="light" />
+  <Icon name="moon" class="dark" />
+  <Icon name="laptop" class="auto" />
+</template>

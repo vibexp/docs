@@ -1,0 +1,134 @@
+---
+/**
+ * Overrides Starlight's Footer. The default doc-footer pieces (EditLink,
+ * LastUpdated, and crucially Pagination for prev/next — relied on by #1520) are
+ * re-rendered from the virtual component modules so per-page navigation is
+ * preserved, then the shared VibeXP brand footer (4 columns + copyright) is
+ * appended below, matching blog/website chrome. Copyright year is build-time.
+ */
+import EditLink from 'virtual:starlight/components/EditLink'
+import LastUpdated from 'virtual:starlight/components/LastUpdated'
+import Pagination from 'virtual:starlight/components/Pagination'
+
+import { footerColumns } from '../lib/navigation.ts'
+
+const currentYear = new Date().getFullYear()
+
+// Brand attribution. The brand/org NAME defaults to the open-source product
+// brand "VibeXP" while staying env-overridable; only the operator URL stays a
+// neutral placeholder so the public repo carries no real domain.
+const BRAND_NAME = import.meta.env.PUBLIC_BRAND_NAME || 'VibeXP'
+const BRAND_OPERATOR = import.meta.env.PUBLIC_BRAND_OPERATOR || 'VibeXP'
+const BRAND_OPERATOR_URL =
+  import.meta.env.PUBLIC_BRAND_OPERATOR_URL ||
+  'https://example.com?utm_source=docs&utm_medium=footer&utm_campaign=brand_link'
+---
+
+<footer class="doc-footer sl-flex">
+  <div class="meta sl-flex">
+    <EditLink />
+    <LastUpdated />
+  </div>
+  <Pagination />
+</footer>
+
+<div class="brand-footer border-t bg-background text-muted-foreground">
+  <div class="brand-footer-inner">
+    <div class="grid gap-8 py-12 sm:grid-cols-2 md:grid-cols-4">
+      {
+        footerColumns.map(column => (
+          <div>
+            <h2 class="mb-4 text-base font-semibold text-foreground">
+              {column.title}
+            </h2>
+            <ul class="space-y-2">
+              {column.links.map(link => (
+                <li>
+                  <a
+                    href={link.href}
+                    target={link.external ? '_blank' : undefined}
+                    rel={link.external ? 'noopener noreferrer' : undefined}
+                    class="text-sm no-underline transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                    {link.external && <span aria-hidden="true"> ↗</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="border-t py-8 text-center">
+      <p class="text-sm">
+        © {currentYear}
+        {BRAND_NAME}. A service from{' '}
+        <a
+          href={BRAND_OPERATOR_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline transition-colors hover:text-foreground"
+        >
+          {BRAND_OPERATOR}
+        </a>
+        . All rights reserved.
+      </p>
+      <p class="mt-2 text-sm">
+        <button
+          type="button"
+          id="cookie-settings-trigger"
+          class="cursor-pointer bg-transparent underline transition-colors hover:text-foreground"
+        >
+          Cookie Settings
+        </button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { openCookieSettings } from '../lib/cookie-consent.ts'
+
+  document
+    .getElementById('cookie-settings-trigger')
+    ?.addEventListener('click', openCookieSettings)
+</script>
+
+<style>
+  @layer starlight.core {
+    .doc-footer {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .meta {
+      gap: 0.75rem 3rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+      font-size: var(--sl-text-sm);
+      color: var(--sl-color-gray-3);
+    }
+    .meta > :global(p:only-child) {
+      margin-inline-start: auto;
+    }
+
+    /*
+     * Break the brand footer out of the doc content column so it spans the full
+     * viewport width like the blog/website footer. The negative inline margins
+     * cancel Starlight's content padding; the inner wrapper restores a centered,
+     * max-width gutter.
+     */
+    .brand-footer {
+      margin-top: 3rem;
+      margin-inline: calc(-1 * var(--sl-content-pad-x));
+      width: calc(100% + 2 * var(--sl-content-pad-x));
+    }
+    .brand-footer-inner {
+      max-width: var(--sl-content-width);
+      margin-inline: auto;
+      padding-inline: var(--sl-content-pad-x);
+    }
+  }
+</style>

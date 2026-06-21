@@ -1,0 +1,10 @@
+dist/
+.astro/
+coverage/
+node_modules/
+
+# Documentation content is authored markdown/MDX, not Prettier-managed.
+# Prettier reflows prose and can collapse the blank lines around Starlight
+# `:::` asides (the fix for the admonition rendering bug), so the content
+# collection is excluded from formatting to preserve authored structure.
+src/content/docs/

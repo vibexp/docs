@@ -1,0 +1,67 @@
+---
+/**
+ * Overrides Starlight's Head to add Google Analytics (via Google Tag Manager)
+ * behind a Google Consent Mode v2 cookie-consent flow, matching website/blog.
+ *
+ * Composition, not replacement: Starlight's Default Head is re-rendered first so
+ * all existing SEO/OG/Twitter/canonical/favicon/JSON-LD output (#1523, wired in
+ * astro.config.mjs `head`) is preserved untouched. Our additions are appended:
+ *   1. Consent Mode v2 bootstrap — sets all signals to `denied` BEFORE GTM loads
+ *      (GDPR default-deny), then upgrades to granted if a prior decision exists.
+ *   2. The GTM loader — emitted only when a valid container id is configured.
+ *
+ * The GTM `<noscript>` fallback (for JS-disabled clients) and the cookie consent
+ * banner are body content, so they live in the Header override (rendered at the
+ * top of <body>), not here — a JS-injected <noscript> would never run for the
+ * JS-disabled clients it exists to serve, and dialog markup does not belong in
+ * <head>.
+ */
+// Import Starlight's built-in Head directly from the package — NOT via
+// `virtual:starlight/components/Head`, which Astro's override system resolves
+// back to *this* file once it's registered in the `components` map, causing
+// infinite recursion. The package path always gives the real default head
+// (the #1523 SEO/OG/JSON-LD output), which we compose with, never replace.
+import Default from '@astrojs/starlight/components/Head.astro'
+
+import { gtmId } from '../lib/gtm.ts'
+
+// Consent Mode v2 default-deny bootstrap — MUST run before the GTM loader so
+// every signal starts denied (GDPR), upgrading to granted only if a prior
+// decision exists. Ported verbatim from website/index.html.
+const consentBootstrap = `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  'ad_storage': 'denied',
+  'ad_user_data': 'denied',
+  'ad_personalization': 'denied',
+  'analytics_storage': 'denied',
+  'wait_for_update': 500
+});
+try {
+  var consentStr = localStorage.getItem('cookieConsent');
+  if (consentStr) {
+    var consentData = JSON.parse(consentStr);
+    if (consentData.status === 'granted') {
+      setTimeout(function() {
+        gtag('consent', 'update', { 'ad_storage':'granted','ad_user_data':'granted','ad_personalization':'granted','analytics_storage':'granted' });
+      }, 0);
+    }
+  }
+} catch (e) {}`
+
+const gtmLoader = gtmId
+  ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',${JSON.stringify(gtmId)});`
+  : undefined
+---
+
+<Default />
+
+{
+  gtmId && (
+    <>
+      {/* Consent Mode v2 default-deny bootstrap — MUST run before the GTM loader. */}
+      <script is:inline set:html={consentBootstrap} />
+      <script is:inline set:html={gtmLoader} />
+    </>
+  )
+}

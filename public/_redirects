@@ -1,0 +1,25 @@
+# Cloudflare Pages redirects. One entry per line: <source> <destination> <status>.
+# Copied verbatim into dist/_redirects at build time (files in public/ are
+# emitted to the deploy root).
+#
+# Legacy Docusaurus sample page (template cruft, since removed) -> homepage.
+/markdown-page    /    301
+/markdown-page/   /    301
+
+# URL parity for the open-source migration: all documentation moved under
+# `/user-guide/...` so the homepage can later surface separate "User Guide" and
+# "Developer Guide" sections. Every previously-live doc slug is redirected to
+# its new home so existing inbound links and SEO are preserved.
+/intro                      /user-guide/intro                      301
+/quick-start                /user-guide/quick-start                301
+/artifacts                  /user-guide/artifacts                  301
+/memory                     /user-guide/memory                     301
+/mcp-server                 /user-guide/mcp-server                 301
+/ai-agents                  /user-guide/ai-agents                  301
+/resource-access-analytics  /user-guide/resource-access-analytics  301
+/prompts                    /user-guide/prompts                    301
+/prompts/*                  /user-guide/prompts/:splat             301
+/integrations/*             /user-guide/integrations/:splat        301
+/open-source                /user-guide/open-source                301
+/self-hosting               /user-guide/self-hosting               301
+/contributing               /user-guide/contributing               301

@@ -1,0 +1,17 @@
+---
+/**
+ * Overrides Starlight's SiteTitle so the docs header shows the shared VibeXP
+ * brand mark (#1514: black rounded square + white activity-pulse) and the
+ * "VibeXP" wordmark, matching blog/website chrome instead of the docs title.
+ */
+const { siteTitleHref } = Astro.locals.starlightRoute
+---
+
+<a
+  href={siteTitleHref}
+  class="flex items-center gap-2 no-underline transition-opacity hover:opacity-80"
+>
+  <img src="/logo.svg" alt="" class="h-8 w-8" />
+  <span class="text-xl font-bold whitespace-nowrap text-foreground">VibeXP</span
+  >
+</a>
