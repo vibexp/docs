@@ -1,0 +1,54 @@
+---
+title: VibeXP Documentation
+description: Centralize your prompts, agents, and workflows — and learn how to get the most out of VibeXP.
+template: splash
+hero:
+  title: VibeXP Documentation
+  tagline: Centralize your prompts, agents, and workflows — and learn how to get the most out of VibeXP.
+  actions:
+    - text: Quick Start
+      link: /user-guide/quick-start
+      icon: right-arrow
+      variant: primary
+    - text: MCP Server
+      link: /user-guide/mcp-server
+      variant: minimal
+    - text: Browse Prompts
+      link: /user-guide/prompts
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components'
+
+<CardGrid>
+  <LinkCard
+    title="Prompts"
+    href="/user-guide/prompts"
+    description="Reusable AI prompt templates for consistent results across any model."
+  />
+  <LinkCard
+    title="Artifacts"
+    href="/user-guide/artifacts"
+    description="Capture and organize AI outputs into a searchable knowledge base."
+  />
+  <LinkCard
+    title="Memory"
+    href="/user-guide/memory"
+    description="Persistent context that follows you across conversations."
+  />
+  <LinkCard
+    title="MCP Server"
+    href="/user-guide/mcp-server"
+    description="Connect AI assistants to your VibeXP data over OAuth 2.1."
+  />
+  <LinkCard
+    title="AI Agents"
+    href="/user-guide/ai-agents"
+    description="Automate workflows with A2A-compatible AI agents."
+  />
+  <LinkCard
+    title="API Keys"
+    href="/user-guide/integrations/api-keys"
+    description="Programmatic access for the CLI, REST API, and custom integrations."
+  />
+</CardGrid>

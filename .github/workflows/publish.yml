@@ -1,0 +1,75 @@
+name: Publish
+
+# Build the static docs site and deploy it to GitHub Pages on every push to
+# main (and on demand via the Actions tab). Enable Pages for the repository
+# with "Source: GitHub Actions" under Settings → Pages before the first run.
+#
+# Note: GitHub Pages does not honor `public/_redirects` (that file is for
+# Cloudflare Pages). If served from a project subpath (e.g.
+# <user>.github.io/<repo>) rather than a custom domain at the root, set Astro's
+# `base` accordingly in astro.config.mjs so absolute `/user-guide/...` links
+# resolve.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; don't cancel an in-progress run so a deploy
+# always finishes cleanly.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Build
+        run: npm run build
+        env:
+          # Canonical origin baked into <link rel="canonical"> + sitemap. Falls
+          # back to the custom domain in public/CNAME; override via repo
+          # variables (Settings → Secrets and variables → Actions → Variables).
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://docs.vibexp.io' }}
+          # Marketing/organization origin used in the JSON-LD publisher node.
+          PUBLIC_ORG_URL: ${{ vars.PUBLIC_ORG_URL || 'https://vibexp.io' }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

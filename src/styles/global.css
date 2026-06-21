@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+@import '@vibexp/design-system/tokens.css';
+@import '@vibexp/design-system/typography.css';
+
+/*
+ * Dark-mode bridge (#1649). The design-system tokens (imported above) flip on
+ * the `.dark` CLASS upstream (`@custom-variant dark (&:is(.dark *))`), but
+ * Starlight toggles light/dark via a `data-theme` ATTRIBUTE on <html>. The
+ * ThemeProvider override (src/components/ThemeProvider.astro) mirrors
+ * `data-theme='dark'` onto a `.dark` class so the package's `.dark` token
+ * values fire under Starlight's native toggle. Tailwind's own `dark:` utilities
+ * key off the attribute directly (no JS dependency), and the mirror keeps the
+ * two selectors in lockstep.
+ */
+@custom-variant dark (&:is([data-theme='dark'] *));
+
+/*
+ * Design tokens — the `:root` (light) + `.dark` (dark) OKLCH values — now come
+ * from @vibexp/design-system/tokens.css (imported above), the single
+ * source of truth shared with the app/blog/website. The previous local `:root`
+ * (dark) / `:root[data-theme='light']` (light) blocks were removed; the only
+ * behavioural change is the package's WCAG-2.2 focus-ring darkening on --ring.
+ * Dark values apply via the `.dark` class the ThemeProvider bridge sets (see the
+ * bridge comment above). The package also ships --success/--warning/--info and
+ * their -foreground/-subtle variants — additive, unused by the docs shell today.
+ */
+
+/*
+ * Expose the tokens to Tailwind utilities (bg-background, text-foreground, …)
+ * and wire the brand fonts. The `@theme inline` block must stay in THIS entry
+ * CSS file — Tailwind v4 only scans `@theme` blocks in the entry file. We keep
+ * docs-site's own Inter + JetBrains Mono load (line 1) and font vars here rather
+ * than the package's fonts.css, which would also pull Poppins (unused by docs).
+ * chart-* stay mapped for parity even though the docs shell does not use them.
+ */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/*
+ * Map Starlight's theming custom properties onto the VibeXP tokens so the docs
+ * shell (background, text, links, sidebar, TOC, nav, hairlines, inline code)
+ * renders in the brand palette. Only `--sl-*` names that Starlight actually
+ * defines are overridden (see @astrojs/starlight/style/props.css).
+ *
+ * These declarations live outside @layer starlight.base, so they win over
+ * Starlight's layered defaults without `!important`. The mappings point at the
+ * VibeXP tokens, which now flip themselves (`:root` light / `.dark` dark from
+ * the package), so both blocks below are identical — the `:root` and
+ * `:root[data-theme='light']` selectors only exist to override Starlight's own
+ * per-theme `--sl-*` defaults at matching specificity, keeping the built-in
+ * theme toggle working.
+ */
+:root {
+  /* Brand fonts feed Starlight's --__sl-font / --__sl-font-mono fallback chain. */
+  --sl-font: var(--font-sans);
+  --sl-font-mono: var(--font-mono);
+
+  /* Surfaces and text. */
+  --sl-color-bg: var(--background);
+  --sl-color-bg-nav: var(--background);
+  --sl-color-bg-sidebar: var(--sidebar);
+  --sl-color-bg-inline-code: var(--muted);
+  --sl-color-text: var(--foreground);
+  --sl-color-white: var(--foreground);
+  --sl-color-black: var(--background);
+
+  /* Gray scale: light (gray-1) → dark (gray-6) in the current scheme. */
+  --sl-color-gray-1: var(--foreground);
+  --sl-color-gray-2: var(--muted-foreground);
+  --sl-color-gray-3: var(--muted-foreground);
+  --sl-color-gray-4: var(--border);
+  --sl-color-gray-5: var(--border);
+  --sl-color-gray-6: var(--muted);
+  --sl-color-gray-7: var(--card);
+
+  /* Accent drives links, active sidebar item, focus affordances. */
+  --sl-color-accent-low: var(--secondary);
+  --sl-color-accent: var(--primary);
+  --sl-color-accent-high: var(--primary);
+  --sl-color-text-accent: var(--primary);
+  --sl-color-bg-accent: var(--primary);
+  /* Text drawn ON accent surfaces (active sidebar item, skip-link, banner).
+     Set explicitly to the token's paired foreground instead of relying on
+     Starlight's indirect default resolution. */
+  --sl-color-text-invert: var(--primary-foreground);
+
+  /* Hairlines / borders. */
+  --sl-color-hairline-light: var(--border);
+  --sl-color-hairline: var(--border);
+  --sl-color-hairline-shade: var(--border);
+}
+
+:root[data-theme='light'] {
+  --sl-color-bg: var(--background);
+  --sl-color-bg-nav: var(--background);
+  --sl-color-bg-sidebar: var(--sidebar);
+  --sl-color-bg-inline-code: var(--muted);
+  --sl-color-text: var(--foreground);
+  --sl-color-white: var(--foreground);
+  --sl-color-black: var(--background);
+
+  --sl-color-gray-1: var(--foreground);
+  --sl-color-gray-2: var(--muted-foreground);
+  --sl-color-gray-3: var(--muted-foreground);
+  --sl-color-gray-4: var(--border);
+  --sl-color-gray-5: var(--border);
+  --sl-color-gray-6: var(--muted);
+  --sl-color-gray-7: var(--card);
+
+  --sl-color-accent-low: var(--secondary);
+  --sl-color-accent: var(--primary);
+  --sl-color-accent-high: var(--primary);
+  --sl-color-text-accent: var(--primary);
+  --sl-color-bg-accent: var(--primary);
+  --sl-color-text-invert: var(--primary-foreground);
+
+  --sl-color-hairline-light: var(--border);
+  --sl-color-hairline: var(--border);
+  --sl-color-hairline-shade: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Default every border to the design-system token. Tailwind v4 dropped the v3
+ * default of gray-200 for the `border` utility, so a bare `border`/`border-b`
+ * falls back to `currentColor` (near-black). Scoped to @layer base so explicit
+ * border-* utilities still win. (Carried over from #1516.)
+ */
+@layer base {
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+}
+
+/*
+ * Inline code in prose: brand mono font on a subtle token-tinted chip, matching
+ * the blog. Starlight applies `--sl-color-bg-inline-code` (mapped above) for the
+ * surface; here we pin the font, radius, and weight to the brand scale.
+ */
+.sl-markdown-content :not(pre) > code {
+  font-family: var(--font-mono);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}

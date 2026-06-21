@@ -1,0 +1,143 @@
+---
+/**
+ * Overrides Starlight's Header to add the VibeXP branded top-nav while
+ * preserving the built-in Search, ThemeSelect, and SiteTitle. The defaults are
+ * re-imported from the virtual component modules so search and the theme toggle
+ * keep working exactly as Starlight ships them (see the upstream Header.astro).
+ *
+ * The branded text nav renders on desktop only (md+); on mobile it is rendered
+ * inside Starlight's existing mobile menu via the MobileMenuFooter override, so
+ * Starlight's hamburger/sidebar behaviour is untouched.
+ */
+import config from 'virtual:starlight/user-config'
+
+import Search from 'virtual:starlight/components/Search'
+import SiteTitle from 'virtual:starlight/components/SiteTitle'
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect'
+
+import CookieConsentBanner from './CookieConsentBanner.astro'
+import { gtmId } from '../lib/gtm.ts'
+import { headerNavLinks } from '../lib/navigation.ts'
+
+const shouldRenderSearch =
+  config.pagefind ||
+  config.components.Search !== '@astrojs/starlight/components/Search.astro'
+---
+
+{
+  /* GTM <noscript> fallback for JS-disabled clients. Static (not JS-injected)
+   and rendered here because the Header override is the earliest body-level
+   component Starlight renders on every page (incl. splash homepage / 404). */
+}
+{
+  gtmId && (
+    <noscript>
+      <iframe
+        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"
+        title="Google Tag Manager"
+      />
+    </noscript>
+  )
+}
+
+<div class="header">
+  <div class="title-wrapper sl-flex">
+    <SiteTitle />
+  </div>
+  <div class="sl-flex print:hidden">
+    {shouldRenderSearch && <Search />}
+  </div>
+  <div class="sl-hidden md:sl-flex print:hidden right-group">
+    <nav class="brand-nav" aria-label="Primary navigation">
+      {
+        headerNavLinks.map(link => (
+          <a
+            href={link.href}
+            target={link.external ? '_blank' : undefined}
+            rel={link.external ? 'noopener noreferrer' : undefined}
+            class="inline-flex h-9 items-center justify-center gap-1 rounded-md px-3 text-sm font-medium whitespace-nowrap text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            {link.label}
+            {link.external && <span aria-hidden="true">↗</span>}
+          </a>
+        ))
+      }
+    </nav>
+    <ThemeSelect />
+  </div>
+</div>
+
+{
+  /* Site-wide cookie consent banner (position:fixed, so DOM location is purely
+   structural). Rendered from the Header so it appears once on every page. */
+}
+<CookieConsentBanner />
+
+<style>
+  @layer starlight.core {
+    .header {
+      display: flex;
+      gap: var(--sl-nav-gap);
+      justify-content: space-between;
+      align-items: center;
+      height: 100%;
+    }
+
+    .title-wrapper {
+      overflow: clip;
+      padding: 0.25rem;
+      margin: -0.25rem;
+      min-width: 0;
+    }
+
+    .right-group {
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .brand-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    @media (min-width: 50rem) {
+      :global(:root[data-has-sidebar]) {
+        --__sidebar-pad: calc(2 * var(--sl-nav-pad-x));
+      }
+      :global(:root:not([data-has-toc])) {
+        --__toc-width: 0rem;
+      }
+      .header {
+        --__sidebar-width: max(
+          0rem,
+          var(--sl-content-inline-start, 0rem) - var(--sl-nav-pad-x)
+        );
+        --__main-column-fr: calc(
+          (
+              100% + var(--__sidebar-pad, 0rem) -
+                var(--__toc-width, var(--sl-sidebar-width)) -
+                (2 * var(--__toc-width, var(--sl-nav-pad-x))) -
+                var(--sl-content-inline-start, 0rem) - var(--sl-content-width)
+            ) /
+            2
+        );
+        display: grid;
+        grid-template-columns:
+          minmax(
+            calc(
+              var(--__sidebar-width) +
+                max(0rem, var(--__main-column-fr) - var(--sl-nav-gap))
+            ),
+            auto
+          )
+          1fr
+          auto;
+        align-content: center;
+      }
+    }
+  }
+</style>
