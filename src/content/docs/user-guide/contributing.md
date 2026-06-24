@@ -3,29 +3,31 @@ title: Contributing
 description: Set up a local VibeXP development environment and learn the conventions for contributing to the open-source project.
 ---
 
-Thanks for your interest in contributing! VibeXP is an open-source AI workspace (prompts, artifacts, memories, teams, MCP). This page covers how to get a local development environment running. For the full, always-current details, see the repository's [`CONTRIBUTING.md`](https://github.com/shaharia-lab/vibexp-oss/blob/main/CONTRIBUTING.md).
+Thanks for your interest in contributing! VibeXP is an open-source AI workspace (prompts, artifacts, memories, teams, MCP). This page covers how to get a local development environment running. For the full, always-current details, see the repository's [`CONTRIBUTING.md`](https://github.com/vibexp/vibexp/blob/main/CONTRIBUTING.md).
+
+For deeper architecture, configuration, and code-generation details, see the [Developer Guide](/developer-guide/intro/).
 
 ## Prerequisites
 
 - **Node.js** >= 20 (for the JS/TS workspaces)
-- **Go** (see `backend-api/go.mod` for the required version) for the backend
+- **Go** 1.25 (see `backend/go.mod` for the exact version) for the backend
 - **Docker** + Docker Compose (for the database and the self-host stack)
 - Optionally **Bun** for the CLI
 
 ## Clone and install
 
-VibeXP is a flat [npm-workspaces](https://docs.npmjs.com/cli/using-npm/workspaces) monorepo. A fresh install needs **no auth token** — the shared `@vibexp/*` packages are vendored in-repo and resolve locally.
+The `vibexp/vibexp` repository holds the two deployable components: `backend/` (Go API) and `frontend/` (React + Vite SPA). The frontend's shared `@vibexp/*` packages (`@vibexp/api-client`, `@vibexp/design-system`) are published to **public npm**, so installing needs **no auth token**.
 
 ```bash
-git clone https://github.com/shaharia-lab/vibexp-oss.git
-cd vibexp-oss
+git clone https://github.com/vibexp/vibexp.git
+cd vibexp
 
-# Installs every JS/TS workspace. No NODE_AUTH_TOKEN or private registry needed.
-npm install
+# Install the frontend dependencies. No NODE_AUTH_TOKEN or private registry needed.
+make frontend-install
 ```
 
 :::note
-If `npm install` ever asks for credentials, something is misconfigured — there are no private dependencies. The root `.npmrc` only sets `legacy-peer-deps=true`.
+If `npm install` ever asks for credentials, something is misconfigured — there are no private dependencies. The `@vibexp/*` packages resolve from public npm.
 :::
 
 ## Run the dev servers
@@ -57,10 +59,10 @@ npm run typecheck --workspace=frontend
 
 ## Run the whole stack
 
-For an end-to-end local environment, use the self-host compose file:
+For an end-to-end local environment, use the root compose file (published images + Postgres):
 
 ```bash
-docker compose -f docker-compose.selfhost.yml up
+docker compose up -d
 ```
 
 See [Self-Hosting](/user-guide/self-hosting/) for the full environment-variable matrix and prerequisites.
@@ -78,7 +80,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) for commit m
 
 ```text
 feat(frontend): add team switcher to the sidebar
-fix(backend-api): return 404 instead of 500 for missing artifacts
+fix(backend): return 404 instead of 500 for missing artifacts
 docs(docs-site): document the MCP setup flow
 chore(cli): bump dependencies
 ```
@@ -105,8 +107,8 @@ VibeXP is open-core. When you add files, follow the license of the directory the
 
 ## Security
 
-Please do **not** report security vulnerabilities through public GitHub issues. See the repository's [`SECURITY.md`](https://github.com/shaharia-lab/vibexp-oss/blob/main/SECURITY.md) for the private disclosure process.
+Please do **not** report security vulnerabilities through public GitHub issues. See the repository's [`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md) for the private disclosure process.
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you are expected to uphold it — see the repository's [`CODE_OF_CONDUCT.md`](https://github.com/shaharia-lab/vibexp-oss/blob/main/CODE_OF_CONDUCT.md).
+This project adheres to the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you are expected to uphold it — see the repository's [`CODE_OF_CONDUCT.md`](https://github.com/vibexp/vibexp/blob/main/CODE_OF_CONDUCT.md).

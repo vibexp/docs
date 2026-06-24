@@ -6,26 +6,26 @@ description: Run your own VibeXP instance on your own infrastructure and domain 
 VibeXP is designed to be self-hosted on your own infrastructure and domain. There is **no committed secret or infrastructure-specific value** in the repository — every deployment supplies its own configuration through environment variables.
 
 :::tip[Canonical reference]
-This page summarizes the repository's [`SELF_HOSTING.md`](https://github.com/shaharia-lab/vibexp-oss/blob/main/SELF_HOSTING.md). That file is the canonical, always-current source — consult it for the authoritative env-var list.
+This page summarizes the deployment setup in the [`vibexp/vibexp`](https://github.com/vibexp/vibexp) repository — its root `docker-compose.yml` and `backend/.env.example` are the canonical, always-current source for the authoritative env-var list.
 :::
 
 ## Prerequisites
 
-- **Docker + Docker Compose** (for the quick start), **or** Node 22+ / Go 1.25+ for local dev.
-- **PostgreSQL 15/16 with the [`pgvector`](https://github.com/pgvector/pgvector) extension.**
+- **Docker + Docker Compose** (for the quick start), **or** Node 20+ / Go 1.25+ for local dev.
+- **PostgreSQL 15/16 with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg16`).
 - A **WorkOS** account for production login (see [Authentication](#authentication)), or use the dev-login bypass for local evaluation.
-- *(For semantic search)* an OpenAI-compatible embeddings endpoint — e.g. [`shaharia-lab/ai-service`](https://github.com/shaharia-lab/ai-service).
+- *(For semantic search)* an OpenAI-compatible embeddings endpoint configured in-app — see [Search and embeddings](#search-and-embeddings). No external embedding service is required to boot.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/shaharia-lab/vibexp-oss.git
-cd vibexp-oss
-cp backend-api/.env.example backend-api/.env   # then edit the required values
-docker compose -f docker-compose.selfhost.yml up --build
+git clone https://github.com/vibexp/vibexp.git
+cd vibexp
+cp backend/.env.example backend/.env   # then edit the required values
+docker compose up -d
 ```
 
-Edit `docker-compose.selfhost.yml` (or supply an `.env`) with your own values before exposing it publicly. By default the frontend serves on `http://localhost:5173` and the API on `http://localhost:8080`.
+The root `docker-compose.yml` runs the published `ghcr.io/vibexp/*` images plus a PostgreSQL (pgvector) database. Edit `backend/.env` with your own values before exposing it publicly. By default the frontend serves on `http://localhost:5173` and the API on `http://localhost:8080`.
 
 ## Your domains
 
@@ -48,7 +48,7 @@ These are the only hard requirements to boot the backend. Everything else is opt
 | --- | --- | --- |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | ✅ | PostgreSQL connection (must have `pgvector`) |
 | `ENCRYPTION_KEY` | ✅ | AES-256 at-rest key — **exactly 32 bytes** |
-| `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS` | ✅ | Must match your embeddings service and the `vector(768)` schema |
+| `EMBEDDING_MODEL` | Optional | Model-id tag stored on embeddings and used as a search filter (defaults to `gemini-embedding-001`). It does **not** change the vector width, which is fixed at 1024 in code. |
 
 :::note
 Database migrations run automatically on boot.
@@ -65,23 +65,23 @@ Production login uses **WorkOS AuthKit**. Provide:
 
 For **local evaluation without WorkOS**, set `DEV_LOGIN_ENABLED=true` (only honored with a `localhost` `FRONTEND_BASE_URL`) plus `WORKOS_COOKIE_PASSWORD`.
 
-:::note[Roadmap: generic OIDC]
-A pluggable generic-OIDC provider (Keycloak / Zitadel / Auth0 / …) is planned. A fully-functional OIDC client already exists in the codebase (`backend-api/internal/auth/idp/oidc/`) and just needs to be wired behind an `AUTH_PROVIDER` switch.
+:::note[Generic OIDC]
+Beyond WorkOS, a generic OIDC provider (Keycloak / Zitadel / Auth0 / …) is supported: set `AUTH_PROVIDER=oidc` and supply the `OIDC_*` variables. WorkOS AuthKit remains the documented production default.
 :::
 
 ## Search and embeddings
 
-Semantic search requires an embeddings service exposing an OpenAI-compatible `POST /v1/embeddings`. Run [`shaharia-lab/ai-service`](https://github.com/shaharia-lab/ai-service) (sentence-transformers, CPU-friendly) or point `AI_SERVICE_URL` at any compatible provider.
+Embeddings are generated **in-process** — an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`.
 
-The vector dimension **must match** `EMBEDDING_DIMENSIONS` and the database schema.
+The embedding provider (any OpenAI-compatible embeddings endpoint) is configured **in-app**, not via environment variables: add it under the embedding-provider settings inside VibeXP. The embedding vector width is **fixed at 1024** in code, locked to the pgvector column — there is no `EMBEDDING_DIMENSIONS` setting and no `vector(768)`. `EMBEDDING_MODEL` only tags the model id and acts as a search filter.
 
 :::caution
-Without an embeddings service, CRUD operations still work, but **semantic search is unavailable**.
+Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable**.
 :::
 
 ## Optional integrations
 
-All disabled by default, enabled by setting their env vars (see `backend-api/.env.example`):
+All disabled by default, enabled by setting their env vars (see `backend/.env.example`):
 
 | Integration | Enable via | Behavior when off |
 | --- | --- | --- |

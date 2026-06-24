@@ -455,7 +455,7 @@ AI tools may temporarily cache data during sessions, but it's not persisted. You
 - **Documentation**: [docs.vibexp.io](https://docs.vibexp.io)
 - **Status Page**: your deployment's status page (e.g. `https://<your-status-page>`)
 - **Email Support**: support@example.com
-- **GitHub**: [github.com/shaharia-lab](https://github.com/shaharia-lab)
+- **GitHub**: [github.com/vibexp/vibexp](https://github.com/vibexp/vibexp)
 
 ## Related Features
 
