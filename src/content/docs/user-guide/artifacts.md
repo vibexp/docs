@@ -148,8 +148,15 @@ Filter by:
 3. Make your changes
 4. Save to update
 
+Artifacts keep a **content-version history**. Each time you save a change, the previous content is snapshotted as a numbered version, so you can:
+
+- **View version history** — browse the list of past versions, newest first.
+- **Inspect a version** — open any earlier snapshot to see its content.
+- **Diff** — compare a previous version against the current content.
+- **Restore** — roll the artifact back to an earlier version. Restoring snapshots the pre-restore content as a new version first, so nothing is lost.
+
 :::note
-Currently, artifacts don't maintain version history. Consider creating new artifacts with version suffixes (e.g., "api-docs-v2") for major changes.
+Restoring never deletes history — it adds a new version, so you can always move forward or back between snapshots.
 :::
 
 ### Metadata
@@ -190,7 +197,7 @@ Connected AI tools can create artifacts:
 ```javascript
 // Example: AI creates artifact during conversation
 vibexp_io_create_artifact({
-  project_name: "user/backend-api",
+  project_name: "user/backend",
   slug: "error-handler",
   title: "Error Handler Implementation",
   content: "```typescript\n...\n```",
@@ -205,7 +212,7 @@ AI tools can search your artifacts:
 ```javascript
 // Search for specific content
 vibexp_io_search_artifacts({
-  project_name: "user/backend-api",
+  project_name: "user/backend",
   search: "authentication",
   limit: 10
 })
@@ -218,7 +225,7 @@ Get specific artifacts by slug:
 ```javascript
 // Retrieve by project and slug
 vibexp_io_get_artifact({
-  project_name: "user/backend-api",
+  project_name: "user/backend",
   slug: "error-handler"
 })
 ```
@@ -331,7 +338,7 @@ Individual artifacts should be under 1MB. For larger content, consider splitting
 
 ### Can I share artifacts?
 
-Not currently, but this feature is planned. For now, artifacts are private to your account.
+Artifacts are scoped to a **team**. Everyone in the team can access the team's artifacts, so inviting collaborators to your team is how you share.
 
 ### How long are artifacts stored?
 

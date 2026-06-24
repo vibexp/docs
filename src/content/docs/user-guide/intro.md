@@ -51,5 +51,5 @@ Explore our feature documentation to learn more:
 ## Need Help?
 
 - Read the [Self-Hosting](/user-guide/self-hosting/) guide to run your own instance
-- Browse the source and file issues on [GitHub](https://github.com/shaharia-lab/vibexp-oss)
+- Browse the source and file issues on [GitHub](https://github.com/vibexp/vibexp)
 - See [Contributing](/user-guide/contributing/) to get involved

@@ -124,8 +124,10 @@ export default defineConfig({
             },
             { slug: 'user-guide/artifacts' },
             { slug: 'user-guide/memory' },
+            { slug: 'user-guide/blueprints' },
             { slug: 'user-guide/mcp-server' },
             { slug: 'user-guide/ai-agents' },
+            { slug: 'user-guide/feeds' },
             { slug: 'user-guide/resource-access-analytics' },
             {
               label: 'Integrations',
@@ -139,6 +141,54 @@ export default defineConfig({
                 { slug: 'user-guide/open-source' },
                 { slug: 'user-guide/self-hosting' },
                 { slug: 'user-guide/contributing' },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Developer Guide',
+          items: [
+            { slug: 'developer-guide/intro' },
+            { slug: 'developer-guide/getting-started' },
+            {
+              label: 'Backend',
+              collapsed: false,
+              items: [
+                { slug: 'developer-guide/backend/overview' },
+                { slug: 'developer-guide/backend/configuration' },
+                { slug: 'developer-guide/backend/database' },
+                { slug: 'developer-guide/backend/authentication' },
+                { slug: 'developer-guide/backend/mcp-server' },
+                { slug: 'developer-guide/backend/api-and-openapi' },
+                { slug: 'developer-guide/backend/code-generation' },
+                { slug: 'developer-guide/backend/testing' },
+              ],
+            },
+            {
+              label: 'Frontend',
+              collapsed: false,
+              items: [
+                { slug: 'developer-guide/frontend/overview' },
+                { slug: 'developer-guide/frontend/configuration' },
+                { slug: 'developer-guide/frontend/building' },
+              ],
+            },
+            {
+              label: 'Deployment',
+              collapsed: false,
+              items: [
+                { slug: 'developer-guide/deployment/self-hosting' },
+                { slug: 'developer-guide/deployment/docker' },
+                { slug: 'developer-guide/deployment/configuration-reference' },
+              ],
+            },
+            {
+              label: 'Contributing',
+              collapsed: false,
+              items: [
+                { slug: 'developer-guide/contributing/workflow' },
+                { slug: 'developer-guide/contributing/pre-commit-and-ci' },
+                { slug: 'developer-guide/contributing/code-conventions' },
               ],
             },
           ],
