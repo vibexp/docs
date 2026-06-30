@@ -140,6 +140,7 @@ export default defineConfig({
               items: [
                 { slug: 'user-guide/open-source' },
                 { slug: 'user-guide/self-hosting' },
+                { slug: 'user-guide/self-hosting/authentication' },
                 { slug: 'user-guide/contributing' },
               ],
             },
