@@ -8,7 +8,7 @@ monorepo. It lives under `backend/` and is the Go module
 `github.com/vibexp/vibexp`. It serves the REST API consumed by the frontend and
 CLI, an MCP server for AI agents, and a set of internal job endpoints.
 
-This page gives you the big picture. For environment variables see
+This page gives you the big picture. For the `config.yaml` reference see
 [Backend Configuration](/developer-guide/backend/configuration/); for the
 spec-first workflow see [API & OpenAPI](/developer-guide/backend/api-and-openapi/).
 
@@ -25,9 +25,9 @@ spec-first workflow see [API & OpenAPI](/developer-guide/backend/api-and-openapi
 | Dependency injection | [Wire](https://github.com/google/wire) (committed `wire_gen.go`) |
 | API codegen | [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) strict server |
 | Mocks | [mockery](https://github.com/vektra/mockery) |
-| Config | [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig) |
+| Config | [koanf](https://github.com/knadh/koanf) — a required, env-interpolated `config.yaml` |
 | Observability | [OpenTelemetry](https://opentelemetry.io/) |
-| Auth | WorkOS AuthKit / generic OIDC |
+| Auth | Identity-provider registry (Google / GitHub / generic OIDC) + embedded OAuth 2.1 Authorization Server ([ory/fosite](https://github.com/ory/fosite)) |
 
 ## Layered design
 
@@ -56,14 +56,16 @@ cmd/                 cobra entrypoint, wires up and starts the server
 
 ```text
 internal/
-  auth/            WorkOS AuthKit, OIDC, dev-login, session cookies, API keys
+  auth/            identity-provider registry (idp/), session cookies (session/),
+                   embedded OAuth 2.1 AS (oauthserver/), JWT verification
+                   (authkit/, mcptoken/)
   cache/           in-process / shared caching helpers
-  config/          envconfig-based configuration loading
+  config/          koanf-based config.yaml loading, interpolation, validation
   container/       Wire dependency-injection wiring (wire_gen.go committed)
   contextkeys/     typed request-context keys (auth subject, request id, …)
   database/        Postgres pool + golang-migrate runner
   errors/          RFC 9457 problem-details error model
-  external/        outbound integrations (GitHub, email, HubSpot, …)
+  external/        outbound integrations (GitHub App, email providers)
   logging/         slog setup (json/text, levels)
   models/          domain models shared across layers
   observability/   OpenTelemetry tracing/metrics + environment detection
@@ -82,9 +84,10 @@ Every API request passes through the chi middleware chain before reaching a
 handler. The chain (configured in `internal/server`) runs roughly in this order:
 
 1. **RealIP** — resolves the client IP from proxy headers (used by rate limiting).
-2. **Rate limiting** — per-IP limits per route group (auth, contact, API), tuned
-   via `*_RATE_LIMIT_PER_MINUTE`.
-3. **CORS** — allows configured origins (`CORS_ALLOWED_ORIGINS`, localhost in dev).
+2. **Rate limiting** — per-IP limits per route group (`auth` and `api`), tuned
+   via the `rate_limit.*` keys in `config.yaml`.
+3. **CORS** — allows configured origins (`server.cors_allowed_origins`,
+   localhost in dev).
 4. **Authentication** — resolves the caller from a session cookie, bearer JWT, or
    API key and binds the subject to the request context.
 5. **Activity logging** — records request/activity metadata.
@@ -93,24 +96,34 @@ handler. The chain (configured in `internal/server`) runs roughly in this order:
 7. **Service** — business logic runs against repository interfaces.
 8. **Repository** — squirrel-built SQL executes against Postgres.
 
-Side effects that should not block the response — such as generating embeddings,
-analytics, and HubSpot sync — are published to an **in-process async event bus**.
-Worker goroutines drain the bus with bounded retries (see the
-`EVENT_BUS_*` settings on the
+Side effects that should not block the response — such as generating embeddings
+and post-signup bootstrapping — are published to an **in-process async event
+bus**. Worker goroutines drain the bus with bounded retries (see the
+`event_bus.*` settings on the
 [Configuration](/developer-guide/backend/configuration/#event-bus) page). The
 embedding pipeline is one of these workers: there is no external AI service and
 no message broker.
 
 :::note
-The MCP server (`/mcp/v1/common`) mounts alongside the REST API in the same
-process. See [MCP Server](/developer-guide/backend/mcp-server/).
+The MCP server (`/mcp/v1/common`) and the embedded OAuth 2.1 Authorization
+Server (`/oauth2/*`) mount alongside the REST API in the same process. See
+[MCP Server](/developer-guide/backend/mcp-server/) and
+[Authentication](/developer-guide/backend/authentication/).
 :::
+
+The backend also **serves the frontend SPA**: combined release builds embed the
+built frontend into the binary via the `embedfrontend` build tag
+(`internal/server/spa_embed.go`), and the runtime `/config.js` endpoint serves
+the deploy-time frontend values (`frontend.*` config keys) as
+`window.__VIBEXP_ENV__` — so one image serves the API and the app from the same
+origin. Default (non-embed) builds compile without a built frontend and still
+serve `/config.js`.
 
 ## Where to go next
 
-- [Backend Configuration](/developer-guide/backend/configuration/) — full env reference.
+- [Backend Configuration](/developer-guide/backend/configuration/) — the full `config.yaml` reference.
 - [Database & Migrations](/developer-guide/backend/database/) — Postgres, pgvector, migrations.
-- [Authentication](/developer-guide/backend/authentication/) — WorkOS, OIDC, dev login.
+- [Authentication](/developer-guide/backend/authentication/) — provider registry, sessions, the embedded OAuth 2.1 AS.
 - [API & OpenAPI](/developer-guide/backend/api-and-openapi/) — the spec-first flow.
 - [Code Generation](/developer-guide/backend/code-generation/) — oapi-codegen, Wire, mockery.
 - [Testing](/developer-guide/backend/testing/) — unit and integration tests.

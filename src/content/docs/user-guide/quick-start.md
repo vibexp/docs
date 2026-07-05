@@ -1,18 +1,19 @@
 ---
 title: Quick Start
-description: Get started with VibeXP in five minutes by creating your account, building your first prompt, generating an API key, and connecting your AI tools.
+description: Get started with VibeXP in five minutes by signing in, building your first prompt, generating an API key, and connecting your AI tools.
 sidebar:
   order: 2
 ---
 
-Get started with VibeXP in 5 minutes. This guide will walk you through creating your account, setting up your first prompt, and connecting your AI tools.
+Get started with VibeXP in 5 minutes. This guide will walk you through signing in, setting up your first prompt, and connecting your AI tools.
 
-## Step 1: Create Your Account
+## Step 1: Sign In
 
 1. Open your VibeXP instance (the deployed VibeXP app at your own domain)
-2. Sign up with your email address or OAuth provider
-3. Verify your email address
-4. Complete your profile setup
+2. On the login page, pick one of the sign-in providers your instance has configured — Google, GitHub, or your organization's own identity provider (OpenID Connect)
+3. Complete the provider's sign-in flow — your VibeXP account is created automatically the first time you sign in
+
+There is no separate signup form, no password to set, and no email verification step — your identity provider handles authentication.
 
 ## Step 2: Create Your First Prompt
 
@@ -64,7 +65,7 @@ claude mcp add --transport http vibexp_io_common \
   https://<your-mcp-host>/mcp/v1/common
 ```
 
-The first time the server is used, Claude Code opens an AuthKit login/consent page in your browser. Approve it once, and Claude Code reconnects automatically afterward.
+The first time the server is used, Claude Code opens VibeXP's consent page in your browser — if you're not already signed in to VibeXP, you'll sign in first and be returned to the consent screen. Approve it once, and Claude Code reconnects automatically afterward.
 
 ### For Other Clients
 
@@ -74,10 +75,10 @@ Paste **only** the connection URL into your MCP client:
 https://<your-mcp-host>/mcp/v1/common
 ```
 
-If your client supports the **MCP OAuth 2.1** flow, it will prompt you to log in via AuthKit and then connect. If it does not support MCP OAuth, it cannot currently connect — the endpoint rejects API-key authentication with `401`. See [MCP Server Integration](/user-guide/mcp-server#how-oauth-connect-works) for how the connect flow works.
+If your client supports the **MCP OAuth 2.1** flow, it will send you to VibeXP's login and consent screen and then connect. If it does not support MCP OAuth, it cannot currently connect — the endpoint rejects API-key authentication with `401`. See [MCP Server Integration](/user-guide/mcp-server/#how-oauth-connect-works) for how the connect flow works.
 
 :::tip[Working across teams]
-You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call — just ask your AI assistant to call `vibexp_io_list_teams` to discover yours. See [MCP Server Integration](/user-guide/mcp-server#working-with-teams) for details.
+You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call — just ask your AI assistant to call `vibexp_io_list_teams` to discover yours. See [MCP Server Integration](/user-guide/mcp-server/#working-with-teams) for details.
 :::
 
 :::note[Upgrading from an older config?]

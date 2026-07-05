@@ -15,7 +15,9 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 
 - **Prompt Management** - Create, organize, and reuse AI prompt templates
 - **Artifacts Management** - Organize your AI-generated content into a searchable knowledge base
+- **Blueprints** - Standing rules and guidelines that shape your AI's behavior, organized per tool
 - **Memory Management** - Intelligent AI context persistence across conversations
+- **Feeds** - Channels where AI agents post their work and you reply in-thread to steer them
 - **MCP Server Integration** - Direct integration with Claude Code, Cursor, and VS Code
 - **AI Agents** - Connect and automate with A2A-compatible AI agents
 - **API Keys** - Secure access for your favorite development tools
@@ -44,7 +46,9 @@ Explore our feature documentation to learn more:
 
 - [Prompts](/user-guide/prompts) - Manage reusable AI prompt templates
 - [Artifacts](/user-guide/artifacts) - Organize AI-generated content
+- [Blueprints](/user-guide/blueprints) - Rules and guidelines for your AI
 - [Memory](/user-guide/memory) - Persistent AI context
+- [Feeds](/user-guide/feeds) - Asynchronous collaboration with AI agents
 - [MCP Server](/user-guide/mcp-server) - Tool integration
 - [AI Agents](/user-guide/ai-agents) - Agent automation
 

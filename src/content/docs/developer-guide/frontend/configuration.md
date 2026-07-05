@@ -1,6 +1,6 @@
 ---
 title: Frontend Configuration
-description: Reference for the VibeXP frontend's build-time VITE_* variables and the single nginx runtime variable, with sensible defaults for self-hosting.
+description: Reference for the VibeXP frontend's build-time VITE_* variables and the runtime /config.js configuration rendered by the backend.
 ---
 
 The frontend is configured through environment variables. The canonical list and
@@ -11,18 +11,23 @@ defaults live in
 
 This is the most important distinction:
 
-- **`VITE_*` and `SENTRY_*` variables are inlined at _build_ time.** They are
-  baked into the JavaScript bundle when `vite build` runs. Changing them requires
-  rebuilding the image.
-- **`BACKEND_ORIGIN` is the only _runtime_ variable.** It is read by nginx at
-  container start (via `envsubst`) to decide where to proxy `/api/`. You can
-  change it without rebuilding.
+- **`VITE_*` variables are inlined at _build_ time.** They are baked into the
+  JavaScript bundle when `vite build` runs. In practice you set them in
+  `frontend/.env` for **local development** (the Vite dev server reads them);
+  the published image bakes only deployment-neutral values.
+- **Deploy-time values come from the _runtime_ `/config.js`.** In production the
+  backend renders `/config.js` from its `frontend.*` configuration (see
+  [Backend Configuration](/developer-guide/backend/configuration/)), setting
+  `window.__VIBEXP_ENV__` before the SPA bundle runs. Branding, site links, MCP
+  endpoint, and analytics are all injected this way — changing them needs a
+  restart, **not a rebuild**. In local dev there is no backend-rendered
+  `/config.js` (the request 404s harmlessly) and the app falls back to the
+  build-time `import.meta.env` values.
 
 :::tip[Why the API base URL is relative]
 The published image is built with `VITE_API_BASE_URL=/api/v1` so requests are
-same-origin. The backend location is chosen at deploy time through
-`BACKEND_ORIGIN`, keeping a single image deployment-agnostic. Do not hardcode a
-backend origin into the build. See
+same-origin — the backend serves the SPA and the API from the same port. Do not
+hardcode a backend origin into the build. See
 [Building & Serving](/developer-guide/frontend/building/).
 :::
 
@@ -30,12 +35,22 @@ backend origin into the build. See
 
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_API_BASE_URL` | `/api/v1` (image build) | Backend API base, including version prefix. Leave relative for same-origin requests behind the nginx proxy. The local-dev `.env.example` points it at `http://localhost:8080/api/v1`. |
-| `BACKEND_ORIGIN` | `http://backend:8080` | **Runtime.** nginx reverse-proxy target for `/api/`. Set per deployment. |
+| `VITE_API_BASE_URL` | `/api/v1` (image build) | Backend API base, including version prefix. Leave empty/relative for same-origin requests (the combined image). The local-dev `.env.example` points it at `http://localhost:8080/api/v1`, targeting `make backend-run-dev`. |
+
+## Release stamps
+
+Build-time only, set by the release pipeline (build args in
+`backend/Dockerfile`); shown in the UI for support/debugging.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `VITE_RELEASE_SHA` | `dev` | Commit SHA of the build. `release.yml` passes `github.sha`. |
+| `VITE_RELEASE_DATE` | `unknown` | Build date stamp. |
 
 ## Branding / site links
 
-All optional, with neutral defaults.
+All optional, with neutral defaults. In production these come from the backend's
+`frontend.*` config via `/config.js`; the `VITE_*` forms apply in local dev.
 
 | Variable | Notes |
 |---|---|
@@ -51,7 +66,7 @@ All optional, with neutral defaults.
 
 | Variable | Notes |
 |---|---|
-| `VITE_MCP_ENDPOINT` | The MCP endpoint advertised in client-setup snippets, e.g. `https://<your-mcp-host>/mcp/v1/common`. |
+| `VITE_MCP_ENDPOINT` | The MCP endpoint advertised in client-setup snippets, e.g. `https://<your-mcp-host>/mcp/v1/common`. Runtime-injectable via `frontend.mcp_endpoint`. |
 
 ## Error reporting / problem details
 
@@ -61,31 +76,14 @@ All optional, with neutral defaults.
 
 ## Analytics (Google Tag Manager / GA4)
 
-Disabled by default — must be explicitly enabled.
+Disabled by default — must be explicitly enabled. Runtime-injectable via the
+backend's `frontend.gtm_*` / `frontend.ga4_measurement_id` config.
 
 | Variable | Default | Notes |
 |---|---|---|
 | `VITE_GTM_ENABLED` | `false` | Set to `true` to enable GTM. |
 | `VITE_GTM_ID` | — | GTM container ID (e.g. `GTM-XXXXXXX`). Empty disables GTM. |
 | `VITE_GA4_MEASUREMENT_ID` | — | GA4 Measurement ID (e.g. `G-XXXXXXXXXX`) for client-ID capture. |
-
-## Sentry (error monitoring)
-
-Optional.
-
-| Variable | When | Notes |
-|---|---|---|
-| `VITE_SENTRY_DSN` | runtime DSN (build-inlined) | Empty disables Sentry. |
-| `SENTRY_ORG` | build only | Source-map upload. |
-| `SENTRY_PROJECT` | build only | Source-map upload. |
-| `SENTRY_AUTH_TOKEN` | build only (CI) | Source-map upload. |
-
-:::note
-All three of `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` must be set
-for source maps to be uploaded at build time. They are not `VITE_*` because they
-are not inlined into the bundle. See
-[Building & Serving](/developer-guide/frontend/building/) for the upload-then-delete flow.
-:::
 
 ## Firebase Cloud Messaging (web push)
 
@@ -102,6 +100,13 @@ Firebase is fully configured — there is no precaching service worker.
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` |
 | `VITE_FIREBASE_APP_ID` |
 | `VITE_FIREBASE_VAPID_KEY` |
+
+:::note
+These are **build-time only** (the service-worker config is generated during
+`npm run build`), and the published image does not set them — web push is
+disabled in the stock image. To enable it, build your own image with the
+`VITE_FIREBASE_*` values present at build time.
+:::
 
 ## Related
 

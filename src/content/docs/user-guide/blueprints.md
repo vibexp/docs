@@ -53,7 +53,11 @@ Blueprints keep a **content-version history**. Each save snapshots the previous 
 
 - **View version history** — browse past versions, newest first.
 - **Inspect a version** — open any earlier snapshot.
-- **Restore** — roll a blueprint back to an earlier version. The pre-restore content is snapshotted as a new version first, so nothing is lost.
+- **Restore** — roll a blueprint back to an earlier version. The pre-restore content is snapshotted as a new version first, so you can move between recent snapshots freely.
+
+:::note[Version retention limit]
+Version history is bounded by an operator-configurable retention limit (**20 versions per blueprint by default**). When the limit is reached, the oldest versions are pruned as new ones are created, so don't rely on very old versions staying available forever on a default deployment.
+:::
 
 ## How AI tools read blueprints over MCP
 
@@ -62,12 +66,13 @@ When your AI assistant is connected to VibeXP through the [MCP server](/user-gui
 - `vibexp_io_create_blueprint` — create a new blueprint (project, slug, title, content, optional type/status/metadata).
 - `vibexp_io_update_blueprint` — update an existing blueprint, located by its project and slug.
 - `vibexp_io_search` — find blueprints (and prompts, artifacts, and memories) by meaning; narrow to blueprints with the `types` filter.
+- `vibexp_io_delete_resource` — delete a blueprint by passing `resource_type: "blueprint"` with its `project_id` and `slug`. The blueprint's search embeddings are removed alongside it.
 
 ```text
 // AI tool creates a blueprint over MCP
 vibexp_io_create_blueprint({
   team_id: "<team-uuid-or-slug>",
-  project_name: "my-api-project",
+  project_id: "<project-uuid>",
   slug: "coding-standards",
   title: "Backend Coding Standards",
   content: "# Standards\n\n- Wrap errors with context\n- ..."

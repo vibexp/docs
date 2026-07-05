@@ -1,6 +1,6 @@
 ---
 title: MCP Server Integration
-description: Give your AI assistants direct OAuth 2.1 access to your VibeXP prompts, artifacts, and memories through the Model Context Protocol.
+description: Give your AI assistants direct OAuth 2.1 access to your VibeXP prompts, artifacts, blueprints, memories, and feeds through the Model Context Protocol.
 sidebar:
   order: 6
 ---
@@ -9,7 +9,7 @@ Give your AI assistants direct access to your VibeXP data through the Model Cont
 
 ## Overview
 
-VibeXP's MCP server acts as a bridge between your AI development tools and your organized data ecosystem. Your AI assistants can access prompts, artifacts, and memories without manual copy-pasting.
+VibeXP's MCP server acts as a bridge between your AI development tools and your organized data ecosystem. Your AI assistants can access prompts, artifacts, blueprints, memories, and feeds without manual copy-pasting.
 
 ### Key Benefits
 
@@ -25,10 +25,12 @@ Model Context Protocol (MCP) is an open standard that enables AI applications to
 
 ### How VibeXP Uses MCP
 
-VibeXP implements MCP to expose your data as **resources** and **tools**:
+VibeXP implements MCP to expose your data through **tools** and **prompts**:
 
-- **Resources**: Read-only access to your prompts, artifacts, and memories
-- **Tools**: Actions AI can perform (create, search, update data)
+- **Tools**: Actions AI can perform — search, create, update, and delete your prompts, artifacts, blueprints, memories, feeds, and attachments (see [Available Tools](#available-tools))
+- **Prompts**: Your published prompts marked **Available in MCP** appear as native MCP prompts, so connected clients can list them and render them with their placeholder arguments
+
+VibeXP does not expose MCP "resources" — all reads and writes go through tools, and prompt templates are additionally served as MCP prompts.
 
 ## Setup Guide
 
@@ -68,7 +70,7 @@ claude mcp add --transport http vibexp_io_common \
   https://<your-mcp-host>/mcp/v1/common
 ```
 
-The first time the server is used, Claude Code opens an AuthKit login/consent page in your browser. Approve it once and Claude Code stores the resulting token; subsequent sessions reconnect automatically.
+The first time the server is used, Claude Code opens VibeXP's consent page in your browser. If you are not already signed in to VibeXP, you are taken to the VibeXP login page first (pick one of your instance's configured sign-in providers) and returned to the consent screen automatically. Approve it once and Claude Code stores the resulting token; subsequent sessions reconnect automatically.
 
 Verify the connection:
 
@@ -86,7 +88,7 @@ https://<your-mcp-host>/mcp/v1/common
 
 Whether this works depends entirely on whether your client implements the **MCP OAuth 2.1** authorization flow:
 
-- **If your client supports MCP OAuth** (auto-discovery, Dynamic Client Registration, and PKCE), it will prompt you to log in via AuthKit on first use and then connect — exactly as Claude Code does. Just paste the URL.
+- **If your client supports MCP OAuth** (auto-discovery, Dynamic Client Registration, and PKCE), it will send you to VibeXP's login and consent screen on first use and then connect — exactly as Claude Code does. Just paste the URL.
 - **If your client does not support MCP OAuth**, it cannot currently connect to the VibeXP MCP endpoint. The endpoint rejects API-key authentication (both `?api_key=` and `Authorization: Bearer <api_key>`) with `401`.
 
 :::caution[Do not pass an API key to the MCP endpoint]
@@ -95,32 +97,44 @@ Configurations that send an API key to `https://<your-mcp-host>/mcp/v1/common` �
 
 ## How OAuth Connect Works
 
-When you paste the URL, an MCP-OAuth-capable client performs a standards-based handshake on your behalf. You normally only see a single browser login/consent screen; the rest happens automatically:
+VibeXP ships with its own **embedded OAuth 2.1 Authorization Server** — token issuance is handled by your VibeXP instance itself, not an external identity service. When you paste the URL, an MCP-OAuth-capable client performs a standards-based handshake on your behalf. You normally only see a single browser consent screen; the rest happens automatically:
 
 1. **Discover** — The client first calls `https://<your-mcp-host>/mcp/v1/common` with no token. The server replies `401` with a `WWW-Authenticate: Bearer` header pointing at the protected-resource metadata document.
-2. **Read metadata** — The client fetches that public metadata document. It names the AuthKit authorization server the client should use.
-3. **Register** — The client self-registers with AuthKit via Dynamic Client Registration (DCR), obtaining a `client_id`. You do not create or paste one.
-4. **Log in** — The client starts a PKCE authorization request. AuthKit shows you a login and consent screen in your browser; you approve access.
-5. **Get a token** — The client exchanges the resulting authorization code (plus its PKCE verifier and the MCP resource URL) for a short-lived RS256 JWT bound to the VibeXP MCP resource (its `aud` claim is the MCP resource URI).
+2. **Read metadata** — The client fetches that public metadata document. It names VibeXP's own embedded authorization server as the one the client should use.
+3. **Register** — The client self-registers with VibeXP's authorization server via Dynamic Client Registration (DCR), obtaining a `client_id`. You do not create or paste one.
+4. **Consent** — The client starts a PKCE authorization request, and your browser opens VibeXP's in-app consent page. You approve access there (see [The Consent Screen](#the-consent-screen) below).
+5. **Get a token** — The client exchanges the resulting authorization code (plus its PKCE verifier and the MCP resource URL) for a short-lived JWT bound to the VibeXP MCP resource (its `aud` claim is the MCP resource URI).
 6. **Connect** — The client sends `POST https://<your-mcp-host>/mcp/v1/common` with `Authorization: Bearer <JWT>` and receives `200`. From here, tools work normally.
 
 Tokens are short-lived and audience-bound. When one expires, an OAuth-capable client refreshes or re-runs the login flow automatically — you usually won't notice.
+
+### The Consent Screen
+
+The consent step happens inside the VibeXP app itself, at `/oauth/consent`:
+
+- **You must be signed in to VibeXP** to approve access. If you are not, the consent page redirects you to the VibeXP login page with a `return_to` parameter, so after signing in (via one of your instance's configured providers) you land back on the exact consent screen you started from.
+- The page shows which client is asking for access; click **Approve** to let it connect, or deny to abort the flow.
+- Consent sessions are single-use and short-lived — if the page has expired, simply re-run the connect flow from your client.
+
+### Local Development: Zero-Config MCP Auth
+
+If you run VibeXP locally (self-hosted development), MCP authentication works **with no configuration at all**: the embedded authorization server is enabled automatically at your local server URL, and the MCP endpoint is pointed at it. Combined with the local dev login (sign in without configuring any identity provider), you can connect an MCP client to a fresh local instance out of the box. In production the embedded authorization server is explicit, opt-in configuration — see the self-hosting guide.
 
 ### Advanced: Discovery Endpoints
 
 These public, no-auth endpoints power the handshake above. You normally never call them yourself — they are documented here for client developers and advanced troubleshooting:
 
-- `GET /.well-known/oauth-protected-resource/mcp/v1/common` — RFC 9728 protected-resource metadata. Returns the resource identifier, the AuthKit authorization server(s), and the supported bearer methods, e.g.:
+- `GET /.well-known/oauth-protected-resource/mcp/v1/common` — RFC 9728 protected-resource metadata. Returns the resource identifier, the authorization server(s) — VibeXP's own embedded authorization server — and the supported bearer methods, e.g.:
 
   ```json
   {
     "resource": "https://<your-mcp-host>/mcp/v1/common",
-    "authorization_servers": ["https://<your-authkit-issuer>"],
+    "authorization_servers": ["https://<your-vibexp-host>"],
     "bearer_methods_supported": ["header"]
   }
   ```
 
-- `GET /.well-known/oauth-authorization-server` — Returns a `302` redirect to the AuthKit authorization-server metadata, as a convenience for clients that look for the authorization-server document at the resource root.
+- `GET /.well-known/oauth-authorization-server` — Returns a `302` redirect to the embedded authorization server's metadata, as a convenience for clients that look for the authorization-server document at the resource root.
 
 ### API Keys Still Apply Outside MCP
 
@@ -205,32 +219,76 @@ Once connected, AI assistants can use these tools.
 Tools that read or write team data require a `team_id` (UUID or slug) argument. Use `vibexp_io_list_teams` to discover valid identifiers — see [Working With Teams](#working-with-teams).
 :::
 
-### Team Discovery
+### Workspace and Context
 
-- **vibexp_io_list_teams**: List the teams you belong to (returns `uuid`, `name`, `slug`). Use the result to supply `team_id` to other tools.
+- **vibexp_io_get_user**: Get basic information about the currently authenticated user
+- **vibexp_io_list_teams**: List the teams you belong to (returns `uuid`, `name`, `slug`). Use the result to supply `team_id` to other tools
+- **vibexp_io_list_projects**: List a team's projects, with optional search and pagination
 
-### DateTime Tools
+### Search
 
-- **vibexp_io_current_date_time**: Get current date/time with timezone support
+- **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
+- **vibexp_io_search_artifacts**: Exact, filterable artifact listing within a project (status, type, text search, pagination)
+- **vibexp_io_search_memories**: Filterable memory listing within a project (status, text search, pagination)
 
 ### Prompt Management
 
-- **vibexp_io_search_prompts**: Search your prompt library
-- **vibexp_io_get_prompt**: Retrieve specific prompt by ID
+- **vibexp_io_create_prompt**: Create a new prompt
+- **vibexp_io_update_prompt**: Update an existing prompt
+
+To *read* prompts, use the generic `vibexp_io_search` tool — or the native MCP prompts your client lists (see the note below).
 
 ### Artifact Management
 
-- **vibexp_io_create_artifact**: Create new artifacts
-- **vibexp_io_search_artifacts**: Search artifacts by project/content
-- **vibexp_io_get_artifact**: Retrieve specific artifact
-- **vibexp_io_update_artifact**: Modify existing artifacts
+- **vibexp_io_create_artifact**: Create a new artifact
+- **vibexp_io_get_artifact**: Get an artifact's content by project and slug
+- **vibexp_io_update_artifact**: Update an existing artifact
+
+### Blueprint Management
+
+- **vibexp_io_create_blueprint**: Create a new blueprint
+- **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug
 
 ### Memory Operations
 
-- **vibexp_io_create_memory**: Store new memories
-- **vibexp_io_search_memories**: Search memory library
-- **vibexp_io_get_memory**: Retrieve specific memory
-- **vibexp_io_update_memory**: Update existing memories
+- **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`)
+- **vibexp_io_get_memory**: Retrieve a specific memory by ID
+- **vibexp_io_update_memory**: Update a memory's text, status, or metadata
+
+### Feeds
+
+- **vibexp_io_list_feeds**: List the AI Feeds available in a team
+- **vibexp_io_post_to_feed**: Post a status update, summary, or report to a feed
+- **vibexp_io_reply_to_feed_item**: Reply to an existing feed item with a follow-up
+- **vibexp_io_list_feed_items**: List a feed's items, newest first (paginated)
+- **vibexp_io_get_feed_item**: Get a single feed item with its full content
+- **vibexp_io_list_feed_item_replies**: List the replies to a feed item, newest first (paginated)
+- **vibexp_io_get_feed_item_reply**: Get a single reply with its full content
+
+### Attachments
+
+- **vibexp_io_upload_attachment**: Upload a base64-encoded file and attach it to a resource such as an artifact (max 5 MB per file, 10 MB total per resource)
+- **vibexp_io_list_attachments**: List a resource's attachments (metadata plus a download URL)
+- **vibexp_io_delete_attachment**: Delete an attachment by its ID
+
+### Deleting Resources
+
+- **vibexp_io_delete_resource**: Delete a single memory, artifact, blueprint, or prompt
+
+One generic tool covers all four deletable resource types. Pass `resource_type` plus the identifier(s) that type requires:
+
+| `resource_type` | Required identifiers      |
+| --------------- | ------------------------- |
+| `memory`        | `id` (the memory's UUID)  |
+| `prompt`        | `slug`                    |
+| `artifact`      | `project_id` and `slug`   |
+| `blueprint`     | `project_id` and `slug`   |
+
+Deleting a resource also removes its search embeddings, and deleting an artifact removes its attachments.
+
+:::note[Prompts are also native MCP prompts]
+Beyond the tools above, your **published** prompts marked **Available in MCP** are exposed as native MCP prompts. Clients that support MCP prompts (such as Claude Code) can list them by name (the prompt's slug), see their placeholder arguments, and render them with values filled in.
+:::
 
 ## Usage Examples
 
@@ -239,8 +297,8 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 ```
 You: "Use my blog post template to write about AI"
 
-AI: *Automatically searches your prompts for "blog post template"*
-    *Retrieves the template using vibexp_io_get_prompt*
+AI: *Searches your team's knowledge with vibexp_io_search (types: prompts)*
+    *Finds the "blog-post-template" prompt*
     *Applies template with your topic*
 ```
 
@@ -307,7 +365,7 @@ AI: *Searches artifacts using vibexp_io_search_artifacts*
 
 ### Authentication
 
-- **OAuth 2.1 Bearer Tokens**: Every MCP request carries a short-lived, audience-bound JWT issued by AuthKit through the connect flow — never an API key
+- **OAuth 2.1 Bearer Tokens**: Every MCP request carries a short-lived, audience-bound JWT issued by VibeXP's embedded authorization server through the connect flow — never an API key
 - **No Long-Lived Secret to Leak**: There is no API key to copy, paste, or accidentally commit; tokens expire and are refreshed automatically by your client
 - **Audience-Bound**: Tokens are valid only for the VibeXP MCP resource (`aud` = the MCP resource URI), so a token cannot be replayed against other services
 - **User Isolation**: Access only your data, never other users'
@@ -369,7 +427,7 @@ Because MCP uses OAuth, there is no API key to manage for the MCP endpoint. To r
 
 **Solutions**:
 - Confirm you are connecting with OAuth (paste the URL) and **not** sending an API key — API-key authentication is rejected at the MCP endpoint
-- Complete the AuthKit login and consent prompt your client opens on first use
+- Complete the VibeXP login and consent screen your client opens on first use (you must be signed in to VibeXP to approve)
 - If a token expired, your client normally refreshes it automatically; if it doesn't, re-run the connect flow to re-authenticate
 - Verify your client supports the MCP OAuth flow (auto-discovery, Dynamic Client Registration, PKCE)
 
@@ -398,7 +456,7 @@ Because MCP uses OAuth, there is no API key to manage for the MCP endpoint. To r
 ### Connection Security
 
 - Use an MCP-OAuth-capable client so authentication is handled by the OAuth 2.1 flow — there is no API key to store or protect for MCP
-- Only approve the AuthKit login/consent prompt when you actually initiated the connection
+- Only approve the VibeXP consent screen when you actually initiated the connection
 - Let your client manage and refresh tokens automatically; do not attempt to extract or reuse the bearer token elsewhere
 - To stop a client's access, sign out / disconnect it in your client (it will need to re-run the connect flow to reconnect)
 
