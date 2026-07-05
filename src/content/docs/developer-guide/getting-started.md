@@ -7,9 +7,9 @@ This page takes you from a fresh clone to a running backend and frontend, both
 with hot reload. Local development is driven entirely by the root `Makefile`.
 
 :::caution
-The root `docker-compose.yml` runs the **published** `ghcr.io/vibexp/*` images
-for self-hosting — it is **not** the dev workflow. To develop VibeXP, use the
-`make` targets below.
+The root `docker-compose.yml` runs the **published** `ghcr.io/vibexp/vibexp`
+image for self-hosting — it is **not** the dev workflow. To develop VibeXP, use
+the `make` targets below.
 :::
 
 ## Prerequisites
@@ -60,10 +60,19 @@ The local email inbox (Mailpit) UI is at **http://localhost:8025**, and the API
 serves on **http://localhost:8080** (health check at
 `http://localhost:8080/health`).
 
-:::note[Where `.env` comes from]
-On first run, if `backend/.env` is missing it is **auto-copied from
-`backend/.env.example`** with dev defaults — there is nothing to configure to
-start. Only `.env.example` is tracked in git; your `.env` is gitignored.
+:::note[Where `.env` and `config.yaml` come from]
+On first run, `scripts/sync-env.sh` bootstraps **both** local files with dev
+defaults — there is nothing to configure to start:
+
+- **`backend/config.yaml`** (copied from `config.example.yaml`) — the
+  **required, primary config surface**: all non-secret settings live here, and
+  the backend fails fast at startup without it.
+- **`backend/.env`** (copied from `.env.example`) — **secrets only**;
+  `config.yaml` references each one as `${VAR}`, and the `make` targets load
+  `.env` so those references resolve.
+
+Only the `*.example` files are tracked in git; your `.env` and `config.yaml`
+are gitignored.
 :::
 
 ## Run the frontend
@@ -78,12 +87,13 @@ This copies `frontend/.env` from `.env.example` if missing, installs
 dependencies if `node_modules` is absent, and starts the **Vite dev server at
 http://localhost:5173**.
 
-## Dev-login bypass (no WorkOS needed locally)
+## Dev-login bypass (no identity provider needed locally)
 
-You do **not** need a WorkOS account to develop locally. The dev defaults enable
-a dev-login bypass (`DEV_LOGIN_ENABLED`), so you can sign in and click around
-immediately. WorkOS / OIDC is only required for real deployments — see the
-self-hosting docs for production auth configuration.
+You do **not** need an identity provider to develop locally. The dev defaults
+enable a dev-login bypass (`auth.dev_login_enabled` in `config.yaml`, honored
+only in local development), so you can sign in and click around immediately. A
+real provider (Google, GitHub, or generic OIDC) is only required for real
+deployments — see the self-hosting docs for production auth configuration.
 
 ## Common checks
 

@@ -303,24 +303,15 @@ MCP (Model Context Protocol) is a standard that allows AI applications to access
 ### Enabling MCP Access
 
 1. Edit your prompt
-2. In the Settings panel, check **Available in MCP**
-3. Save the prompt (Published status recommended)
+2. Set the prompt's status to **Published** — the toggle only appears for published prompts
+3. In the Settings panel, turn on **Available in MCP**
+4. Save the prompt
+
+The **Available in MCP** toggle controls whether the prompt is exposed to connected MCP clients as a native MCP prompt. Only **published** prompts can be exposed — switching a prompt back to draft turns the toggle off automatically.
 
 ### Using MCP-Enabled Prompts
 
-Once enabled, your prompts become available in connected applications. The exact usage depends on the tool:
-
-**Claude Code**
-```bash
-# List available prompts
-claude-code mcp prompts list
-
-# Use a prompt
-claude-code use prompt blog-post-template
-```
-
-**Cursor / VS Code**
-Prompts appear in the MCP resources panel and can be inserted directly into your editor.
+Once enabled, the prompt appears in connected clients under its slug as a native MCP prompt. Clients that support MCP prompts (such as Claude Code) list your exposed prompts, show each prompt's `{{variable}}` placeholders as named arguments, and render the prompt with your values filled in. In Claude Code, for example, exposed prompts show up as slash commands you can invoke directly.
 
 ### MCP Configuration
 
@@ -328,17 +319,18 @@ To connect VibeXP's MCP server to your tools, see the [MCP Server Integration](/
 
 ### MCP API Capabilities
 
-Connected applications can:
-- List all your published MCP-enabled prompts
-- Fetch full prompt content
-- Resolve variable placeholders
-- Execute prompts with parameters
-- Access prompt metadata
+Over MCP, connected AI agents can work with your prompt library in three ways:
+
+- **Create and update prompts** — the `vibexp_io_create_prompt` and `vibexp_io_update_prompt` tools let agents write to your prompt library.
+- **Find prompt content** — the generic `vibexp_io_search` tool searches your prompts (alongside artifacts, blueprints, and memories) by meaning; narrow it to prompts with the `types` filter.
+- **List and render exposed prompts** — published prompts with **Available in MCP** enabled are served as native MCP prompts, with placeholder resolution handled by VibeXP.
+
+There are no dedicated prompt read tools — reading goes through search or the native MCP prompts.
 
 ### Best Practices for MCP Prompts
 
-**Publish MCP-enabled prompts**
-While drafts can be MCP-enabled, published prompts are more stable for tool integration.
+**Publish prompts you want exposed**
+Only published prompts can be made available in MCP — moving a prompt back to draft removes it from connected clients.
 
 **Use clear, unique names**
 Tool users will see prompt names in selection lists. Make them descriptive and distinguishable.

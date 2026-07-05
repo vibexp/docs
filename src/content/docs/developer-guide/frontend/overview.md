@@ -1,19 +1,19 @@
 ---
 title: Frontend Overview
-description: Architecture of the VibeXP frontend — a Vite + React + TypeScript SPA served by nginx, how it talks to the backend, and the local dev loop.
+description: Architecture of the VibeXP frontend — a Vite + React + TypeScript SPA embedded in and served by the Go backend, how it talks to the backend, and the local dev loop.
 ---
 
 The VibeXP frontend is a single-page application (SPA) that lives in the
 [`frontend/`](https://github.com/vibexp/vibexp/tree/main/frontend) directory of
-the [`vibexp/vibexp`](https://github.com/vibexp/vibexp) monorepo. It is built and
-released independently from the backend.
+the [`vibexp/vibexp`](https://github.com/vibexp/vibexp) monorepo. In production
+it is **embedded into the Go backend** and shipped as one combined
+artifact/release — a single image serves the SPA and the API.
 
 ## Tech stack
 
 - **Vite** — build tool and dev server.
 - **React 19** with **TypeScript** — UI layer.
 - **React Router** — client-side routing.
-- **nginx** — serves the static build in production and reverse-proxies the API.
 
 Node.js **>= 20** is required (enforced by the `engines` field in
 `package.json`).
@@ -54,36 +54,51 @@ frontend/src/
 
 ## How it talks to the backend
 
-The frontend is **deployment-agnostic**. It is built with a **relative** API
-base URL — `VITE_API_BASE_URL=/api/v1` — so all requests are same-origin. In
-production, nginx reverse-proxies `/api/` to the backend, whose location is set
-at deploy time via the `BACKEND_ORIGIN` runtime variable (default
-`http://backend:8080`).
+In production the frontend and the API share **one origin**: the backend serves
+the embedded SPA and the API from the same port, so the image is built with a
+**relative** API base URL (`VITE_API_BASE_URL=/api/v1`) and all requests are
+same-origin. Deploy-time values (branding, MCP endpoint, analytics) are not
+baked into the bundle either — the backend renders them at runtime as
+`/config.js` (`window.__VIBEXP_ENV__`), loaded before the SPA bundle.
 
-This means the backend origin is **never baked into the build**. The same
-published image works against any backend. See
-[Frontend Configuration](/developer-guide/frontend/configuration/) for the
+In local development the two run as separate processes: the Vite dev server on
+**:5173**, the backend on **:8080**, and the SPA calls the backend directly —
+the `.env.example` default is `VITE_API_BASE_URL=http://localhost:8080/api/v1`.
+There is no backend-rendered `/config.js` in dev; the app falls back to the
+build-time `import.meta.env` values.
+
+See [Frontend Configuration](/developer-guide/frontend/configuration/) for the
 build-time vs runtime split, and
-[Building & Serving](/developer-guide/frontend/building/) for the nginx proxy
-details.
+[Building & Serving](/developer-guide/frontend/building/) for how the SPA is
+embedded and served.
 
 ## Authentication flow (high level)
 
-Authentication is handled by the **backend** via WorkOS AuthKit; the frontend
-never holds API keys or OAuth secrets.
+Authentication is handled by the **backend's provider registry** (Google,
+GitHub, generic OIDC — `auth.providers` in the backend config); the frontend
+never holds OAuth secrets.
 
-1. The user starts sign-in from the SPA, which redirects to the backend auth
-   endpoint.
-2. The backend completes the WorkOS flow and returns to the SPA's
-   `/auth/callback` route.
+1. The sign-in page fetches `GET /api/v1/auth/providers` and renders a
+   **provider picker** from whatever this deployment has enabled
+   (`src/services/authService.ts`).
+2. Picking a provider asks the backend for the identity-provider login URL
+   (`/auth/login?provider=…`) and redirects the browser there. The backend
+   completes the OAuth flow and returns to the SPA's `/auth/callback` route.
 3. The session is carried in an **httpOnly session cookie** set by the backend —
    it is not readable by JavaScript, and is sent automatically on same-origin
-   `/api/v1` requests through the nginx proxy.
+   `/api/v1` requests.
+
+The SPA also hosts the **OAuth consent page** (`/oauth/consent`,
+`src/pages/auth/OAuthConsentPage.tsx`) for the backend's embedded MCP
+Authorization Server: it gates on an app login (redirecting signed-out users to
+`/login` with a `return_to` back to the same consent URL), then posts the
+approve/deny decision.
 
 :::tip[Local evaluation]
-For local development and self-host evaluation, a dev-login bypass
-(`DEV_LOGIN_ENABLED=true`, localhost only) lets you sign in without a WorkOS
-account. See [Self-Hosting](/developer-guide/deployment/self-hosting/).
+For local development and self-host evaluation, a dev-login bypass — backend
+config `auth.dev_login_enabled: true`, effective only when the environment is
+detected as development — lets you sign in without any OAuth provider. See
+[Self-Hosting](/developer-guide/deployment/self-hosting/).
 :::
 
 ## Local dev loop
@@ -94,8 +109,9 @@ Local development uses the root `Makefile`, not Docker:
 make frontend-run-dev
 ```
 
-This installs dependencies if needed, copies `frontend/.env` from
-`.env.example` if missing, and starts the Vite dev server at
+This bootstraps `frontend/.env` via `scripts/sync-env.sh frontend` (copies
+`.env.example` if `.env` is missing, and appends any newly-introduced keys after
+a pull), installs dependencies if needed, and starts the Vite dev server at
 **http://localhost:5173**.
 
 ## Key checks
@@ -113,6 +129,6 @@ make frontend-build       # production build
 ## Next
 
 - [Frontend Configuration](/developer-guide/frontend/configuration/) — the full
-  `VITE_*` / build variable reference.
-- [Building & Serving](/developer-guide/frontend/building/) — the Docker image
-  and nginx serving model.
+  `VITE_*` / runtime `/config.js` reference.
+- [Building & Serving](/developer-guide/frontend/building/) — the combined
+  Docker image and how the backend embeds and serves the SPA.

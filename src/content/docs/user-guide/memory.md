@@ -64,8 +64,9 @@ Connected AI tools can create memories during conversations:
 
 ```typescript
 vibexp_io_create_memory({
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   text: "User prefers React with TypeScript and Tailwind CSS",
-  project_name: "user/preferences",
   metadata: {
     category: "coding_preferences",
     priority: "medium"
@@ -111,17 +112,38 @@ Add searchable tags:
 - Domain: `frontend`, `backend`, `devops`
 - Purpose: `style-guide`, `architecture`, `deployment`
 
+## Memory Lifecycle Status
+
+Every memory has a lifecycle **status** that controls where it appears:
+
+- **active** — the default. Active memories show up in memory lists and in search results.
+- **draft** — a work in progress. Drafts appear in default memory lists so you can keep refining them, but they are **never returned by search**, so AI tools won't pick them up as context.
+- **archived** — retired. Archived memories are hidden from default lists and from search, but remain reachable when you filter the list by the `archived` status explicitly.
+
+### Changing a Memory's Status
+
+- **In the app** — the memory create/edit form includes a status selector, each memory shows a status badge in the list and detail views, and the memory list has a status filter (including "All statuses") so you can find drafts and archived memories.
+- **Over MCP** — `vibexp_io_create_memory` and `vibexp_io_update_memory` both accept a `status` parameter (`active`, `draft`, or `archived`), so connected AI tools can, for example, park an unconfirmed fact as a draft or archive an outdated one.
+
+:::tip
+Prefer archiving over deleting: an archived memory stops influencing search and AI context but stays available if you need it back.
+:::
+
 ## Searching and Filtering
 
-### Full-Text Search
+### Semantic Search
 
-Search across all memory content:
+Search finds memories **by meaning**, not just by matching words:
 
 ```
 Search: "React hooks best practices"
 ```
 
-Finds all memories mentioning React hooks and best practices.
+Surfaces memories about React hooks and best practices even when they use different wording. Semantic search is the default.
+
+:::note[Keyword fallback]
+Semantic search requires the deployment to have an embedding provider configured. When it doesn't, VibeXP automatically falls back to keyword full-text search — same search box, exact-word matching instead of matching by meaning.
+:::
 
 ### Advanced Filters
 
@@ -209,8 +231,10 @@ Previous: Used any types, now strict typing
 ```javascript
 // AI tools create memories during conversations
 vibexp_io_create_memory({
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   text: "User's testing framework preference: Jest with React Testing Library",
-  project_name: "user/preferences",
+  status: "active", // optional: active (default), draft, or archived
   metadata: {
     category: "testing",
     priority: "medium",
@@ -224,7 +248,8 @@ vibexp_io_create_memory({
 ```javascript
 // AI tools search memories for context
 vibexp_io_search_memories({
-  project_name: "user/backend-project",
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   search: "database",
   limit: 5
 })
@@ -235,22 +260,39 @@ vibexp_io_search_memories({
 ```javascript
 // Get memory by ID
 vibexp_io_get_memory({
-  memory_id: "mem_abc123xyz"
+  team_id: "<team-uuid-or-slug>",
+  memory_id: "<memory-uuid>"
 })
 ```
 
 ### Updating Memories
 
 ```javascript
-// Update memory content or metadata
+// Update memory content, status, or metadata
 vibexp_io_update_memory({
-  memory_id: "mem_abc123xyz",
+  team_id: "<team-uuid-or-slug>",
+  memory_id: "<memory-uuid>",
   text: "Updated content...",
+  status: "archived", // optional lifecycle change
   metadata: {
     priority: "high"
   }
 })
 ```
+
+### Deleting Memories
+
+AI tools delete a memory with the generic `vibexp_io_delete_resource` tool, passing `resource_type: "memory"` and the memory's `id`:
+
+```javascript
+vibexp_io_delete_resource({
+  team_id: "<team-uuid-or-slug>",
+  resource_type: "memory",
+  id: "<memory-uuid>"
+})
+```
+
+Deletion also removes the memory's search embeddings. Prefer archiving (`status: "archived"`) when you might want the memory back.
 
 ## Common Use Cases
 

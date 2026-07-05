@@ -23,13 +23,24 @@ The MCP authorization spec separates two roles. VibeXP plays **both**, so an MCP
 
 VibeXP mints short-lived JWTs (audience = your `MCP_RESOURCE_URI`), signs them with DB-stored keys it rotates, and publishes its own JWKS. Compliance is therefore **constant across providers**.
 
+:::note[`config.yaml` is the canonical config surface]
+All auth settings live in the backend's `config.yaml`. In the published image, an env var only works when the baked `/app/config.yaml` references it as `${VAR}` — that covers `AUTH_PROVIDER`, the per-provider client id / secret / redirect vars, `SESSION_ENCRYPTION_KEY`, `OAUTH_AS_ISSUER_URL`, and `MCP_RESOURCE_URI`. Settings marked "mounted `config.yaml`" below are **not** env-wired: mount your own file over `/app/config.yaml` to set them.
+:::
+
 ## Choose your login provider(s)
 
-Set `AUTH_PROVIDERS` to a comma-separated list. Each enabled provider needs its own credentials. A misconfigured provider is logged and skipped (never fatal), so you can roll out one at a time.
+Set `AUTH_PROVIDER` to a single provider. Each enabled provider needs its own credentials. A misconfigured provider is logged and skipped (never fatal), so you can roll out one at a time.
 
 ```bash
-# One or more of: google, github, oidc
-AUTH_PROVIDERS=google,github
+# One of: google, github, oidc
+AUTH_PROVIDER=google
+```
+
+To enable **several providers at once**, set the provider list in a mounted `config.yaml` (it takes precedence over `AUTH_PROVIDER` and is not settable via env vars):
+
+```yaml
+auth:
+  providers: ["google", "github"]
 ```
 
 ### Google
@@ -80,13 +91,18 @@ OAUTH_AS_ISSUER_URL=https://<your-app-host>
 
 # Token audience (RFC 8707) — your MCP endpoint. Required to enable the MCP endpoint.
 MCP_RESOURCE_URI=https://<your-app-host>/mcp/v1/common
+```
 
-# Optional lifetimes (sane defaults shown)
-OAUTH_AS_ACCESS_TOKEN_TTL=15m
-OAUTH_AS_REFRESH_TOKEN_TTL=720h
-OAUTH_AS_AUTH_CODE_TTL=10m
-OAUTH_AS_KEY_ROTATION_INTERVAL=720h
-OAUTH_AS_CLEANUP_INTERVAL=1h
+The token lifetimes are tunable under `auth.oauth_as.*` in a mounted `config.yaml` — they are not env-wired in the published image (sane defaults shown):
+
+```yaml
+auth:
+  oauth_as:
+    access_token_ttl: "15m"
+    refresh_token_ttl: "720h"
+    auth_code_ttl: "10m"
+    key_rotation_interval: "720h"
+    cleanup_interval: "1h"
 ```
 
 When `OAUTH_AS_ISSUER_URL` is set, `MCP_OAUTH_ISSUER` defaults to it; setting a *divergent* `MCP_OAUTH_ISSUER` fails fast at startup (a token's issuer and the resource server's expected issuer must agree).
@@ -108,21 +124,25 @@ FRONTEND_BASE_URL=https://<your-app-host>
 For local-only evaluation you can skip external providers entirely:
 
 ```bash
-AUTH_PROVIDERS=                 # empty: no external provider
+# Leave AUTH_PROVIDER unset — no external provider needed.
 FRONTEND_BASE_URL=http://localhost:8080   # localhost ⇒ development mode
-DEV_LOGIN_ENABLED=true          # enables /api/v1/auth/dev/login (honored only in local dev)
 ```
+
+The dev-login bypass (`/api/v1/auth/dev/login`) is on by default (`auth.dev_login_enabled: true` in the shipped config) but is **honored only in local development** — a non-localhost `FRONTEND_BASE_URL` makes it inert.
 
 In local development the embedded AS auto-derives sane defaults (issuer = the local base URL, resource URI = `<issuer>/mcp/v1/common`) and HTTPS enforcement is skipped, so a fresh checkout connects an MCP client with zero auth edits. Production never derives these and never bypasses HTTPS.
 
 ## Restricting who can sign in (optional)
 
-```bash
-SIGNIN_ALLOWED_EMAILS=alice@example.com,bob@example.com   # allowlist; empty = anyone the provider authenticates
+Set the allowlist under `auth.signin_allowed_emails` in a mounted `config.yaml` (not env-wired in the published image); empty means anyone the provider authenticates:
+
+```yaml
+auth:
+  signin_allowed_emails: ["alice@example.com", "bob@example.com"]
 ```
 
 ## What a self-hoster does NOT need
 
 - No WorkOS (or any external Authorization Server) account.
 - No JWT key files — keys live in the database and rotate automatically.
-- No CORS / nginx config for MCP — the AS and the SPA are same-origin in the single combined image.
+- No CORS or reverse-proxy routing config for MCP — the AS and the SPA are same-origin in the single combined image.

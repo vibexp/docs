@@ -1,6 +1,6 @@
 ---
 title: Pre-commit & CI
-description: The mandatory pre-commit hooks, what CI enforces, and how VibeXP releases container images from prefixed git tags.
+description: The mandatory pre-commit hooks, what CI enforces, and how VibeXP releases the combined container image from a single v* git tag.
 ---
 
 VibeXP gates every commit on the same checks CI runs. Installing and respecting
@@ -42,7 +42,7 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 ### Frontend (TypeScript / React)
 
 - **lint-staged** (format & autofix), **eslint**, **type-check** (`tsc`),
-  **test** (Vitest), and **build**.
+  **test** (Jest), and **build**.
 - **security scan**, **dependency audit** (on lockfile changes), and a
   **complexity check**.
 
@@ -85,17 +85,28 @@ with `GO_VERSION` (`1.25.11`) in the `Makefile`.
 install -> lint -> type-check -> test -> build
 ```
 
+### `ci-e2e.yml` (on-demand)
+
+The production-like end-to-end suite (Playwright) is **not** wired to PRs — it
+builds the combined image from source and boots a full stack (Postgres +
+fake-gcs + the backend serving the embedded SPA), which is too heavy to gate
+every PR. Run it manually via `workflow_dispatch` (Actions tab, or
+`gh workflow run ci-e2e.yml -f branch=<ref>`) against any branch. It delegates
+to `make e2e`, so a green run there means the same `make e2e` is green locally.
+
 ## Releases
 
-The two components are released **independently** via prefixed git tags. Creating
-a GitHub Release with the matching tag builds and publishes the container image:
+There is one combined artifact and one release workflow, `release.yml`. Creating
+a GitHub Release with a `vX.Y.Z` tag builds the combined image (frontend SPA
+embedded into the Go backend) and publishes it:
 
-| Release tag        | Image built                                          |
-| ------------------ | ---------------------------------------------------- |
-| `backend-vX.Y.Z`   | `ghcr.io/vibexp/backend:X.Y.Z` (+ `:latest`)         |
-| `frontend-vX.Y.Z`  | `ghcr.io/vibexp/frontend:X.Y.Z` (+ `:latest`)        |
+| Release tag | Image built                                                        |
+| ----------- | ------------------------------------------------------------------ |
+| `vX.Y.Z`    | `ghcr.io/vibexp/vibexp:X.Y.Z` (+ `:latest` for non-prereleases)     |
 
-These are handled by `release-backend.yml` and `release-frontend.yml`.
+A `workflow_dispatch` input is available as a manual escape hatch to build from
+the current ref without a release. The old per-component `backend-v*` /
+`frontend-v*` tags (and their split images) are legacy and no longer released.
 
 ## SHA-pinned actions
 

@@ -52,14 +52,15 @@ When AI tools are connected via MCP, they can automatically create artifacts dur
 
 ```typescript
 // AI tools can create artifacts automatically
-const artifact = {
-  project_name: "user/project",
+vibexp_io_create_artifact({
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   slug: "api-documentation-v1",
   title: "REST API Documentation",
   content: "# API Endpoints\n\n## Users\n...",
-  type: "static_contexts",
+  type: "static-contexts",
   status: "active"
-}
+})
 ```
 
 ## Organizing Artifacts
@@ -153,10 +154,10 @@ Artifacts keep a **content-version history**. Each time you save a change, the p
 - **View version history** — browse the list of past versions, newest first.
 - **Inspect a version** — open any earlier snapshot to see its content.
 - **Diff** — compare a previous version against the current content.
-- **Restore** — roll the artifact back to an earlier version. Restoring snapshots the pre-restore content as a new version first, so nothing is lost.
+- **Restore** — roll the artifact back to an earlier version. Restoring snapshots the pre-restore content as a new version first, so you can move forward or back between recent snapshots.
 
-:::note
-Restoring never deletes history — it adds a new version, so you can always move forward or back between snapshots.
+:::note[Version retention limit]
+Version history is bounded by an operator-configurable retention limit (**20 versions per artifact by default**). When the limit is reached, the oldest versions are pruned as new ones are created. Your instance's operator can raise the limit or disable pruning entirely — but on a default deployment, don't rely on very old versions staying available forever.
 :::
 
 ### Metadata
@@ -197,11 +198,12 @@ Connected AI tools can create artifacts:
 ```javascript
 // Example: AI creates artifact during conversation
 vibexp_io_create_artifact({
-  project_name: "user/backend",
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   slug: "error-handler",
   title: "Error Handler Implementation",
   content: "```typescript\n...\n```",
-  type: "static_contexts"
+  type: "static-contexts"
 })
 ```
 
@@ -212,7 +214,8 @@ AI tools can search your artifacts:
 ```javascript
 // Search for specific content
 vibexp_io_search_artifacts({
-  project_name: "user/backend",
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   search: "authentication",
   limit: 10
 })
@@ -225,10 +228,26 @@ Get specific artifacts by slug:
 ```javascript
 // Retrieve by project and slug
 vibexp_io_get_artifact({
-  project_name: "user/backend",
+  team_id: "<team-uuid-or-slug>",
+  project_id: "<project-uuid>",
   slug: "error-handler"
 })
 ```
+
+### Deleting Artifacts
+
+AI tools delete an artifact with the generic `vibexp_io_delete_resource` tool, passing `resource_type: "artifact"` with the artifact's `project_id` and `slug`:
+
+```javascript
+vibexp_io_delete_resource({
+  team_id: "<team-uuid-or-slug>",
+  resource_type: "artifact",
+  project_id: "<project-uuid>",
+  slug: "error-handler"
+})
+```
+
+Deleting an artifact also removes its search embeddings and its attachments.
 
 ## Common Use Cases
 

@@ -8,7 +8,7 @@ how the codebase is organized, how to run it locally, the conventions that keep
 the project consistent, and how to get a change merged.
 
 If you are only running or self-hosting VibeXP, the
-[User Guide](/user-guide/) and [Self-Hosting](/user-guide/self-hosting/) pages
+[User Guide](/user-guide/intro/) and [Self-Hosting](/user-guide/self-hosting/) pages
 are the better starting point.
 
 ## What VibeXP is
@@ -27,8 +27,10 @@ https://github.com/vibexp/vibexp
 
 ## Monorepo layout
 
-The repository is a **monorepo with two independently deployable components**.
-Each ships as its own container image and is released on its own cadence.
+The repository is a **monorepo with two components that ship as one combined
+container image**: `backend/Dockerfile` builds the frontend SPA and embeds it
+into the Go binary (via the `embedfrontend` build tag), and each `vX.Y.Z`
+GitHub Release publishes a single `ghcr.io/vibexp/vibexp` image.
 
 ```text
 backend/   Go REST API (module github.com/vibexp/vibexp)
@@ -36,16 +38,14 @@ backend/   Go REST API (module github.com/vibexp/vibexp)
            internal/    server, services, repositories, auth, container (Wire DI)
            migrations/  SQL migrations
            openapi.yaml + paths/ + schemas/   API source of truth
-           Dockerfile
+           Dockerfile   builds the COMBINED image (embeds the SPA, embedfrontend tag)
 
 frontend/  Vite + React + TypeScript SPA
            src/         pages, components, features, hooks, services, lib, utils
-           Dockerfile
-           nginx.conf.template   reverse-proxies /api -> BACKEND_ORIGIN
 
 Makefile             all dev/CI tasks (backend-*, frontend-*)
-docker-compose.yml   runs PUBLISHED ghcr.io/vibexp/* images + Postgres (self-host, NOT for dev)
-.github/workflows/   ci-backend, ci-frontend, release-backend, release-frontend
+docker-compose.yml   runs the PUBLISHED ghcr.io/vibexp/vibexp image + Postgres (self-host, NOT for dev)
+.github/workflows/   ci-backend, ci-frontend, ci-e2e, release
 ```
 
 :::note
@@ -67,15 +67,20 @@ repos under the [`vibexp` organization](https://github.com/vibexp).
   regenerated via `make` (never hand-edited).
 - **PostgreSQL + pgvector** for storage and semantic search.
 - **MCP endpoint** so AI tools connect over the Model Context Protocol.
-- **WorkOS / OIDC auth** in production, with a dev-login bypass for local work.
+- **Config-driven auth**: a provider registry (Google, GitHub, generic OIDC)
+  configured in `config.yaml`, plus an embedded OAuth 2.1 Authorization Server
+  for MCP tokens — with a dev-login bypass for local work.
 
 ### Frontend (`frontend/`)
 
-- **Vite + React + TypeScript** single-page app, served by **nginx** in
-  production.
-- **Deployment-agnostic.** Built with a relative `VITE_API_BASE_URL=/api/v1`;
-  nginx proxies `/api/` to the backend (`BACKEND_ORIGIN`). The frontend never
-  hardcodes a backend origin.
+- **Vite + React + TypeScript** single-page app. In production it is
+  **embedded into the Go binary** and served by the backend from the same
+  origin as the API — one image, one port.
+- **Deployment-agnostic.** Built with a relative `VITE_API_BASE_URL=/api/v1`
+  (same-origin, no proxy to configure) and configured at **runtime** via the
+  backend-served `/config.js` (`window.__VIBEXP_ENV__`) — branding and
+  analytics change with an env var and a restart, not a rebuild. The frontend
+  never hardcodes a backend origin.
 
 ### Shared packages
 

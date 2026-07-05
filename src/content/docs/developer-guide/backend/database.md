@@ -10,7 +10,7 @@ with pgvector enabled.
 
 ## Connection
 
-Connection details come from the `DB_*` environment variables (see
+Connection details come from the `database.*` keys in `config.yaml` (see
 [Configuration](/developer-guide/backend/configuration/#database)). The pool and
 migration runner live in `internal/database`. Data access is implemented in
 `internal/repositories/postgres` using the
@@ -26,6 +26,17 @@ and the schema is created and brought up to date.
 
 Migration files live in `backend/migrations/`.
 
+:::note[Migrations were consolidated]
+The migration history has been squashed twice: `001_baseline` is a `pg_dump`-style
+baseline replacing the original incremental migrations, and `002_consolidated`
+squashes everything that accumulated after the backend-v0.2.0 release (memory
+lifecycle status, the OAuth Authorization Server tables) into a single step.
+The directory currently contains exactly these two migrations, and **the next
+new migration is `003_…`**. A fresh database runs both files; a pre-existing
+database must be stamped to the matching version so the consolidated files are
+never re-run against a populated schema.
+:::
+
 ## File naming
 
 Each migration is a numbered pair of `.up.sql` / `.down.sql` files:
@@ -35,13 +46,13 @@ NNN_descriptive_name.up.sql     # forward migration
 NNN_descriptive_name.down.sql   # rollback
 ```
 
-For example:
+The current set:
 
 ```text
-022_create_embeddings_table.up.sql
-022_create_embeddings_table.down.sql
-023_add_content_to_embeddings.up.sql
-023_add_content_to_embeddings.down.sql
+001_baseline.up.sql
+001_baseline.down.sql
+002_consolidated.up.sql
+002_consolidated.down.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -50,16 +61,15 @@ have a matching `.down.sql`.
 ## pgvector & embeddings
 
 Embeddings are stored in pgvector columns. The vector width is **fixed at 1024**
-in code and locked to the column definition — it is not configurable and there is
-no environment variable for it. The `022_create_embeddings_table.up.sql`
-migration enables the extension and creates the table:
+in code and locked to the column definition — it is not configurable. The
+`001_baseline.up.sql` migration enables the extension and creates the table:
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
 
-CREATE TABLE embeddings (
+CREATE TABLE public.embeddings (
     -- ...
-    embedding vector(1024)
+    vector_embeddings public.vector(1024) NOT NULL,
     -- ...
 );
 ```
@@ -81,12 +91,13 @@ which would otherwise cause non-deterministic ordering.
 
 ## Adding a migration
 
-1. Pick the next sequence number (one higher than the current maximum).
+1. Pick the next sequence number (one higher than the current maximum — with
+   the consolidated history, the next one is `003`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/056_add_widgets_table.up.sql
-   touch backend/migrations/056_add_widgets_table.down.sql
+   touch backend/migrations/003_add_widgets_table.up.sql
+   touch backend/migrations/003_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

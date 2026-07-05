@@ -31,15 +31,15 @@ The API is organised into these domains (one `paths/*.yaml` file each):
 | `ai-tools` | `api-keys` |
 | `artifacts` | `attachments` |
 | `auth` | `backoffice` |
-| `blueprints` | `contact` |
-| `embedding-providers` | `feeds` |
-| `github` | `health` |
-| `invitations` | `memories` |
-| `notifications` | `projects` |
-| `prompts` | `search` |
-| `subscriptions` | `support` |
-| `teams` | `types` |
-| `user` | `webhooks` |
+| `blueprints` | `embedding-providers` |
+| `feeds` | `github` |
+| `health` | `invitations` |
+| `memories` | `notifications` |
+| `projects` | `prompts` |
+| `search` | `subscriptions` |
+| `support` | `teams` |
+| `types` | `user` |
+| `webhooks` | |
 
 Shared schema definitions live in `schemas/common.yaml`; other `schemas/*.yaml`
 files mirror the path domains.
