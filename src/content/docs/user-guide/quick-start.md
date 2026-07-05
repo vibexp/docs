@@ -75,10 +75,10 @@ Paste **only** the connection URL into your MCP client:
 https://<your-mcp-host>/mcp/v1/common
 ```
 
-If your client supports the **MCP OAuth 2.1** flow, it will send you to VibeXP's login and consent screen and then connect. If it does not support MCP OAuth, it cannot currently connect — the endpoint rejects API-key authentication with `401`. See [MCP Server Integration](/user-guide/mcp-server#how-oauth-connect-works) for how the connect flow works.
+If your client supports the **MCP OAuth 2.1** flow, it will send you to VibeXP's login and consent screen and then connect. If it does not support MCP OAuth, it cannot currently connect — the endpoint rejects API-key authentication with `401`. See [MCP Server Integration](/user-guide/mcp-server/#how-oauth-connect-works) for how the connect flow works.
 
 :::tip[Working across teams]
-You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call — just ask your AI assistant to call `vibexp_io_list_teams` to discover yours. See [MCP Server Integration](/user-guide/mcp-server#working-with-teams) for details.
+You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call — just ask your AI assistant to call `vibexp_io_list_teams` to discover yours. See [MCP Server Integration](/user-guide/mcp-server/#working-with-teams) for details.
 :::
 
 :::note[Upgrading from an older config?]

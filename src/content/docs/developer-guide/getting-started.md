@@ -106,7 +106,7 @@ make backend-lint         # golangci-lint
 make backend-check        # lint + vulncheck + security scan
 
 # Frontend
-make frontend-test        # vitest
+make frontend-test        # jest
 make frontend-lint        # eslint
 make frontend-type-check  # tsc
 ```

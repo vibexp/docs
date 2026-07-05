@@ -120,7 +120,7 @@ Selects and configures the web-login identity providers. See
 | `auth.providers` | `[]` | Web-login providers to enable **simultaneously**: any of `google`, `github`, `oidc` (case-insensitive). Empty disables web login (dev login still works). Takes precedence over `auth.provider`. |
 | `auth.provider` | _(empty)_ | Backward-compatible single-provider shim; used only when `auth.providers` is empty. |
 | `auth.session_encryption_key` | `${SESSION_ENCRYPTION_KEY}` | Hex secret (**64 hex chars = 32 bytes**) backing the AES-256-GCM session cookie and the OAuth state HMAC. Empty disables cookie session auth. Generate with `openssl rand -hex 32`. |
-| `auth.dev_login_enabled` | `false` | Gates `/api/v1/auth/dev/login`. Effective only when `true` **and** the environment is detected as local development. |
+| `auth.dev_login_enabled` | `false` when unset (the shipped `config.example.yaml` and baked Docker config set `true`) | Gates `/api/v1/auth/dev/login`. Effective only when `true` **and** the environment is detected as local development. |
 | `auth.signin_allowed_emails` | `[]` | Allow-list of emails permitted to sign in. Empty means open registration. |
 
 :::caution

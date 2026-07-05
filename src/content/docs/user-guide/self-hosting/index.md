@@ -34,9 +34,11 @@ The backend reads a single required `config.yaml`. The published image bakes a d
 docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
-  -e FRONTEND_BASE_URL=https://<your-vibexp-host> \
-  ghcr.io/vibexp/vibexp:latest
+  -e FRONTEND_BASE_URL=http://localhost:8080 \
+  ghcr.io/vibexp/vibexp:0.3.0
 ```
+
+The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
 
 ## Your domains
 
@@ -80,7 +82,7 @@ auth:
   providers: ["google", "github"]
 ```
 
-For **local evaluation without a provider**, keep the default `localhost` `FRONTEND_BASE_URL` — the dev-login bypass is on by default and only works on localhost.
+For **local evaluation without a provider**, point `FRONTEND_BASE_URL` at localhost (the bundled compose file sets `http://localhost:8080`) — that enables the dev-login bypass, which only works on localhost. The bare image leaves `FRONTEND_BASE_URL` empty, which keeps dev-login off (fail-closed).
 
 ➡️ See **[Authentication & MCP Auth](/user-guide/self-hosting/authentication/)** for per-provider setup, the embedded Authorization Server, the full env-var matrix, and the HTTPS expectation.
 

@@ -386,21 +386,23 @@ Code Review Guidelines:
 
 ### REST API Endpoints
 
+All memory endpoints are team-scoped:
+
 ```bash
-# List memories
-GET /api/v1/memories?project_name=user/project
+# List memories (optional filters: project_id, search, status, ...)
+GET /api/v1/{team_id}/memories?project_id={project_id}
 
 # Get specific memory
-GET /api/v1/memories/{memory_id}
+GET /api/v1/{team_id}/memories/{memory_id}
 
 # Create memory
-POST /api/v1/memories
+POST /api/v1/{team_id}/memories
 
 # Update memory
-PUT /api/v1/memories/{memory_id}
+PUT /api/v1/{team_id}/memories/{memory_id}
 
 # Delete memory
-DELETE /api/v1/memories/{memory_id}
+DELETE /api/v1/{team_id}/memories/{memory_id}
 ```
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.

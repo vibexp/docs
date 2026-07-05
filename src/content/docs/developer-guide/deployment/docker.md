@@ -43,8 +43,8 @@ endpoint, all on a single port and a single origin. There is no separate
 frontend container, no reverse proxy in between, and no CORS to configure.
 
 Its `environment:` block carries the database connection (`DB_HOST: postgres`,
-`DB_USER`, `DB_PASSWORD`, `DB_NAME`), the required `ENCRYPTION_KEY` and
-`SESSION_ENCRYPTION_KEY`, and the public origin (`FRONTEND_BASE_URL`). Its
+`DB_USER`, `DB_PASSWORD`, `DB_NAME`), the required `ENCRYPTION_KEY`, plus
+`SESSION_ENCRYPTION_KEY` (needed for production session auth; empty disables cookie sessions) and the public origin (`FRONTEND_BASE_URL`). Its
 healthcheck hits `http://localhost:8080/ping`. See
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)
 for which of these you must change for production.
