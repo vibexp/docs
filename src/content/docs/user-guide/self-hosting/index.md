@@ -93,14 +93,14 @@ For **local evaluation without a provider**, point `FRONTEND_BASE_URL` at localh
 
 Embeddings are generated **in-process** — an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`.
 
-The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors — the width is locked to the pgvector column and is not configurable.
+The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
 
 The settings page also shows embedding **coverage** per team, with one-click **Reprocess pending** and **Clear all embeddings** actions. Changing a provider's identity (endpoint or model) wipes and re-embeds that team's data automatically.
 
 Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
 
 :::caution
-Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable** — search falls back to keyword (full-text) mode, which since v0.6.0 includes typo tolerance.
+Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable**: search falls back to keyword (full-text) mode, which since v0.6.0 includes typo tolerance.
 :::
 
 ## Optional integrations

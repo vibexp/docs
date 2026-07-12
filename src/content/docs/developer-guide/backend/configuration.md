@@ -37,7 +37,7 @@ own file over that path to take full control.
   (32 hex chars = 32 bytes).
 - Rate limits must be ≥ 1, retention windows must be in `1..3650` days,
   search-ranking weights must be valid, and the OAuth-AS token lifespans must
-  be positive and ordered — all validated at startup.
+  be positive and ordered. All are validated at startup.
 :::
 
 ## Interpolation grammar

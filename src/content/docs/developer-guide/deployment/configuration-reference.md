@@ -101,7 +101,7 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   **1024**. Embedding providers are configured **per team in the app** (model,
   chunk sizing, concurrency, and query/document prefixes included), not via
   environment.
-- **Model providers** — per-team OpenAI-compatible LLM endpoints, also managed
+- **Model providers**: per-team OpenAI-compatible LLM endpoints, also managed
   in the app with encrypted API keys.
 - **File attachments** — enable the GCS emulator service and the related `app`
   variables. See [Docker & Compose](/developer-guide/deployment/docker/).

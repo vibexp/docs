@@ -36,7 +36,7 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 - **go security scan** — `gosec`.
 - **OpenAPI validation** — validates the spec when `openapi.yaml`, `paths/`, or
   `schemas/` change.
-- **OpenAPI embedded bundle drift** — the runtime-served bundle in
+- **OpenAPI embedded bundle drift**: the runtime-served bundle in
   `internal/server/openapispec/` must be regenerated with the spec.
 - **Block `os.Getenv`** — config must go through the config package, not
   `os.Getenv`.

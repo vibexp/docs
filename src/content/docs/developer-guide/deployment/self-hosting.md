@@ -127,7 +127,7 @@ on save. Embedding providers are configured **per team in the app** (an
 OpenAI-compatible endpoint plus model, chunk sizing, concurrency, and optional
 query/document prefixes), not via environment variables. Changing a provider's
 identity wipes and re-embeds that team's data. Without a configured provider,
-embedding is skipped and entities still save — only semantic search is
+embedding is skipped and entities still save; only semantic search is
 unavailable (keyword search still works).
 
 ## Related

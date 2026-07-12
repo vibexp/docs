@@ -25,7 +25,8 @@ https://<your-api-host>/api/v1
 ```
 
 Prompt routes are **team-scoped**: every endpoint includes your team's id (or
-slug) as the first path segment, shown as `{team_id}` below.
+slug) as the first path segment, shown as `{team_id}` in the endpoint
+definitions and `<team-id>` in the example commands.
 
 ## Authentication
 

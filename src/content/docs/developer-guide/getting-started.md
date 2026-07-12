@@ -14,10 +14,10 @@ the `make` targets below.
 
 ## Prerequisites
 
-- **Docker + Compose** — used to run PostgreSQL (with pgvector), Mailpit, and
+- **Docker + Compose**: used to run PostgreSQL (with pgvector), Mailpit, and
   a local TEI embedding service. `docker-compose` or `podman-compose` both
   work.
-- **Go 1.25.x** — the `Makefile` pins `GOTOOLCHAIN=go1.25.12`, so Go downloads
+- **Go 1.25.x**: the `Makefile` pins `GOTOOLCHAIN=go1.25.12`, so Go downloads
   and uses that exact toolchain on demand even if your system Go is newer.
 - **Node.js >= 20** — for the frontend (its `engines` field requires `>=20`).
 - **`pre-commit`** — required; commits are gated on it. Install with
