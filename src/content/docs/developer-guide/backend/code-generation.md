@@ -1,6 +1,6 @@
 ---
 title: Code Generation
-description: oapi-codegen, Wire, mockery, the config schema generator, and the embedded OpenAPI bundle: the generators behind the VibeXP backend.
+description: The generators behind the VibeXP backend, including oapi-codegen, Wire, mockery, the config schema generator, and the embedded OpenAPI bundle.
 ---
 
 The backend relies on five code generators. All of their output is **committed**
