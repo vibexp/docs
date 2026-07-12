@@ -38,6 +38,16 @@ Rules:
 - Proactively keep the docs up to date: when a new VibeXP release is published,
   review the docs against it and update anything stale or missing.
 
+### The `/update-docs` skill
+
+The whole sync runs end to end via the **`update-docs`** skill
+(`.claude/skills/update-docs/SKILL.md`): detect the latest release, audit all
+docs against the release source with file:line evidence, fix/add/remove
+content, validate the build, open a PR, and run the automated review loop
+until approved. Use it whenever the docs need to catch up with a release.
+The last synced release is recorded in `.vibexp-release` at the repo root;
+keep that file updated in every sync PR.
+
 ## Commands
 
 ```bash
