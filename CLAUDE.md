@@ -8,6 +8,36 @@ The VibeXP documentation site — a static [Astro](https://astro.build/) +
 [Starlight](https://starlight.astro.build/) site, deployed to GitHub Pages at
 `docs.vibexp.io`. Open source under AGPL-3.0-or-later.
 
+## Upstream project
+
+This site documents [VibeXP](https://github.com/vibexp/vibexp), the main
+application. A local checkout is expected as a sibling directory: if this repo
+is at `$HOME/Projects/docs`, the main project lives at `$HOME/Projects/vibexp`.
+If it is missing, clone it first:
+
+```bash
+git clone https://github.com/vibexp/vibexp.git ../vibexp
+```
+
+**Docs track the latest published release of VibeXP, not its `main` branch.**
+`main` may contain unreleased work, and docs must never describe features that
+users cannot run yet. Before writing or validating docs, check out the latest
+release tag in the local checkout:
+
+```bash
+cd ../vibexp
+git fetch --tags
+git checkout "$(gh release view --repo vibexp/vibexp --json tagName -q .tagName)"
+```
+
+Rules:
+
+- Every documentation change must be validated and verified against the main
+  project source at the latest release tag (features, commands, configuration,
+  API surface, UI flows).
+- Proactively keep the docs up to date: when a new VibeXP release is published,
+  review the docs against it and update anything stale or missing.
+
 ## Commands
 
 ```bash
@@ -27,19 +57,23 @@ main.
 ## Content structure
 
 Docs live in `src/content/docs/` (Starlight content collection). Content is
-split into two top-level guides so each can grow independently:
+split into two top-level guides, one per audience:
 
-- **`user-guide/`** — end-user docs. All current content lives here and is
-  served under `/user-guide/...`.
-- **`developer-guide/`** — contributor/developer docs (not written yet).
+- **`user-guide/`** — for end users: how to use the VibeXP platform. Served
+  under `/user-guide/...`.
+- **`developer-guide/`** — for application developers: how to develop, deploy,
+  and manage the application. Served under `/developer-guide/...`.
+
+Keep content in the guide that matches its audience. Usage and features belong
+in the user guide; architecture, configuration, and operations belong in the
+developer guide.
 
 The homepage `index.mdx` and `404.md` stay at the collection root.
 
-**Important:** every doc URL is `/user-guide/...`. When adding pages, register
-their slug in the `sidebar` in `astro.config.mjs`, and use root-absolute
-`/user-guide/...` links between docs (the site is served from a custom domain at
-root, so no base prefix). When adding the developer guide later, add a sibling
-`developer-guide/` group to the sidebar and homepage cards.
+**Important:** when adding pages, register their slug in the `sidebar` in
+`astro.config.mjs`, and use root-absolute `/user-guide/...` or
+`/developer-guide/...` links between docs (the site is served from a custom
+domain at root, so no base prefix).
 
 ## Configuration
 
@@ -54,8 +88,17 @@ root, so no base prefix). When adding the developer guide later, add a sibling
 - `public/_redirects` — Cloudflare Pages redirects (NOT used by GitHub Pages;
   kept for portability).
 
+## Writing style
+
+- No em dashes anywhere in documentation content.
+- Be concise, short, and to the point. Cut anything that does not help the
+  reader accomplish their task.
+- Docs must be readable, easily scannable, and understandable by everyone:
+  short paragraphs, clear headings, lists and tables over long prose.
+
 ## Conventions
 
 - Pin GitHub Actions to commit SHAs (with a `# vX.Y.Z` comment), not tags.
-- Internal doc links are root-absolute under `/user-guide/...`.
+- Internal doc links are root-absolute under `/user-guide/...` or
+  `/developer-guide/...`.
 - Run `npm run lint` and `npm run typecheck` before committing.
