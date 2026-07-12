@@ -132,7 +132,10 @@ export default defineConfig({
             {
               label: 'Integrations',
               collapsed: false,
-              items: [{ slug: 'user-guide/integrations/api-keys' }],
+              items: [
+                { slug: 'user-guide/integrations/api-keys' },
+                { slug: 'user-guide/integrations/ai-providers' },
+              ],
             },
             {
               label: 'Open Source & Self-Hosting',

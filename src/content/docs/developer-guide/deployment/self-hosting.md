@@ -60,8 +60,8 @@ instead, mount your own `config.yaml` over the baked path (there is a commented
 `volumes:` entry on the `app` service) — start from `backend/config.example.yaml`.
 
 Compose is optional: with a reachable pgvector-enabled PostgreSQL, a single
-`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.3.0` works
-anywhere. See
+`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.6.0` works
+anywhere. The image is multi-arch (`linux/amd64` + `linux/arm64`). See
 [Docker & Compose](/developer-guide/deployment/docker/) and the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/).
 
@@ -122,10 +122,13 @@ uncomment the `gcs` service and the `STORAGE_EMULATOR_HOST` /
 
 Embeddings are generated **in-process** — there is no separate AI service. The
 embedding vector width is **fixed at 1024 in code** (locked to the pgvector
-column), so pick a model that outputs 1024 dimensions. The embedding provider is
-configured **in the app** (an OpenAI-compatible endpoint), not via environment
-variables. Without a configured provider, embedding is skipped and entities still
-save — only semantic search is unavailable.
+column), so pick a model that outputs 1024 dimensions; providers are validated
+on save. Embedding providers are configured **per team in the app** (an
+OpenAI-compatible endpoint plus model, chunk sizing, concurrency, and optional
+query/document prefixes), not via environment variables. Changing a provider's
+identity wipes and re-embeds that team's data. Without a configured provider,
+embedding is skipped and entities still save; only semantic search is
+unavailable (keyword search still works).
 
 ## Related
 

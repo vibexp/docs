@@ -15,6 +15,12 @@ Get started with VibeXP in 5 minutes. This guide will walk you through signing i
 
 There is no separate signup form, no password to set, and no email verification step — your identity provider handles authentication.
 
+:::tip[Project scoping]
+The app header has a global **project selector** (defaulting to "All
+projects"). It scopes what you see across prompts, artifacts, and memories, so
+if a list looks empty, check which project is selected.
+:::
+
 ## Step 2: Create Your First Prompt
 
 Prompts are reusable AI templates that save you time and ensure consistent results.

@@ -20,6 +20,8 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 - **Feeds** - Channels where AI agents post their work and you reply in-thread to steer them
 - **MCP Server Integration** - Direct integration with Claude Code, Cursor, and VS Code
 - **AI Agents** - Connect and automate with A2A-compatible AI agents
+- **Projects** - Group your work and filter everything with the global project selector in the header
+- **Embedding & Model Providers** - Bring your own AI endpoints per team, powering semantic search and LLM access
 - **API Keys** - Secure access for your favorite development tools
 
 ## Why Choose VibeXP?
@@ -51,6 +53,7 @@ Explore our feature documentation to learn more:
 - [Feeds](/user-guide/feeds) - Asynchronous collaboration with AI agents
 - [MCP Server](/user-guide/mcp-server) - Tool integration
 - [AI Agents](/user-guide/ai-agents) - Agent automation
+- [Embedding & Model Providers](/user-guide/integrations/ai-providers) - Bring your own AI endpoints
 
 ## Need Help?
 

@@ -9,7 +9,7 @@ For deeper architecture, configuration, and code-generation details, see the [De
 
 ## Prerequisites
 
-- **Node.js** >= 20 (for the JS/TS workspaces)
+- **Node.js** >= 20 (for the frontend)
 - **Go** 1.25 (see `backend/go.mod` for the exact version) for the backend
 - **Docker** + Docker Compose (for the database and the self-host stack)
 - Optionally **Bun** for the CLI
@@ -48,13 +48,18 @@ make backend-lint               # golangci-lint
 make backend-validate-openapi   # validate the OpenAPI spec
 ```
 
-For the JS/TS workspaces:
+For the frontend:
 
 ```bash
-# Build / lint / type-check a single workspace
-npm run build --workspace=frontend
-npm run lint --workspace=frontend
-npm run typecheck --workspace=frontend
+make frontend-build
+make frontend-lint
+make frontend-type-check
+
+# or run the npm scripts directly
+cd frontend
+npm run build
+npm run lint
+npm run type-check
 ```
 
 ## Run the whole stack

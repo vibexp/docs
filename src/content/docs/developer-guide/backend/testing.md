@@ -50,8 +50,11 @@ make e2e
 
 The e2e suite is **production-like**: `docker-compose.e2e.yml` builds the
 combined image (backend serving the embedded SPA) from source and boots it with
-Postgres and a fake-gcs emulator, then runs the frontend's Playwright tests
-against the running stack. `make e2e` does everything — installs the Playwright
+Postgres, a fake-gcs emulator (plus a `gcs-init` bucket bootstrap), and an
+**a2a-test-agent** (a toy A2A agent built from `backend/cmd/a2a-test-agent/`,
+exposed to the suite via `E2E_A2A_AGENT_URL`) so Playwright can register an
+agent and chat with it end to end. It then runs the frontend's Playwright
+tests against the running stack. `make e2e` does everything: installs the Playwright
 browser, builds and boots the stack, runs the suite, and always tears the stack
 down. The individual steps are also available:
 

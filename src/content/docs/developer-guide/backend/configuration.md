@@ -35,9 +35,9 @@ own file over that path to take full control.
 - `security.encryption_key` — must be **exactly 32 bytes** (AES-256). The
   service refuses to start otherwise. Generate one with `openssl rand -hex 16`
   (32 hex chars = 32 bytes).
-- `embedding.model` must be non-empty, chunk sizing must be sane, rate limits
-  must be ≥ 1, retention windows must be in `1..3650` days, and the OAuth-AS
-  token lifespans must be positive and ordered — all validated at startup.
+- Rate limits must be ≥ 1, retention windows must be in `1..3650` days,
+  search-ranking weights must be valid, and the OAuth-AS token lifespans must
+  be positive and ordered. All are validated at startup.
 :::
 
 ## Interpolation grammar
@@ -232,23 +232,37 @@ Embeddings are generated in-process by an async event-bus worker: text is
 chunked in Go, embedded via the active provider, and stored in pgvector. There
 is **no** external AI service and **no** message broker.
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `embedding.model` | `gemini-embedding-001` | The `model_id` tag written on every row and used as the search filter. Required (non-empty). |
-| `embedding.chunk_size` | `1000` | Rune-based chunk size for the in-Go chunker. |
-| `embedding.chunk_overlap` | `200` | Overlap between chunks (must be smaller than the chunk size). |
-
-:::note
-The embedding **provider** (an OpenAI-compatible `/v1/embeddings` endpoint:
-OpenAI, Ollama, LocalAI, vLLM, TEI, …) is configured **in-app** in the
-`embedding_providers` table (`base_url`, `api_key`, `provider_type`), not in
-`config.yaml`. If no provider is configured, entities are still saved and
-search falls back to keyword (full-text) mode.
-
-The embedding vector width is **fixed at 1024 in code** — it is locked to the
-pgvector column and is **not** configurable. Pick a model that outputs (or can
-be asked for) 1024 dimensions.
+:::caution[Not in config.yaml since v0.4.0]
+There is **no `embedding` block** in `config.yaml`. All embedding settings are
+**per-team embedding providers**, managed in the app (Settings) or via
+`/api/v1/{team_id}/settings/embedding-providers`. A leftover `embedding:` block
+in an old config file is silently ignored.
 :::
+
+Each per-team embedding provider stores:
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `base_url`, `api_key`, `provider_type` | _(required)_ | Any OpenAI-compatible `/v1/embeddings` endpoint: OpenAI, Ollama, LocalAI, vLLM, TEI, and similar. API keys are stored encrypted. |
+| `model` | _(set per provider)_ | The `model_id` tag written on every vector row and used as the search filter. |
+| `chunk_size` | `1000` | Rune-based chunk size for the in-Go chunker. |
+| `chunk_overlap` | `200` | Overlap between chunks (must be smaller than the chunk size). |
+| `concurrency` | `1` | Max concurrent embedding requests sent to this provider. |
+| `query_prefix` / `document_prefix` | _(empty)_ | Optional prefixes for asymmetric models (mxbai, BGE, E5) prepended to queries and documents. |
+
+Provider behavior:
+
+- Providers are validated on save and must return **1024-dimension** vectors.
+  The width is locked to the pgvector column and is not configurable.
+- Changing a provider's identity (endpoint or model) **wipes and re-embeds**
+  that team's vectors. Coverage, one-click reprocess, and clear-all-embeddings
+  actions are available on the settings page and API.
+- If no provider is configured, entities are still saved and search falls back
+  to keyword (full-text) mode.
+
+Per-team **model providers** (bring-your-own OpenAI-compatible LLM endpoints)
+are also managed in-app, under `/api/v1/{team_id}/settings/model-providers`,
+not in `config.yaml`.
 
 ## Email
 
@@ -331,7 +345,8 @@ be ≥ 1.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `a2a.default_timeout` | `5m` | Max time to wait for agent-to-agent HTTP responses. |
+| `a2a.default_timeout` | `5m` | Max time to wait for synchronous agent-to-agent HTTP responses. |
+| `a2a.stream_timeout` | `2h` | Max lifetime of a streaming (SSE) agent task. Decoupled from the sync timeout so long-running streams are not cut short. |
 
 ## FCM (web push)
 
@@ -346,9 +361,9 @@ telemetry and pick the deployment environment). Most are auto-populated by the
 hosting platform; `config.example.yaml` passes them through with
 `${VAR:-}` references, so manual setting is rarely needed. Detection order:
 `otel_environment`, then `environment`/`env`/`deployment_environment`, then
-cloud indicators (`kubernetes_service_host`, `google_cloud_project` /
-`gcp_project`, `aws_region` / `aws_default_region`), defaulting to
-`production`.
+cloud indicators (`kubernetes_service_host`, `k_service` / `k_revision`
+(Cloud Run), `google_cloud_project` / `gcp_project`, `aws_region` /
+`aws_default_region`), defaulting to `production`.
 
 ## Event bus
 

@@ -92,7 +92,7 @@ It is multi-stage:
    combined image) and the release stamps `VITE_RELEASE_SHA` /
    `VITE_RELEASE_DATE`. Branding/analytics are **not** build args — they are
    injected at runtime via `/config.js`.
-2. **Backend stage (`golang:1.25.11-alpine`).** Copies the backend source,
+2. **Backend stage (`golang:1.25.12-alpine`).** Copies the backend source,
    copies `frontend/dist` into `internal/server/dist`, and builds with
    `-tags embedfrontend`.
 3. **Runtime stage (`alpine:3.20`).** Copies the binary and migrations, bakes a

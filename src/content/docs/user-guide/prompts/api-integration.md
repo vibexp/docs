@@ -24,6 +24,10 @@ All API requests use the base URL:
 https://<your-api-host>/api/v1
 ```
 
+Prompt routes are **team-scoped**: every endpoint includes your team's id (or
+slug) as the first path segment, shown as `{team_id}` in the endpoint
+definitions and `<team-id>` in the example commands.
+
 ## Authentication
 
 Include your API key in the `Authorization` header using Bearer token format:
@@ -40,13 +44,13 @@ Retrieve a list of all your prompts.
 
 **Endpoint:**
 ```
-GET /api/v1/prompts
+GET /api/v1/{team_id}/prompts
 ```
 
 **Example request:**
 ```bash
 curl -X GET \
-  https://<your-api-host>/api/v1/prompts \
+  https://<your-api-host>/api/v1/<team-id>/prompts \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -85,13 +89,13 @@ Retrieve a single prompt by ID or slug.
 
 **Endpoint:**
 ```
-GET /api/v1/prompts/{id_or_slug}
+GET /api/v1/{team_id}/prompts/{id_or_slug}
 ```
 
 **Example request:**
 ```bash
 curl -X GET \
-  https://<your-api-host>/api/v1/prompts/blog-post-template \
+  https://<your-api-host>/api/v1/<team-id>/prompts/blog-post-template \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -119,13 +123,13 @@ Create a new prompt programmatically.
 
 **Endpoint:**
 ```
-POST /api/v1/prompts
+POST /api/v1/{team_id}/prompts
 ```
 
 **Example request:**
 ```bash
 curl -X POST \
-  https://<your-api-host>/api/v1/prompts \
+  https://<your-api-host>/api/v1/<team-id>/prompts \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -167,13 +171,13 @@ Modify an existing prompt.
 
 **Endpoint:**
 ```
-PUT /api/v1/prompts/{id_or_slug}
+PUT /api/v1/{team_id}/prompts/{id_or_slug}
 ```
 
 **Example request:**
 ```bash
 curl -X PUT \
-  https://<your-api-host>/api/v1/prompts/blog-post-template \
+  https://<your-api-host>/api/v1/<team-id>/prompts/blog-post-template \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -210,13 +214,13 @@ Permanently delete a prompt.
 
 **Endpoint:**
 ```
-DELETE /api/v1/prompts/{id_or_slug}
+DELETE /api/v1/{team_id}/prompts/{id_or_slug}
 ```
 
 **Example request:**
 ```bash
 curl -X DELETE \
-  https://<your-api-host>/api/v1/prompts/old-template \
+  https://<your-api-host>/api/v1/<team-id>/prompts/old-template \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -299,10 +303,11 @@ import requests
 
 API_KEY = "your_api_key"
 BASE_URL = "https://<your-api-host>/api/v1"
+TEAM_ID = "your_team_id"
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
 # Get all prompts
-response = requests.get(f"{BASE_URL}/prompts", headers=headers)
+response = requests.get(f"{BASE_URL}/{TEAM_ID}/prompts", headers=headers)
 prompts = response.json()["prompts"]
 
 # Save to file
@@ -320,6 +325,7 @@ const axios = require('axios');
 
 const API_KEY = 'your_api_key';
 const BASE_URL = 'https://<your-api-host>/api/v1';
+const TEAM_ID = 'your_team_id';
 const headers = { 'Authorization': `Bearer ${API_KEY}` };
 
 const promptTemplates = [
@@ -336,7 +342,7 @@ const promptTemplates = [
 ];
 
 for (const template of promptTemplates) {
-  await axios.post(`${BASE_URL}/prompts`, template, { headers });
+  await axios.post(`${BASE_URL}/${TEAM_ID}/prompts`, template, { headers });
 }
 ```
 
@@ -349,11 +355,12 @@ import requests
 
 API_KEY = "your_api_key"
 BASE_URL = "https://<your-api-host>/api/v1"
+TEAM_ID = "your_team_id"
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
 # Get all marketing prompts
 response = requests.get(
-    f"{BASE_URL}/prompts",
+    f"{BASE_URL}/{TEAM_ID}/prompts",
     headers=headers,
     params={"label": "marketing"}
 )
@@ -363,7 +370,7 @@ prompts = response.json()["prompts"]
 for prompt in prompts:
     labels = prompt["labels"] + ["content-creation"]
     requests.put(
-        f"{BASE_URL}/prompts/{prompt['slug']}",
+        f"{BASE_URL}/{TEAM_ID}/prompts/{prompt['slug']}",
         headers=headers,
         json={"labels": labels}
     )
@@ -379,7 +386,7 @@ Deploy prompts as part of your build process:
 # Deploy prompts from source control
 for file in prompts/*.json; do
     curl -X POST \
-        https://<your-api-host>/api/v1/prompts \
+        https://<your-api-host>/api/v1/<team-id>/prompts \
         -H "Authorization: Bearer $API_KEY" \
         -H "Content-Type: application/json" \
         -d @"$file"

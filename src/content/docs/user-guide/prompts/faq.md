@@ -19,14 +19,11 @@ There's no limit on the number of prompts you can create. Build your library as 
 
 ### Are prompts private?
 
-Yes. All prompts are private to your account by default. Only you can view and use your prompts unless you explicitly share them.
+Prompts belong to a **team**. Everyone in the team can see and use the team's prompts. They are not visible outside the team unless explicitly shared.
 
 ### Can I share prompts with my team?
 
-Currently, prompts are private to individual accounts. Team collaboration features are on the roadmap. For now, you can:
-- Manually share prompt content via copy-paste
-- Export prompts and share the JSON
-- Use API integration to sync prompts across team accounts
+Yes, automatically: prompts are team-scoped, so all team members can view and use them. Prompts can also be shared explicitly via a share link for access outside the team.
 
 ### Is there a mobile app?
 
@@ -88,7 +85,7 @@ If you delete a prompt that's referenced by others using the `@` syntax, those r
 
 ### Can I reference prompts from other users?
 
-No. Prompt references only work with prompts in your own library. Team prompt sharing is planned for a future release.
+Prompt references work with any prompt in your team's library, including prompts created by your teammates.
 
 ### How many prompts can I reference in a single prompt?
 
@@ -131,9 +128,8 @@ No. MCP is currently supported by Claude Code, Cursor, VS Code, and other tools 
 ### How do I get an API key?
 
 1. Log into your VibeXP instance (your deployed VibeXP app)
-2. Go to Account Settings
-3. Navigate to API Keys section
-4. Click **Generate API Key**
+2. Go to **Settings** → **Integration** → **API Keys**
+3. Click **Generate API Key**
 
 See the [API Keys guide](/user-guide/integrations/api-keys) for detailed instructions.
 
@@ -183,12 +179,9 @@ Only change slugs when necessary, and update all references.
 
 ### How do I find unused prompts?
 
-Currently, there's no automated way to identify unused prompts. You can:
+Use [Resource Access Analytics](/user-guide/resource-access-analytics): each prompt has an Access activity view showing when and from where (web, MCP, API, CLI) it was last accessed. You can also:
 - Sort by "Updated" date to find old prompts
 - Use labels like `deprecated` to mark prompts you no longer use
-- Review the "Recent Activity" count on the Prompt Management page
-
-Usage analytics are on the roadmap.
 
 ### Can I duplicate a prompt?
 
@@ -243,7 +236,7 @@ Variables are replaced when you execute the prompt through MCP or API, not when 
 
 ### Are prompts versioned?
 
-Currently, prompts have basic versioning through Draft/Published states. Full version history (tracking all changes over time) is on the roadmap.
+Yes. Prompts keep a numbered content-version history, like artifacts and blueprints: each save snapshots the previous content, and you can view past versions and restore any of them. Retention is operator-configurable (20 versions by default).
 
 ### Can I schedule prompts to run automatically?
 

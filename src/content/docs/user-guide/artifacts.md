@@ -41,7 +41,7 @@ Artifacts are substantial pieces of AI-generated content:
    - **Slug**: Unique identifier (auto-generated from title)
    - **Title**: Descriptive name
    - **Description**: Brief summary (optional)
-   - **Type**: work_reports, static_contexts, or general
+   - **Type**: any of your team's artifact types (default: general)
    - **Content**: Your artifact content (supports Markdown)
    - **Status**: active or expired
 4. Click **Save**
@@ -82,21 +82,16 @@ Examples:
 
 ### Artifact Types
 
-**work_reports**
-- Completed analyses
-- Status reports
-- Summary documents
+Artifact types are **custom categories your team defines** under Settings →
+Customization → **Artifact Types**. Every team starts with the default
+`general` type; add types that match how your team works, for example:
 
-**static_contexts**
-- Documentation
-- Code snippets
-- Technical specifications
-- Reference materials
+- **work-reports**: completed analyses, status reports, summaries
+- **static-contexts**: documentation, code snippets, reference material
+- **general**: meeting notes, brainstorming, miscellaneous content
 
-**general**
-- Meeting notes
-- Brainstorming sessions
-- Miscellaneous content
+When creating an artifact (in the UI or via MCP), the type value must match
+one of your team's configured types.
 
 ### Status Management
 
@@ -121,7 +116,7 @@ Finds all artifacts mentioning authentication and implementation.
 
 Filter by:
 - **Project**: Show artifacts from specific projects
-- **Type**: work_reports, static_contexts, or general
+- **Type**: any of your team's artifact types
 - **Status**: active or expired
 - **Creation Date**: Date range filtering
 - **Metadata**: Custom metadata fields
@@ -257,7 +252,7 @@ Store reusable code snippets:
 
 ```
 Project: personal/code-snippets
-Type: static_contexts
+Type: static-contexts
 Examples:
 - "react-custom-hook-example"
 - "api-error-handler"
@@ -270,7 +265,7 @@ Maintain living documentation:
 
 ```
 Project: company/main-app
-Type: static_contexts
+Type: static-contexts
 Examples:
 - "architecture-overview"
 - "deployment-guide"
@@ -322,21 +317,26 @@ Examples:
 
 ### REST API Endpoints
 
-```bash
-# List artifacts
-GET /api/v1/artifacts?project_name=user/project
+All artifact routes are team-scoped and project-addressed:
 
-# Get specific artifact
-GET /api/v1/artifacts/{project_name}/{slug}
+```bash
+# List artifacts in a team
+GET /api/v1/{team_id}/artifacts
+
+# List artifacts in a project
+GET /api/v1/{team_id}/artifacts/{project_id}
+
+# Get a specific artifact
+GET /api/v1/{team_id}/artifacts/{project_id}/{slug}
 
 # Create artifact
-POST /api/v1/artifacts
+POST /api/v1/{team_id}/artifacts
 
 # Update artifact
-PUT /api/v1/artifacts/{project_name}/{slug}
+PUT /api/v1/{team_id}/artifacts/{project_id}/{slug}
 
 # Delete artifact
-DELETE /api/v1/artifacts/{project_name}/{slug}
+DELETE /api/v1/{team_id}/artifacts/{project_id}/{slug}
 ```
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.

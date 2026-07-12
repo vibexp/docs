@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.3.0
+  ghcr.io/vibexp/vibexp:0.6.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -60,11 +60,14 @@ These are the only hard requirements to boot the backend. Everything else is opt
 | --- | --- | --- |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | ✅ | PostgreSQL connection (must have `pgvector`) |
 | `ENCRYPTION_KEY` | ✅ | AES-256 at-rest key — **exactly 32 bytes** |
-| `EMBEDDING_MODEL` | Optional | Model-id tag stored on embeddings and used as a search filter (defaults to `gemini-embedding-001`). It does **not** change the vector width, which is fixed at 1024 in code. |
 
 :::note
-Database migrations run automatically on boot.
+Database migrations run automatically on boot; upgrading is a straight image
+bump. The published image is multi-arch (`linux/amd64` + `linux/arm64`).
 :::
+
+There is no embedding env var: embedding and model providers are configured
+per team **in the app** (see [Search and embeddings](#search-and-embeddings)).
 
 ## Authentication
 
@@ -90,10 +93,14 @@ For **local evaluation without a provider**, point `FRONTEND_BASE_URL` at localh
 
 Embeddings are generated **in-process** — an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`.
 
-The embedding provider (any OpenAI-compatible embeddings endpoint) is configured **in-app**, not via environment variables: add it under the embedding-provider settings inside VibeXP. The embedding vector width is **fixed at 1024** in code, locked to the pgvector column — there is no `EMBEDDING_DIMENSIONS` setting and no `vector(768)`. `EMBEDDING_MODEL` only tags the model id and acts as a search filter.
+The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
+
+The settings page also shows embedding **coverage** per team, with one-click **Reprocess pending** and **Clear all embeddings** actions. Changing a provider's identity (endpoint or model) wipes and re-embeds that team's data automatically.
+
+Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
 
 :::caution
-Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable**.
+Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable**: search falls back to keyword (full-text) mode, which since v0.6.0 includes typo tolerance.
 :::
 
 ## Optional integrations

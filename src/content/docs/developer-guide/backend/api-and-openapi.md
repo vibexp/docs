@@ -34,12 +34,12 @@ The API is organised into these domains (one `paths/*.yaml` file each):
 | `blueprints` | `embedding-providers` |
 | `feeds` | `github` |
 | `health` | `invitations` |
-| `memories` | `notifications` |
-| `projects` | `prompts` |
-| `search` | `subscriptions` |
-| `support` | `teams` |
-| `types` | `user` |
-| `webhooks` | |
+| `memories` | `model-providers` |
+| `notifications` | `projects` |
+| `prompts` | `search` |
+| `subscriptions` | `support` |
+| `teams` | `types` |
+| `user` | `webhooks` |
 
 Shared schema definitions live in `schemas/common.yaml`; other `schemas/*.yaml`
 files mirror the path domains.
@@ -55,6 +55,20 @@ make backend-bundle-openapi
 ```
 
 Always consume the **bundle** (`dist/openapi.bundled.yaml`), not the source tree.
+
+## Served at runtime
+
+Since v0.5.0 every running instance serves its own bundled spec at
+`GET /openapi.yaml` and `GET /openapi.json`. The bytes come from a committed,
+`go:embed`-ed bundle in `internal/server/openapispec/`:
+
+```bash
+make backend-generate-openapi-bundle   # regenerate the embedded bundle (redocly)
+make backend-openapi-bundle-check      # regenerate, then fail on drift
+```
+
+CI and pre-commit run the drift check, so regenerate and commit the embedded
+bundle whenever the spec changes.
 
 ## Validation & linting
 
