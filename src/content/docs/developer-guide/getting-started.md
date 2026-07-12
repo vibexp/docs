@@ -14,9 +14,10 @@ the `make` targets below.
 
 ## Prerequisites
 
-- **Docker + Compose** — used to run PostgreSQL (with pgvector) and Mailpit
-  locally. `docker-compose` or `podman-compose` both work.
-- **Go 1.25.x** — the `Makefile` pins `GOTOOLCHAIN=go1.25.11`, so Go downloads
+- **Docker + Compose** — used to run PostgreSQL (with pgvector), Mailpit, and
+  a local TEI embedding service. `docker-compose` or `podman-compose` both
+  work.
+- **Go 1.25.x** — the `Makefile` pins `GOTOOLCHAIN=go1.25.12`, so Go downloads
   and uses that exact toolchain on demand even if your system Go is newer.
 - **Node.js >= 20** — for the frontend (its `engines` field requires `>=20`).
 - **`pre-commit`** — required; commits are gated on it. Install with
@@ -53,12 +54,16 @@ make backend-run-dev
 
 This target:
 
-- starts **PostgreSQL** and **Mailpit** via Compose,
+- starts **PostgreSQL**, **Mailpit**, and a local **embeddings** service
+  (HuggingFace TEI serving `mxbai-embed-large-v1`, 1024 dimensions) via
+  Compose,
 - starts the API under **air** for hot reload on any `.go` change.
 
-The local email inbox (Mailpit) UI is at **http://localhost:8025**, and the API
-serves on **http://localhost:8080** (health check at
-`http://localhost:8080/health`).
+The local email inbox (Mailpit) UI is at **http://localhost:8025**, the
+embeddings service health check is at **http://localhost:8000/health**
+(port configurable via `TEI_PORT`; the first start downloads the model,
+roughly 670 MB), and the API serves on **http://localhost:8080** (health
+check at `http://localhost:8080/health`).
 
 :::note[Where `.env` and `config.yaml` come from]
 On first run, `scripts/sync-env.sh` bootstraps **both** local files with dev

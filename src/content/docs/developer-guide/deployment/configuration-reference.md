@@ -98,9 +98,16 @@ live in `config.yaml`; `config.example.yaml` documents every one.
 ## Optional services
 
 - **Semantic search** — embeddings run in-process; vector width is fixed at
-  **1024**. Configure an embedding provider **in the app**, not via environment.
+  **1024**. Embedding providers are configured **per team in the app** (model,
+  chunk sizing, concurrency, and query/document prefixes included), not via
+  environment.
+- **Model providers** — per-team OpenAI-compatible LLM endpoints, also managed
+  in the app with encrypted API keys.
 - **File attachments** — enable the GCS emulator service and the related `app`
   variables. See [Docker & Compose](/developer-guide/deployment/docker/).
+
+Every running instance serves its own API spec at `/openapi.yaml` and
+`/openapi.json`.
 
 ## Related
 

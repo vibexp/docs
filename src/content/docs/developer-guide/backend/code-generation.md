@@ -1,9 +1,9 @@
 ---
 title: Code Generation
-description: oapi-codegen, Wire, mockery, and the config schema generator — the generators behind the VibeXP backend.
+description: oapi-codegen, Wire, mockery, the config schema generator, and the embedded OpenAPI bundle — the generators behind the VibeXP backend.
 ---
 
-The backend relies on four code generators. All of their output is **committed**
+The backend relies on five code generators. All of their output is **committed**
 to the repository, and CI fails if any of it is stale relative to its source.
 
 :::danger[The golden rule]
@@ -72,6 +72,20 @@ make backend-config-schema-check      # regenerate, then fail if it differs from
 `backend-config-schema-check` runs in CI and catches a changed `Config` struct
 that was never regenerated. It is idempotent on a clean tree.
 
+## Embedded OpenAPI bundle
+
+Every running instance serves its spec at `/openapi.yaml` and `/openapi.json`.
+The served bytes are a committed, `go:embed`-ed bundle in
+`internal/server/openapispec/`, regenerated with Redocly:
+
+```bash
+make backend-generate-openapi-bundle   # regenerate the embedded bundle
+make backend-openapi-bundle-check      # regenerate, then fail if it differs from the committed files
+```
+
+CI and pre-commit run the drift check. Regenerate the bundle in the same
+change as any spec edit.
+
 ## Quick reference
 
 | Generator | Command | Output (committed) |
@@ -80,6 +94,7 @@ that was never regenerated. It is idempotent on a clean tree.
 | Wire | `make backend-wire-gen` (`backend-wire-check` to verify) | `internal/container/wire_gen.go` |
 | mockery | `make backend-mock-generate` | `mock_*.go` files |
 | gen-config-schema | `make backend-generate-config-schema` (`backend-config-schema-check` to verify) | `backend/config.schema.json` |
+| OpenAPI bundle | `make backend-generate-openapi-bundle` (`backend-openapi-bundle-check` to verify) | `internal/server/openapispec/openapi.bundled.{yaml,json}` |
 
 :::tip
 After changing the spec, a provider signature, a service interface, or the

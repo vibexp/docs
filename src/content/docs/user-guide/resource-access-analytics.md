@@ -70,7 +70,7 @@ This means the chart reflects how valuable a resource is to the team as a whole.
 
 ## Data retention
 
-Access events are retained for **90 days**. Activity older than 90 days is automatically removed, so the "Last 3 months" range always covers the full retained history. This window is fixed for now.
+Access events are retained for **90 days by default**. Older activity is automatically removed, so the "Last 3 months" range covers the full retained history on a default deployment. The window is operator-configurable (`retention.access_event_days`, 1 to 3650 days).
 
 ## Frequently asked questions
 

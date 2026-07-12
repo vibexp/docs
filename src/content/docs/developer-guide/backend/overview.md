@@ -16,7 +16,7 @@ spec-first workflow see [API & OpenAPI](/developer-guide/backend/api-and-openapi
 
 | Concern | Technology |
 | --- | --- |
-| Language / toolchain | Go `1.25.11` (pinned via `GOTOOLCHAIN`) |
+| Language / toolchain | Go `1.25.12` (pinned via `GOTOOLCHAIN`) |
 | Entrypoint / CLI | [cobra](https://github.com/spf13/cobra) |
 | HTTP router | [chi v5](https://github.com/go-chi/chi) |
 | Database | PostgreSQL + [pgvector](https://github.com/pgvector/pgvector) |

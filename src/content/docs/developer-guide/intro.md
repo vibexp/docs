@@ -59,7 +59,7 @@ repos under the [`vibexp` organization](https://github.com/vibexp).
 ### Backend (`backend/`)
 
 - **Go** REST API, module `github.com/vibexp/vibexp`. The toolchain is pinned to
-  **Go 1.25.11** (`GOTOOLCHAIN=go1.25.11` in the `Makefile`) so local builds
+  **Go 1.25.12** (`GOTOOLCHAIN=go1.25.12` in the `Makefile`) so local builds
   match CI exactly.
 - **Spec-first OpenAPI.** `backend/openapi.yaml` — bundled from `paths/` and
   `schemas/` — is the single source of truth. The strict server bindings, Wire

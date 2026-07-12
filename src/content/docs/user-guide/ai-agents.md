@@ -1,373 +1,212 @@
 ---
 title: AI Agents (A2A)
-description: Connect, automate, and scale with A2A-compatible AI agents and manage autonomous AI workflows directly from VibeXP.
+description: Connect A2A-compatible AI agents to VibeXP, chat with them, and track task execution in real time.
 sidebar:
   order: 7
 ---
 
-Connect, automate, and scale with AI agents using the Agent-to-Agent (A2A) protocol. Integrate any A2A-compatible agent and manage autonomous AI workflows directly from VibeXP.
+Connect AI agents to VibeXP using the Agent-to-Agent (A2A) protocol. Add any
+A2A-compatible agent, chat with it, and track task execution in real time.
 
 ## Overview
 
-A2A (Agent-to-Agent) is an open protocol that enables AI agents to communicate and collaborate with platforms like VibeXP. Connect autonomous agents, assign tasks, track execution in real-time, and maintain persistent conversations.
+A2A is an open standard for communicating with AI agents. VibeXP speaks A2A
+through the official `a2a-go` SDK and supports protocol v1.0, with automatic
+negotiation down to v0.3 for older agents.
 
-### Key Benefits
+What VibeXP handles for you:
 
-- **Universal Support**: Any A2A-compatible agent works
-- **Real-Time Monitoring**: Watch agents work with live updates
-- **Persistent Conversations**: Resume chats anytime with full context
-- **Task Management**: Create, monitor, and review executions
-- **Secure Credentials**: Encrypted storage for agent authentication
+- **Discovery**: fetches and validates the agent card
+- **Invocation**: sends tasks, synchronous or streaming
+- **Live updates**: streams status and results while the agent works
+- **Cancellation**: stop a running task from the chat
+- **Conversations**: multi-turn chats with full context
 
-## What is A2A?
+## Adding an agent
 
-A2A is an open standard for AI agent communication that defines:
+Agents belong to a team. To add one:
 
-- **Agent Capabilities**: What agents can do
-- **Task Execution**: How to delegate work
-- **Streaming Updates**: Real-time progress reporting
-- **Conversation Management**: Multi-turn interactions
+1. Open **Agents** in the sidebar
+2. Click **Add agent**
+3. Enter the agent's **base URL** (for example `https://your-agent-domain.com`)
+4. Wait for the agent card preview to load
+5. Choose the initial status: **Active** or **Paused**
+6. Click **Create agent**
 
-### Agent Types
+VibeXP discovers the agent card at
+`<base URL>/.well-known/agent-card.json`. The agent's name, description,
+version, skills, and capabilities all come from the card. You do not enter
+them manually.
 
-- **Research Agents**: Autonomous research and data gathering
-- **Code Assistants**: Code review, generation, and documentation
-- **Data Analysis**: Automated processing and report generation
-- **Content Creation**: Writing, editing, and optimization
-- **Workflow Automation**: End-to-end process automation
-- **Task Management**: Intelligent coordination and planning
+Notes:
 
-## Connecting Agents
+- The card must be served from exactly `/.well-known/agent-card.json` over
+  HTTP or HTTPS, and must be 1 MB or smaller.
+- The base URL cannot be changed after creation. Delete and re-add the agent
+  to point at a new URL.
+- The number of agents per team is bounded by your plan's resource limit.
+- Agents cannot be moved between teams.
 
-### Prerequisites
+### Host restrictions
 
-- VibeXP account
-- A2A-compatible agent
-- Agent discovery URL (provided by agent developer)
+In production, VibeXP refuses agent URLs that resolve to loopback, private,
+link-local, or cloud-metadata addresses. In local development these hosts are
+allowed, so you can test against an agent running on `localhost`.
 
-### Connection Steps
+## The agent card
 
-1. Navigate to **AI Agents** in the sidebar
-2. Click **Connect New Agent**
-3. Enter agent details:
-   - **Discovery URL**: Agent's A2A endpoint
-   - **Name**: Friendly name for reference
-   - **Description**: What the agent does (optional)
-4. Click **Connect**
+The agent detail page renders the card as declared by the agent:
 
-VibeXP automatically:
-- Fetches the agent card
-- Validates capabilities
-- Configures the connection
-- Checks supported transports (HTTP, SSE, WebSocket)
+- **Interfaces**: A2A v1.0 cards list `supportedInterfaces`, each with a URL,
+  protocol binding (JSON-RPC or REST), and protocol version. VibeXP uses the
+  primary interface.
+- **Streaming**: whether the agent supports streaming updates
+  (`capabilities.streaming`).
+- **Skills**: the agent's declared skills with tags.
+- **Input and output modes**: the content types the agent accepts and returns.
 
-### Configuring Credentials
+## Credentials
 
-If your agent requires authentication:
+If the agent card declares `securitySchemes`, a credentials editor appears
+when you edit the agent. Two credential types are supported:
 
-1. Open the connected agent
-2. Click **Configure Credentials**
-3. Enter required credentials:
-   - API keys
-   - Access tokens
-   - Custom authentication data
-4. Save securely (encrypted storage)
+| Type | Meaning |
+| --- | --- |
+| `apiKey` | A key sent in a header, query parameter, or cookie, as the card specifies. Keys sent in the `Authorization` header get a `Bearer ` prefix automatically. |
+| `http` | HTTP authentication via the `Authorization` header, Basic or Bearer. |
 
-## Creating Tasks
+Other schemes (`oauth2`, `openIdConnect`, `mutualTLS`) are shown as
+unsupported and rejected on save.
 
-### Simple Task
+Credential handling:
 
-1. Select a connected agent
-2. Click **New Task**
-3. Enter your task description
-4. Click **Send**
+- Credentials are encrypted at rest and never shown back in full.
+- When the card lists multiple schemes, VibeXP picks one deterministically:
+  the card's declared security requirements first, then alphabetical order.
+- Once credentials are stored, VibeXP also uses them to re-fetch the agent
+  card, so cards behind authentication work too.
+
+## Running tasks
+
+Open an agent and send a message to start a task:
+
+1. Select an active agent
+2. Type your task in the chat
+3. Send
 
 Example:
+
 ```
 Analyze this codebase and identify performance bottlenecks in the API layer.
 ```
 
-### Starting Conversations
+VibeXP picks the invocation mode automatically:
 
-For multi-turn interactions:
+- **Streaming** agents return updates live over SSE as the task progresses.
+- **Synchronous** agents return a reply directly. If the task is not yet
+  terminal, VibeXP polls it until it completes (up to 5 minutes).
 
-1. Select agent
-2. Click **Start Conversation**
-3. Send your first message
-4. Continue the conversation with follow-ups
+### Task statuses
 
-Example conversation:
-```
-You: "Review the authentication module for security issues"
-Agent: "I found 3 potential issues..."
-You: "Focus on the token validation logic"
-Agent: "Analyzing token validation..."
-```
+| Status | Meaning |
+| --- | --- |
+| `pending` / `submitted` | Task accepted, not yet running |
+| `working` / `running` | The agent is executing the task |
+| `input-required` | The agent is waiting for your input |
+| `auth-required` | The agent is waiting for authorization |
+| `completed` / `success` | Task finished successfully |
+| `failed` / `error` | Task ended with an error |
+| `cancelled` | Task was cancelled |
 
-## Monitoring Execution
+### Cancelling a task
 
-### Real-Time Status
+While a task is running, a **Cancel** button appears in the chat. Cancelling
+stops the local stream, asks the remote agent to cancel the task, and marks
+the execution `cancelled`. A task that already reached a terminal state
+cannot be cancelled.
 
-Watch agents work with live updates:
+### Timeouts
 
-- **Thinking**: Agent is processing
-- **Working**: Executing the task
-- **Streaming Results**: Sending updates
-- **Completed**: Task finished
-- **Failed**: Encountered error
+Timeouts are set by the instance operator, not per task:
 
-### Event Streaming
+- Synchronous tasks: 5 minutes by default (`a2a.default_timeout`)
+- Streaming tasks: 2 hours by default (`a2a.stream_timeout`)
 
-See detailed progress:
-- Status changes
-- Intermediate results
-- Progress indicators
-- Tool usage
-- Errors and warnings
+Streaming uses its own timeout, so long-running streams are not cut short by
+the sync limit.
 
-### Execution History
+## Conversations
 
-Review past executions:
-- Full conversation history
-- Timestamps and duration
-- Success/failure status
-- Performance metrics
-- Error details
+Messages to the same agent are grouped into conversations, so follow-ups keep
+full context:
 
-## Managing Conversations
+- Continue a conversation by opening it and sending another message.
+- Click **Start new chat** to begin a fresh conversation.
+- Past executions, replies, timestamps, and errors stay available in the
+  conversation history.
 
-### Resume Conversations
+## Agent stats
 
-Pick up where you left off:
+The Agents page shows per-agent and team-level stats:
 
-1. Navigate to **AI Agents** → **Conversations**
-2. Select a conversation
-3. Click **Resume**
-4. Continue from last message
+- Per agent: total runs, success rate, last run
+- Team: total, active, paused, and errored agents, runs today and this week,
+  and recent activity
 
-All context is preserved automatically.
+## Security
 
-### Conversation Features
-
-- **Context Preservation**: Full history maintained
-- **Multi-Turn**: Complex workflows with back-and-forth
-- **Branching**: Start new topics from any point
-- **Export**: Save conversations for reference
-
-## Use Cases
-
-### Code Review Agent
-
-```markdown
-Agent: code-reviewer
-Task: "Review PR #123 for security issues"
-
-Agent Actions:
-1. Fetches PR diff
-2. Analyzes code changes
-3. Checks security patterns
-4. Generates review comments
-5. Creates summary report
-```
-
-### Research Agent
-
-```markdown
-Agent: research-assistant
-Task: "Research best practices for React performance optimization"
-
-Agent Actions:
-1. Searches multiple sources
-2. Analyzes information
-3. Summarizes findings
-4. Provides recommendations
-5. Cites sources
-```
-
-### Documentation Agent
-
-```markdown
-Agent: doc-generator
-Conversation:
-You: "Generate API documentation for the user service"
-Agent: "Analyzing user service code..."
-Agent: "Documentation generated. Should I include examples?"
-You: "Yes, include examples for authentication endpoints"
-Agent: "Adding examples..."
-```
-
-## Agent Configuration
-
-### Transport Types
-
-Agents can use different communication methods:
-
-- **HTTP**: Request/response pattern
-- **SSE (Server-Sent Events)**: Server push for streaming
-- **WebSocket**: Full duplex communication
-
-VibeXP automatically uses the best available transport.
-
-### Timeout Settings
-
-Configure task timeouts:
-
-- **Short Tasks**: 30 seconds - 5 minutes
-- **Medium Tasks**: 5 - 30 minutes
-- **Long Tasks**: 30 minutes - 2 hours
-
-### Retry Configuration
-
-Set retry behavior for failed tasks:
-
-- **No Retry**: Fail immediately
-- **Auto Retry**: Retry with exponential backoff
-- **Manual Retry**: You decide when to retry
-
-## Performance Monitoring
-
-### Agent Metrics
-
-Track agent performance:
-
-- **Success Rate**: Percentage of successful tasks
-- **Average Duration**: Mean execution time
-- **Error Rate**: Failed tasks percentage
-- **Response Time**: Time to first response
-
-### Usage Analytics
-
-Monitor usage patterns:
-
-- **Most Used Agents**: Popular agents in your workspace
-- **Task Distribution**: Types of tasks requested
-- **Time Patterns**: Peak usage times
-- **Resource Usage**: API calls and compute time
-
-## Security and Privacy
-
-### Credential Security
-
-- **Encrypted Storage**: All credentials encrypted at rest
-- **Secure Transmission**: HTTPS for all communication
-- **User Isolation**: Your agents never access other users' data
-- **Revocable Access**: Delete credentials anytime
-
-### Data Privacy
-
-- **Private by Default**: Agent conversations are private
-- **No Sharing**: Data not shared with other users
-- **Audit Logs**: Complete record of agent actions
-- **Data Retention**: Control how long data is kept
-
-### Access Control
-
-- **User-Scoped**: Agents only access your resources
-- **Permission Management**: Control what agents can do
-- **Credential Rotation**: Update credentials regularly
+- **Encrypted credentials**: agent credentials are encrypted at rest and can
+  be updated or deleted anytime.
+- **Team isolation**: agents and their conversations are scoped to the team.
+- **Host protection**: production deployments block internal and
+  cloud-metadata addresses to prevent request forgery.
+- **Activity log**: agent changes and runs are recorded in team activity.
 
 ## Troubleshooting
 
-### Agent Connection Failed
+### Cannot add an agent
 
-**Problem**: Cannot connect to agent
+- Check the base URL: the card must exist at
+  `<base URL>/.well-known/agent-card.json`.
+- Confirm the card is valid A2A: name, description, version, interfaces,
+  input and output modes, and skills are required.
+- On a production instance, make sure the agent host is publicly reachable.
+  Private and loopback addresses only work in local development.
 
-**Solutions**:
-- Verify discovery URL is correct
-- Check agent is online and accessible
-- Ensure agent supports A2A protocol
-- Try again after a few minutes
+### Task fails
 
-### Task Execution Failed
+- Read the error in the conversation history.
+- Verify the stored credentials are still valid.
+- Send a new message to retry. There is no automatic retry.
 
-**Problem**: Agent returns error
+### Agent is offline
 
-**Solutions**:
-- Review error message for details
-- Check agent credentials are valid
-- Verify task requirements are met
-- Try simpler task to test connection
-- Contact agent developer for support
+Running tasks fail with a network or timeout error. Once the agent is back,
+send a new message to run the task again.
 
-### Slow Response Times
-
-**Problem**: Agent takes too long
-
-**Solutions**:
-- Check agent status and load
-- Verify network connection
-- Try during off-peak hours
-- Consider using different agent
-- Increase timeout settings
-
-## Best Practices
-
-### Task Design
-
-- Be specific and clear in task descriptions
-- Provide necessary context upfront
-- Break complex workflows into smaller tasks
-- Set appropriate timeouts for task complexity
-
-### Conversation Management
-
-- Use conversations for related work
-- Resume conversations to maintain context
-- Archive completed conversations regularly
-- Export important conversations for reference
-
-### Agent Selection
-
-- Choose appropriate agent for task type
-- Test agents with simple tasks first
-- Monitor performance and success rates
-- Have backup agents for critical workflows
-
-### Security
-
-- Use strong credentials for agents
-- Rotate credentials periodically
-- Revoke access for unused agents
-- Monitor agent activity regularly
-
-## Frequently Asked Questions
+## Frequently asked questions
 
 ### What agents are compatible?
 
-Any agent implementing the A2A protocol specification. This includes custom agents, third-party agents, and specialized domain agents.
-
-### Can I build my own agent?
-
-Yes! Follow the A2A protocol specification to build custom agents that integrate with VibeXP.
+Any agent implementing the A2A protocol, v1.0 or v0.3. This includes custom
+agents you build and host yourself.
 
 ### How many agents can I connect?
 
-Unlimited. Connect as many A2A-compatible agents as needed for your workflows.
+Agent count per team is bounded by your plan's resource limit.
 
 ### Are conversations private?
 
-Yes. All agent conversations are private to your account and encrypted in storage and transit.
-
-### Can agents access my VibeXP data?
-
-Only if explicitly configured. Agents can be given access to specific resources through secure authentication.
-
-### What happens if an agent goes offline?
-
-Active tasks will fail with timeout errors. You can retry once the agent is back online.
+Conversations are scoped to your team and stored with the rest of your team
+data. Agent credentials are encrypted.
 
 ### Can I run agents on my own infrastructure?
 
-Yes! Build and host custom A2A agents on your infrastructure and connect them to VibeXP.
+Yes. Build an A2A agent, serve its card at
+`/.well-known/agent-card.json`, and add its base URL. On a self-hosted
+instance in local development mode, `localhost` agents work too.
 
-## Support and Resources
-
-- **A2A Protocol**: [github.com/a2a-protocol](https://github.com/a2a-protocol)
-- **VibeXP Docs**: [docs.vibexp.io](https://docs.vibexp.io)
-- **Email Support**: support@example.com
-- **Community**: [discord.gg/vibexp](https://discord.gg/vibexp)
-
-## Related Features
+## Related features
 
 - [MCP Server](/user-guide/mcp-server) - Direct tool integration
 - [Artifacts](/user-guide/artifacts) - Store agent outputs

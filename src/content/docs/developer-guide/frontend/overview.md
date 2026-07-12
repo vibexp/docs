@@ -43,13 +43,18 @@ The API client is generated from the backend spec. The change flow is: update
 ```text
 frontend/src/
 ├── pages/        Route-level views (one per screen)
-├── components/   Reusable presentational components
+├── components/   Reusable presentational components (layout/ holds the app header and its global project selector)
 ├── features/     Feature modules (domain-grouped UI + logic)
 ├── hooks/        Custom React hooks
 ├── contexts/     React context providers (auth, theme, …)
 ├── services/     API calls and side-effecting integrations
 ├── lib/          Third-party wiring and shared setup
-└── utils/        Pure helpers and small utilities
+├── utils/        Pure helpers and small utilities
+├── config/       App-level configuration
+├── constants/    Shared constants
+├── styles/       Global styles
+├── types/        Shared TypeScript types
+└── routes.tsx    The route table
 ```
 
 ## How it talks to the backend

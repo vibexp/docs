@@ -36,6 +36,8 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 - **go security scan** — `gosec`.
 - **OpenAPI validation** — validates the spec when `openapi.yaml`, `paths/`, or
   `schemas/` change.
+- **OpenAPI embedded bundle drift** — the runtime-served bundle in
+  `internal/server/openapispec/` must be regenerated with the spec.
 - **Block `os.Getenv`** — config must go through the config package, not
   `os.Getenv`.
 
@@ -76,8 +78,9 @@ download-deps -> format -> build -> test
 ```
 
 (`go mod download`, `gofmt` check, `go build`, `go test -race`, `golangci-lint`,
-and OpenAPI spec validation.) The `go-version` in this workflow must stay in sync
-with `GO_VERSION` (`1.25.11`) in the `Makefile`.
+and OpenAPI spec validation. The OpenAPI job also checks config-schema drift
+and embedded-bundle drift.) The `go-version` in this workflow must stay in sync
+with `GO_VERSION` (`1.25.12`) in the `Makefile`.
 
 ### `ci-frontend.yml`
 

@@ -148,17 +148,13 @@ Semantic search requires the deployment to have an embedding provider configured
 ### Advanced Filters
 
 Filter memories by:
-- **Project**: Specific project memories
-- **Category**: Group by type
-- **Priority**: Importance level
-- **Tags**: Custom tag filtering
-- **Creation Date**: Time-based filtering
+- **Tag**: Custom tag filtering (tags come from memory metadata)
+- **Status**: Memory lifecycle status
+- **Project**: Use the global project selector in the app header to scope the
+  list to one project (or all)
 
-### Quick Access
-
-- **Recent**: Last accessed memories
-- **Favorites**: Star important memories
-- **Project View**: All memories for a project
+Fields like category and priority live in each memory's free-form metadata
+and are searchable.
 
 ## Auto-Context Injection
 
@@ -174,11 +170,11 @@ When using AI tools connected via MCP:
 
 ### Relevance Matching
 
-Memories are matched based on:
-- **Keywords**: Content similarity
-- **Project**: Current project context
-- **Priority**: High-priority memories preferred
-- **Recency**: Recently accessed memories weighted higher
+Memories are ranked by **semantic relevance** to the query (vector
+similarity). When the instance enables recency ranking, relevance is blended
+with how recently a memory was created or updated. Without an embedding
+provider, matching falls back to keyword (full-text) search with typo
+tolerance.
 
 ### Manual Reference
 
@@ -209,20 +205,6 @@ Updated: 2024-01-15
 Changes: Added new TypeScript conventions
 Previous: Used any types, now strict typing
 ```
-
-## Bulk Operations
-
-### Batch Update
-
-1. Select multiple memories
-2. Click **Bulk Actions** → **Update Metadata**
-3. Add/remove tags, change category, or update priority
-
-### Batch Delete
-
-1. Select memories to remove
-2. Click **Bulk Actions** → **Delete**
-3. Confirm deletion
 
 ## MCP Integration
 
@@ -427,7 +409,9 @@ Memories can be project-specific or global. Project-specific memories are only r
 
 ### Can I export memories?
 
-Yes. Export memories individually or in bulk as JSON or Markdown files.
+There is no built-in export button. Use the REST API
+(`GET /api/v1/{team_id}/memories`) to list your memories as JSON, or connected
+AI tools via MCP to retrieve them.
 
 ### How secure are my memories?
 
