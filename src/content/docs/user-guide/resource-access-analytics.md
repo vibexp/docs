@@ -41,7 +41,7 @@ An access is recorded when a resource's **detail** is successfully read:
 
 - Opening a resource's detail page in the web app.
 - Fetching a single resource by the API or CLI (a get-by-id / get-by-slug request that succeeds).
-- Reading a resource through its MCP tool — currently `vibexp_io_get_artifact` and `vibexp_io_get_memory`.
+- Reading a resource through its MCP tool — `vibexp_io_get_resource` (for a `memory`, `artifact`, or `blueprint`).
 
 The following are **not** counted:
 

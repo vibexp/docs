@@ -225,45 +225,50 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 - **vibexp_io_list_teams**: List the teams you belong to (returns `uuid`, `name`, `slug`). Use the result to supply `team_id` to other tools
 - **vibexp_io_list_projects**: List a team's projects, with optional search and pagination
 
-### Search
+### Search and resource reads
 
 - **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
-- **vibexp_io_search_artifacts**: Exact, filterable artifact listing within a project (status, type, text search, pagination)
-- **vibexp_io_search_memories**: Filterable memory listing within a project (status, text search, pagination)
+- **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type` — a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`
+- **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items — filterable (status, type, text search) and paginated; call `vibexp_io_get_resource` for a single item's full content
+
+One generic pair of read tools covers memories, artifacts, and blueprints (keyed by `resource_type`), mirroring `vibexp_io_delete_resource`.
 
 ### Prompt Management
 
 - **vibexp_io_create_prompt**: Create a new prompt
 - **vibexp_io_update_prompt**: Update an existing prompt
+- **vibexp_io_render_prompt**: Render a published, MCP-exposed prompt by slug, substituting values for its `{{placeholders}}` — returns the rendered body
 
-To *read* prompts, use the generic `vibexp_io_search` tool — or the native MCP prompts your client lists (see the note below).
+To *read* prompts, use `vibexp_io_render_prompt`, the generic `vibexp_io_search` tool, or the native MCP prompts your client lists (see the note below).
 
 ### Artifact Management
 
 - **vibexp_io_create_artifact**: Create a new artifact
-- **vibexp_io_get_artifact**: Get an artifact's content by project and slug
 - **vibexp_io_update_artifact**: Update an existing artifact
+
+Read artifacts with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: artifact`).
 
 ### Blueprint Management
 
 - **vibexp_io_create_blueprint**: Create a new blueprint
 - **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug
 
+Read blueprints with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: blueprint`).
+
 ### Memory Operations
 
 - **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`)
-- **vibexp_io_get_memory**: Retrieve a specific memory by ID
 - **vibexp_io_update_memory**: Update a memory's text, status, or metadata
+
+Read memories with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: memory`).
 
 ### Feeds
 
 - **vibexp_io_list_feeds**: List the AI Feeds available in a team
 - **vibexp_io_post_to_feed**: Post a status update, summary, or report to a feed
 - **vibexp_io_reply_to_feed_item**: Reply to an existing feed item with a follow-up
-- **vibexp_io_list_feed_items**: List a feed's items, newest first (paginated)
-- **vibexp_io_get_feed_item**: Get a single feed item with its full content
-- **vibexp_io_list_feed_item_replies**: List the replies to a feed item, newest first (paginated)
-- **vibexp_io_get_feed_item_reply**: Get a single reply with its full content
+- **vibexp_io_list_feed_items**: List a feed's items, newest first (paginated); pass `include_replies` to embed a few recent reply excerpts per item
+- **vibexp_io_get_feed_item**: Get a single feed item with its full content **and its replies inline** (newest first) — use it to read an item and the whole conversation on it in one call
 
 ### Attachments
 
@@ -317,7 +322,7 @@ AI: *Creates artifact using vibexp_io_create_artifact*
 ```
 You: "Write a function following my coding standards"
 
-AI: *Searches memories using vibexp_io_search_memories*
+AI: *Lists memories using vibexp_io_list_resources (resource_type: memory)*
     *Finds your TypeScript coding preferences*
     *Applies standards automatically in code*
 ```
@@ -327,7 +332,7 @@ AI: *Searches memories using vibexp_io_search_memories*
 ```
 You: "Show me all my React components"
 
-AI: *Searches artifacts using vibexp_io_search_artifacts*
+AI: *Lists artifacts using vibexp_io_list_resources (resource_type: artifact)*
     *Filters by project and content*
     *Lists matching artifacts with previews*
 ```

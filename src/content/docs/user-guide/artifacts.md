@@ -202,14 +202,15 @@ vibexp_io_create_artifact({
 })
 ```
 
-### Searching Artifacts
+### Listing Artifacts
 
-AI tools can search your artifacts:
+AI tools list and filter your artifacts with the generic `vibexp_io_list_resources` tool, passing `resource_type: "artifact"`:
 
 ```javascript
-// Search for specific content
-vibexp_io_search_artifacts({
+// List artifacts in a project, filtered by a search term
+vibexp_io_list_resources({
   team_id: "<team-uuid-or-slug>",
+  resource_type: "artifact",
   project_id: "<project-uuid>",
   search: "authentication",
   limit: 10
@@ -218,12 +219,13 @@ vibexp_io_search_artifacts({
 
 ### Retrieving Artifacts
 
-Get specific artifacts by slug:
+Get a specific artifact's full content with `vibexp_io_get_resource` (`resource_type: "artifact"`), by project and slug:
 
 ```javascript
 // Retrieve by project and slug
-vibexp_io_get_artifact({
+vibexp_io_get_resource({
   team_id: "<team-uuid-or-slug>",
+  resource_type: "artifact",
   project_id: "<project-uuid>",
   slug: "error-handler"
 })

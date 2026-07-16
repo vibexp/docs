@@ -225,12 +225,13 @@ vibexp_io_create_memory({
 })
 ```
 
-### Searching Memories
+### Listing Memories
 
 ```javascript
-// AI tools search memories for context
-vibexp_io_search_memories({
+// AI tools list memories for context with the generic list_resources tool
+vibexp_io_list_resources({
   team_id: "<team-uuid-or-slug>",
+  resource_type: "memory",
   project_id: "<project-uuid>",
   search: "database",
   limit: 5
@@ -240,10 +241,11 @@ vibexp_io_search_memories({
 ### Retrieving Specific Memory
 
 ```javascript
-// Get memory by ID
-vibexp_io_get_memory({
+// Get a memory's full content by ID with the generic get_resource tool
+vibexp_io_get_resource({
   team_id: "<team-uuid-or-slug>",
-  memory_id: "<memory-uuid>"
+  resource_type: "memory",
+  id: "<memory-uuid>"
 })
 ```
 
