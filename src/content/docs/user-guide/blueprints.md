@@ -65,6 +65,7 @@ When your AI assistant is connected to VibeXP through the [MCP server](/user-gui
 
 - `vibexp_io_create_blueprint` — create a new blueprint (project, slug, title, content, optional type/status/metadata).
 - `vibexp_io_update_blueprint` — update an existing blueprint, located by its project and slug.
+- `vibexp_io_get_resource` / `vibexp_io_list_resources` — read blueprints by passing `resource_type: "blueprint"`: fetch one by `project_id` and `slug` (with full content), or list a project's blueprints as slim, filterable, paginated items.
 - `vibexp_io_search` — find blueprints (and prompts, artifacts, and memories) by meaning; narrow to blueprints with the `types` filter.
 - `vibexp_io_delete_resource` — delete a blueprint by passing `resource_type: "blueprint"` with its `project_id` and `slug`. The blueprint's search embeddings are removed alongside it.
 
