@@ -29,6 +29,14 @@ This target first bundles the spec, then generates the strict-server code and th
 types package. See [API & OpenAPI](/developer-guide/backend/api-and-openapi/) for
 the spec-first workflow.
 
+:::note[External clients are generated elsewhere]
+This page covers the **in-repo** generators. The external typed clients
+(`@vibexp/api-client` and `api-client-go`) are generated from the same spec but
+live in their own repos, and are **auto-published** on merge to `main`. See
+[API & OpenAPI](/developer-guide/backend/api-and-openapi/#the-api-change-flow)
+for that flow.
+:::
+
 ## Wire (dependency injection)
 
 The dependency graph is wired with [Wire](https://github.com/google/wire). The

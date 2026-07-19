@@ -128,6 +128,7 @@ export default defineConfig({
             { slug: 'user-guide/mcp-server' },
             { slug: 'user-guide/ai-agents' },
             { slug: 'user-guide/feeds' },
+            { slug: 'user-guide/comments' },
             { slug: 'user-guide/resource-access-analytics' },
             { slug: 'user-guide/team-roles-and-permissions' },
             {
@@ -145,6 +146,7 @@ export default defineConfig({
                 { slug: 'user-guide/open-source' },
                 { slug: 'user-guide/self-hosting' },
                 { slug: 'user-guide/self-hosting/authentication' },
+                { slug: 'user-guide/self-hosting/instance-admin' },
                 { slug: 'user-guide/contributing' },
               ],
             },

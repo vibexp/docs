@@ -74,15 +74,43 @@ production), so the flag has no effect in real deployments even if left on.
 
 ## Sign-in allow-list
 
-`auth.signin_allowed_emails` is a list of addresses permitted to sign in. When
-empty (the default), registration is open — anyone can sign in. Set a list to
-restrict access:
+`auth.access_allowlist` restricts who may sign in, by email domain and/or exact
+address. When both lists are empty (the default), registration is open: anyone
+can sign in.
 
 ```yaml
 auth:
-  signin_allowed_emails:
-    - alice@example.com
-    - bob@example.com
+  access_allowlist:
+    domains:
+      - example.com
+    emails:
+      - alice@other.com
+```
+
+Rules:
+
+- A user is allowed if **either** list matches.
+- `domains` matches the part after the last `@` **exactly** (case-insensitive):
+  `a@sub.example.com` does not match domain `example.com`.
+- `emails` matches the full address exactly.
+- When the allow-list is active, sign-in also requires a **provider-verified**
+  email. An unverified IdP account is denied even if its claimed address is
+  listed.
+
+The MCP OAuth consent-attach re-check uses the same matcher, so an established
+identity is re-validated against the allow-list.
+
+## Instance admins
+
+`auth.instance_admins` lists the emails designated as instance administrators
+(matched case-insensitively). It is exposed as `is_instance_admin` on
+`GET /api/v1/auth/me` and unlocks the `/api/v1/admin` portal, which is guarded by
+instance-admin middleware. Empty (the default) leaves the feature dormant.
+
+```yaml
+auth:
+  instance_admins:
+    - admin@example.com
 ```
 
 ## API keys

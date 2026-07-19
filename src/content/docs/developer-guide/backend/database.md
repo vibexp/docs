@@ -18,6 +18,11 @@ migration runner live in `internal/database`. Data access is implemented in
 [squirrel](https://github.com/Masterminds/squirrel) SQL builder — this is the
 only layer that issues SQL.
 
+Postgres TLS is controlled by `database.sslmode`. Only two values are
+supported: `disable` (the default, no TLS) and `require` (encrypt without
+server-certificate verification). `verify-ca` / `verify-full` are not supported
+yet. Managed Postgres offerings that require TLS work with `require`.
+
 ## Migrations run automatically on boot
 
 Migrations use [golang-migrate](https://github.com/golang-migrate/migrate) and
@@ -31,10 +36,11 @@ Migration files live in `backend/migrations/`.
 The early history was squashed: `001_baseline` is a `pg_dump`-style baseline
 replacing the original incremental migrations, and `002_consolidated` squashes
 everything that accumulated after the backend-v0.2.0 release (memory lifecycle
-status, the OAuth Authorization Server tables). Three release migrations have
+status, the OAuth Authorization Server tables). Four release migrations have
 shipped since: `003` (per-team embedding providers, v0.4.0), `004` (provider
-concurrency + model providers, v0.5.0), and `005` (search and embedding
-enhancements, v0.6.0). A pre-existing pre-v0.3.0 database must be stamped to
+concurrency + model providers, v0.5.0), `005` (search and embedding
+enhancements, v0.6.0), and `006_consolidated` (RBAC foundation + resource
+comments, v0.7.0). A pre-existing pre-v0.3.0 database must be stamped to
 the matching version so the consolidated files are never re-run against a
 populated schema.
 :::
@@ -56,6 +62,7 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 003_per_team_embedding_providers.up.sql
 004_provider_concurrency_and_model_providers.up.sql
 005_search_and_embedding_enhancements.up.sql
+006_consolidated.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -110,12 +117,12 @@ which would otherwise cause non-deterministic ordering.
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `005` as the newest shipped migration, the next one is `006`).
+   `006` as the newest shipped migration, the next one is `007`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/006_add_widgets_table.up.sql
-   touch backend/migrations/006_add_widgets_table.down.sql
+   touch backend/migrations/007_add_widgets_table.up.sql
+   touch backend/migrations/007_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

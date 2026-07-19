@@ -98,6 +98,7 @@ whenever you change the `Config` struct.
 | `database.user` | `vibexp_app` | **Yes** | Database user. |
 | `database.password` | `${DB_PASSWORD}` | **Yes** | Database password (secret — resolved from the environment). |
 | `database.name` | `vibexp_io` | **Yes** | Database name. |
+| `database.sslmode` | `disable` | No | Connection TLS mode. `disable` (no TLS) or `require` (encrypt, no cert verification). Set `require` for managed Postgres that mandates TLS. |
 
 See [Database & Migrations](/developer-guide/backend/database/) for pooling and
 migration behaviour.
@@ -121,7 +122,9 @@ Selects and configures the web-login identity providers. See
 | `auth.provider` | _(empty)_ | Backward-compatible single-provider shim; used only when `auth.providers` is empty. |
 | `auth.session_encryption_key` | `${SESSION_ENCRYPTION_KEY}` | Hex secret (**64 hex chars = 32 bytes**) backing the AES-256-GCM session cookie and the OAuth state HMAC. Empty disables cookie session auth. Generate with `openssl rand -hex 32`. |
 | `auth.dev_login_enabled` | `false` when unset (the shipped `config.example.yaml` and baked Docker config set `true`) | Gates `/api/v1/auth/dev/login`. Effective only when `true` **and** the environment is detected as local development. |
-| `auth.signin_allowed_emails` | `[]` | Allow-list of emails permitted to sign in. Empty means open registration. |
+| `auth.access_allowlist.domains` | `[]` | Allowed email domains (matched exactly against the part after the last `@`). |
+| `auth.access_allowlist.emails` | `[]` | Allowed exact email addresses. A user may sign in if **either** list matches; both empty means open registration. While active, sign-in also requires a provider-verified email (unverified accounts are denied). |
+| `auth.instance_admins` | `[]` | Emails designated as instance administrators. Drives `is_instance_admin` and the `/api/v1/admin` portal; matched case-insensitively and validated as emails at startup. |
 
 :::caution
 Provider misconfiguration is never fatal: an unknown name in `auth.providers`,

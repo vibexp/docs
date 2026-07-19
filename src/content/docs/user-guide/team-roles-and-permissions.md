@@ -68,6 +68,10 @@ Admins and Owners can switch any member between **Member** and **Admin** using t
 
 The **Owner's row cannot be changed here** — ownership is not a role you assign, it's one you transfer. People with a pending invitation can't be changed either: they have no membership until they accept.
 
+:::note[Share a pending invitation link]
+Admins and Owners can copy a shareable accept link (`/invitations/accept/:token`) for a pending invitation from the members list, to hand it over directly if the invitation email never arrives.
+:::
+
 :::caution
 You can demote **yourself** from Admin to Member. Nothing stops you, and you cannot undo it — you'd no longer hold the permission to change roles. Ask an Owner or another Admin to promote you back.
 :::

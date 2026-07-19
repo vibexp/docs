@@ -57,6 +57,21 @@ frontend/src/
 └── routes.tsx    The route table
 ```
 
+## v0.7.0 surfaces
+
+Notable UI added in v0.7.0:
+
+- **Instance-admin portal**: the `/admin` routes behind a `RequireInstanceAdmin`
+  route guard (`routes.tsx`), covering instance stats, users, and teams views.
+- **Metadata editor**: `MetadataEditor` (`components/metadata/`) for editable
+  key-value metadata on Blueprint, Artifact, and Memory forms.
+- **Resource comments**: `components/comments/`, a detail-page sidebar panel, an
+  all-comments dialog, and a "Recent comments" card on the homepage.
+- **Role management**: controls in team settings
+  (`pages/settings/teams/TeamDetailsPage.tsx`), gated by
+  `can('member.role.update')`.
+- **Copyable invitation link**: `components/invitations/`.
+
 ## How it talks to the backend
 
 In production the frontend and the API share **one origin**: the backend serves

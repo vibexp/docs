@@ -45,7 +45,7 @@ frontend/  Vite + React + TypeScript SPA
 
 Makefile             all dev/CI tasks (backend-*, frontend-*)
 docker-compose.yml   runs the PUBLISHED ghcr.io/vibexp/vibexp image + Postgres (self-host, NOT for dev)
-.github/workflows/   ci-backend, ci-frontend, ci-e2e, release
+.github/workflows/   ci, ci-e2e, publish-api-client, release
 ```
 
 :::note

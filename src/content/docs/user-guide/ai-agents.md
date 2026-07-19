@@ -86,6 +86,16 @@ Credential handling:
 - Once credentials are stored, VibeXP also uses them to re-fetch the agent
   card, so cards behind authentication work too.
 
+## Permissions
+
+Agent actions are authorized by the caller's team role (RBAC). See
+[Team roles & permissions](/user-guide/team-roles-and-permissions).
+
+- **Creating** an agent requires the `resource.create` permission, held by
+  every Owner, Admin, and Member.
+- **Updating, editing, and running** any of the team's agents is open to every
+  team member, including the agent's stored credentials.
+
 ## Running tasks
 
 Open an agent and send a message to start a task:
