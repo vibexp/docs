@@ -248,7 +248,7 @@ The Prompt Gallery provides pre-built templates organized by category. A communi
 
 ### Can I collaborate with others on prompt development?
 
-Not yet. Real-time collaboration features (comments, suggestions, co-editing) are planned for team accounts.
+Yes. Prompts are team-scoped, so teammates can view and edit them. You can also leave [comments](/user-guide/comments) on a prompt to discuss changes. Suggestions and real-time co-editing remain on the roadmap.
 
 ### Is there an AI assistant to help write prompts?
 

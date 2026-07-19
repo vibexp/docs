@@ -170,6 +170,8 @@ Add custom metadata for enhanced organization:
 
 Access metadata in search and filtering.
 
+**Editing metadata:** the create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
+
 ## Bulk Operations
 
 ### Batch Delete

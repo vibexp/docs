@@ -43,10 +43,9 @@ Three files in the repo anchor the surface:
 :::caution[Env vars only work when the file references them]
 There is no generic environment override: an env var takes effect **only if the
 loaded `config.yaml` references it as `${VAR}`**. The baked Docker config wires
-the common knobs listed below; anything it does not reference — multi-provider
-`auth.providers` lists, `auth.oauth_as.*` token TTLs,
-`auth.signin_allowed_emails`, and most tuning fields — requires mounting your
-own `config.yaml`.
+the common knobs listed below; anything it does not reference (multi-provider
+`auth.providers` lists, `auth.oauth_as.*` token TTLs, and most tuning fields)
+requires mounting your own `config.yaml`.
 :::
 
 ## Must-set production values
@@ -59,12 +58,15 @@ local evaluation only.
 |---|---|---|
 | `ENCRYPTION_KEY` | `security.encryption_key` | Required. **Exactly 32 bytes** (AES-256). Generate: `openssl rand -base64 24 \| cut -c1-32`. |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | `database.*` | PostgreSQL connection. Change `DB_PASSWORD` from the default; keep it in sync with Postgres `POSTGRES_PASSWORD`. |
+| `DB_SSLMODE` | `database.sslmode` | `disable` (default) or `require`. Set `require` for managed Postgres that mandates TLS. |
 | `SESSION_ENCRYPTION_KEY` | `auth.session_encryption_key` | 64 hex chars (32 bytes) backing the session cookie and OAuth state HMAC. Generate: `openssl rand -hex 32`. |
 | `FRONTEND_BASE_URL` | `frontend.base_url` | Your real public URL, e.g. `https://<your-app-host>` — the single origin serving both SPA and API. A non-localhost value automatically disables the dev-login bypass. |
 | `AUTH_PROVIDER` | `auth.provider` | One of `google`, `github`, `oidc`. Several at once needs a mounted `config.yaml` with `auth.providers: [...]`. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (or `GITHUB_*`, `OIDC_*`) | `auth.<provider>.*` | Credentials for the chosen provider (plus `*_REDIRECT_URI` if it differs from `<FRONTEND_BASE_URL>/api/v1/auth/callback`, and `OIDC_ISSUER_URL` for OIDC). |
 | `OAUTH_AS_ISSUER_URL` | `auth.oauth_as.issuer_url` | Public **HTTPS** URL enabling the embedded OAuth 2.1 Authorization Server (MCP tokens). |
 | `MCP_RESOURCE_URI` | `mcp.resource_uri` | Public MCP URL, the required token audience (RFC 8707), e.g. `https://<your-app-host>/mcp/v1/common`. |
+| `INSTANCE_ADMIN_EMAILS` | `auth.instance_admins` | Comma-separated emails granted the `/api/v1/admin` portal. Empty leaves the feature dormant. |
+| `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` | `auth.access_allowlist.*` | Optional. Restrict sign-in by email domain and/or exact address (comma-separated). A user is allowed if either matches; both empty means open. |
 
 :::caution
 Changing `DB_PASSWORD` after the first run does not retroactively change an

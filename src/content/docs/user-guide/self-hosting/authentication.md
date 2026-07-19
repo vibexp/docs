@@ -134,12 +134,33 @@ In local development the embedded AS auto-derives sane defaults (issuer = the lo
 
 ## Restricting who can sign in (optional)
 
-Set the allowlist under `auth.signin_allowed_emails` in a mounted `config.yaml` (not env-wired in the published image); empty means anyone the provider authenticates:
+Restrict sign-in by email domain and/or exact address. Both are env-wired in the published image:
+
+```bash
+AUTH_ALLOWED_DOMAINS=example.com
+AUTH_ALLOWED_EMAILS=alice@example.com
+```
+
+A user is allowed if **either** list matches (comma-separate multiple values). Both empty means anyone the provider authenticates can sign in. While the allowlist is active, sign-in also requires a **provider-verified** email, so unverified accounts are denied.
+
+To set it in a mounted `config.yaml` instead:
 
 ```yaml
 auth:
-  signin_allowed_emails: ["alice@example.com", "bob@example.com"]
+  access_allowlist:
+    domains: ["example.com"]
+    emails: ["alice@example.com"]
 ```
+
+## Designating instance admins (optional)
+
+Instance admins get the admin portal (`/api/v1/admin`). List them via `INSTANCE_ADMIN_EMAILS` (comma-separated), or `auth.instance_admins` in a mounted `config.yaml`:
+
+```bash
+INSTANCE_ADMIN_EMAILS=admin@example.com
+```
+
+Empty (the default) leaves the feature dormant.
 
 ## What a self-hoster does NOT need
 

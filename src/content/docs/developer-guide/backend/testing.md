@@ -36,6 +36,11 @@ default `make backend-test` does not run them.
 - Override the target database with the `POSTGRES_TEST_DSN` environment variable.
 - The timeout is 180s to allow for migrations and real I/O.
 
+Since issue #390, CI runs the unit and integration-tagged tests **together in a
+single execution** (`make backend-test-coverage-integration`) against a real
+Postgres service container, so integration coverage now counts toward the
+reported total.
+
 :::tip
 Start the local stack first (`make backend-run-dev` brings up Postgres), or point
 `POSTGRES_TEST_DSN` at any reachable test database before running integration

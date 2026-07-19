@@ -69,24 +69,26 @@ catch two migrations claiming the same sequence number.
 CI runs the **same `make` targets** you run locally, so a clean local run is the
 best predictor of a green build.
 
-### `ci-backend.yml`
+### `ci.yml`
 
-```text
-download-deps -> format -> build -> test
-              + lint
-              + OpenAPI validation
-```
+Backend and frontend CI are consolidated into a single `ci.yml` (issue #390).
+Its jobs:
 
-(`go mod download`, `gofmt` check, `go build`, `go test -race`, `golangci-lint`,
-and OpenAPI spec validation. The OpenAPI job also checks config-schema drift
-and embedded-bundle drift.) The `go-version` in this workflow must stay in sync
-with `GO_VERSION` (`1.25.12`) in the `Makefile`.
+| Job | What it does |
+| --- | --- |
+| `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. |
+| `build-and-test` | Backend build + tests. Runs unit **and** integration-tagged tests together against a `pgvector` Postgres service container, with coverage. |
+| `lint` | Backend `golangci-lint`. |
+| `openapi` | OpenAPI validation plus config-schema and embedded-bundle drift checks. |
+| `build-lint-test` | Frontend install, lint, type-check, test, and build. |
+| `sonar` | SonarCloud scan fed by both test jobs' coverage artifacts. |
 
-### `ci-frontend.yml`
+The `go-version` in this workflow must stay in sync with `GO_VERSION`
+(`1.25.12`) in the `Makefile`.
 
-```text
-install -> lint -> type-check -> test -> build
-```
+The **SonarCloud quality gate is blocking** (since #371/#397): a red gate fails
+CI. Coverage artifacts from both the backend and frontend test jobs feed the
+scanner.
 
 ### `ci-e2e.yml` (on-demand)
 

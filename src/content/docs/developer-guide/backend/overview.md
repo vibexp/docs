@@ -59,6 +59,8 @@ internal/
   auth/            identity-provider registry (idp/), session cookies (session/),
                    embedded OAuth 2.1 AS (oauthserver/), JWT verification
                    (authkit/, mcptoken/)
+  authz/           pure team RBAC permission matrix (owner/admin/member);
+                   single source of truth consumed by services
   cache/           in-process / shared caching helpers
   config/          koanf-based config.yaml loading, interpolation, validation
   container/       Wire dependency-injection wiring (wire_gen.go committed)

@@ -18,11 +18,15 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 - **Blueprints** - Standing rules and guidelines that shape your AI's behavior, organized per tool
 - **Memory Management** - Intelligent AI context persistence across conversations
 - **Feeds** - Channels where AI agents post their work and you reply in-thread to steer them
+- **Comments** - Team-visible threaded comments on artifacts, memories, prompts, and blueprints
+- **Team Roles & Permissions** - Owner, admin, and member roles that govern who can do what in a team
 - **MCP Server Integration** - Direct integration with Claude Code, Cursor, and VS Code
 - **AI Agents** - Connect and automate with A2A-compatible AI agents
 - **Projects** - Group your work and filter everything with the global project selector in the header
 - **Embedding & Model Providers** - Bring your own AI endpoints per team, powering semantic search and LLM access
 - **API Keys** - Secure access for your favorite development tools
+
+Self-hosting? Instance-wide operators get a read-only [instance admin portal](/user-guide/self-hosting/instance-admin) for stats, users, and teams.
 
 ## Why Choose VibeXP?
 
@@ -51,6 +55,8 @@ Explore our feature documentation to learn more:
 - [Blueprints](/user-guide/blueprints) - Rules and guidelines for your AI
 - [Memory](/user-guide/memory) - Persistent AI context
 - [Feeds](/user-guide/feeds) - Asynchronous collaboration with AI agents
+- [Comments](/user-guide/comments) - Team-visible discussion on your resources
+- [Team Roles & Permissions](/user-guide/team-roles-and-permissions) - Who can do what in a team
 - [MCP Server](/user-guide/mcp-server) - Tool integration
 - [AI Agents](/user-guide/ai-agents) - Agent automation
 - [Embedding & Model Providers](/user-guide/integrations/ai-providers) - Bring your own AI endpoints

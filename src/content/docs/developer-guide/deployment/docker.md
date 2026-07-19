@@ -44,7 +44,10 @@ frontend container, no reverse proxy in between, and no CORS to configure.
 
 Its `environment:` block carries the database connection (`DB_HOST: postgres`,
 `DB_USER`, `DB_PASSWORD`, `DB_NAME`), the required `ENCRYPTION_KEY`, plus
-`SESSION_ENCRYPTION_KEY` (needed for production session auth; empty disables cookie sessions) and the public origin (`FRONTEND_BASE_URL`). Its
+`SESSION_ENCRYPTION_KEY` (needed for production session auth; empty disables cookie sessions) and the public origin (`FRONTEND_BASE_URL`). Other baked
+operator knobs include `DB_SSLMODE` (`require` for managed Postgres TLS),
+`INSTANCE_ADMIN_EMAILS` (grants the admin portal), and
+`AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` (restrict sign-in). Its
 healthcheck hits `http://localhost:8080/ping`. See
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)
 for which of these you must change for production.
@@ -63,7 +66,7 @@ baked default.
 There is no generic environment override: an env var only has an effect if the
 loaded `config.yaml` references it as `${VAR}`. Settings the baked file does not
 reference (multi-provider `auth.providers` lists, `auth.oauth_as.*` token TTLs,
-`auth.signin_allowed_emails`, …) require mounting your own file — see below.
+…) require mounting your own file (see below).
 :::
 
 ### Taking full control: mount your own `config.yaml`
@@ -89,7 +92,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=https://vibexp.example.com \
-  ghcr.io/vibexp/vibexp:0.6.0
+  ghcr.io/vibexp/vibexp:0.7.0
 ```
 
 The baked `FRONTEND_BASE_URL` defaults to **empty** (fail-closed: the dev-login
@@ -100,7 +103,7 @@ bypass stays off). To evaluate locally with the dev-login shortcut via a bare
 ## Image tags
 
 Each GitHub Release with a `vX.Y.Z` tag publishes
-`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.6.0`); non-prereleases
+`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.7.0`); non-prereleases
 also move `:latest`, which `docker-compose.yml` tracks. Since v0.4.0 the image
 is **multi-arch**: one manifest covers `linux/amd64` and `linux/arm64`.
 

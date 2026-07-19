@@ -15,6 +15,8 @@ The MCP endpoint (`https://<your-mcp-host>/mcp/v1/common`) now authenticates via
 
 VibeXP API Keys act as secure tokens that authenticate your tools while accessing your personalized prompts, artifacts, memories, and other productivity features without requiring manual login each time.
 
+An API key acts **as its owning user**. Every call is authorized as the key's owner, with that user's role in the target team, so a key can never do more than its owner can. See [Team roles & permissions](/user-guide/team-roles-and-permissions).
+
 ### Key Benefits
 
 - **Seamless Integration**: No manual login required for tools
@@ -104,7 +106,7 @@ Include the API key in the Authorization header:
 
 ```bash
 curl -H "Authorization: Bearer vxk_YOUR_API_KEY_HERE" \
-  https://<your-api-host>/api/v1/prompts
+  https://<your-api-host>/api/v1/<team-id>/prompts
 ```
 
 ### With Custom Applications
@@ -113,6 +115,7 @@ curl -H "Authorization: Bearer vxk_YOUR_API_KEY_HERE" \
 // Node.js example
 const axios = require('axios');
 
+const teamId = '<team-id>';
 const client = axios.create({
   baseURL: 'https://<your-api-host>/api/v1',
   headers: {
@@ -120,8 +123,8 @@ const client = axios.create({
   }
 });
 
-// Fetch prompts
-const prompts = await client.get('/prompts');
+// Fetch prompts (routes are team-scoped)
+const prompts = await client.get(`/${teamId}/prompts`);
 ```
 
 ```python
@@ -133,7 +136,7 @@ headers = {
 }
 
 response = requests.get(
-    'https://<your-api-host>/api/v1/prompts',
+    'https://<your-api-host>/api/v1/<team-id>/prompts',
     headers=headers
 )
 prompts = response.json()
@@ -280,11 +283,13 @@ If you notice suspicious activity:
 ### "Unauthorized" Error
 
 **Causes**:
-- Trying to access resources you don't own
+- The key owner's team role is too low for the action (a key can never do more than its owner)
+- Trying to act on resources you don't own
 - API key lacks the required integration permission
 - Account suspended or restricted
 
 **Solutions**:
+- Confirm the key owner has a role in the target team that permits the action (see [Team roles & permissions](/user-guide/team-roles-and-permissions))
 - Verify you're accessing your own data
 - Check that your API key has the necessary integration enabled (e.g., the CLI integration for CLI access)
 - If you are trying to reach the MCP endpoint, note that it does not accept API keys — it uses OAuth 2.1 (see [MCP Server Integration](/user-guide/mcp-server))
@@ -351,31 +356,33 @@ Authorization: Bearer vxk_YOUR_API_KEY_HERE
 
 ### Available Endpoints
 
+All resource routes are team-scoped: `/api/v1/{team_id}/...`.
+
 **Prompts**:
 ```
-GET    /api/v1/prompts
-GET    /api/v1/prompts/{id}
-POST   /api/v1/prompts
-PUT    /api/v1/prompts/{id}
-DELETE /api/v1/prompts/{id}
+GET    /api/v1/{team_id}/prompts
+GET    /api/v1/{team_id}/prompts/{id}
+POST   /api/v1/{team_id}/prompts
+PUT    /api/v1/{team_id}/prompts/{id}
+DELETE /api/v1/{team_id}/prompts/{id}
 ```
 
 **Artifacts**:
 ```
-GET    /api/v1/artifacts
-GET    /api/v1/artifacts/{project}/{slug}
-POST   /api/v1/artifacts
-PUT    /api/v1/artifacts/{project}/{slug}
-DELETE /api/v1/artifacts/{project}/{slug}
+GET    /api/v1/{team_id}/artifacts
+GET    /api/v1/{team_id}/artifacts/{project}/{slug}
+POST   /api/v1/{team_id}/artifacts
+PUT    /api/v1/{team_id}/artifacts/{project}/{slug}
+DELETE /api/v1/{team_id}/artifacts/{project}/{slug}
 ```
 
 **Memories**:
 ```
-GET    /api/v1/memories
-GET    /api/v1/memories/{id}
-POST   /api/v1/memories
-PUT    /api/v1/memories/{id}
-DELETE /api/v1/memories/{id}
+GET    /api/v1/{team_id}/memories
+GET    /api/v1/{team_id}/memories/{id}
+POST   /api/v1/{team_id}/memories
+PUT    /api/v1/{team_id}/memories/{id}
+DELETE /api/v1/{team_id}/memories/{id}
 ```
 
 See full API documentation for detailed endpoint information.

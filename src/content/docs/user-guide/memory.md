@@ -156,6 +156,8 @@ Filter memories by:
 Fields like category and priority live in each memory's free-form metadata
 and are searchable.
 
+The memory create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
+
 ## Auto-Context Injection
 
 ### How It Works

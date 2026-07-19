@@ -100,6 +100,8 @@ You're all set! Here's what you can do next:
 - **Add Memories**: Store project context and preferences
 - **Connect Agents**: Integrate A2A-compatible AI agents
 
+Working with a team? Members can [comment](/user-guide/comments) on artifacts, memories, prompts, and blueprints, and team access is governed by [roles and permissions](/user-guide/team-roles-and-permissions).
+
 ## Core Concepts
 
 ### Prompts
