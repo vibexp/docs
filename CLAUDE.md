@@ -8,45 +8,55 @@ The VibeXP documentation site — a static [Astro](https://astro.build/) +
 [Starlight](https://starlight.astro.build/) site, deployed to GitHub Pages at
 `docs.vibexp.io`. Open source under AGPL-3.0-or-later.
 
-## Upstream project
+## Upstream projects
 
-This site documents [VibeXP](https://github.com/vibexp/vibexp), the main
-application. A local checkout is expected as a sibling directory: if this repo
-is at `$HOME/Projects/docs`, the main project lives at `$HOME/Projects/vibexp`.
-If it is missing, clone it first:
+This site documents two products. Local checkouts are expected as sibling
+directories of this repo (`$HOME/Projects/docs`):
+
+| Product | Repository | Sibling checkout | Docs surface |
+| --- | --- | --- | --- |
+| VibeXP core | [vibexp/vibexp](https://github.com/vibexp/vibexp) | `../vibexp` | the whole site except `user-guide/cli/` |
+| VibeXP CLI | [vibexp/cli](https://github.com/vibexp/cli) | `../cli` | `user-guide/cli/` |
+
+If a checkout is missing, clone it first:
 
 ```bash
 git clone https://github.com/vibexp/vibexp.git ../vibexp
+git clone https://github.com/vibexp/cli.git ../cli
 ```
 
-**Docs track the latest published release of VibeXP, not its `main` branch.**
-`main` may contain unreleased work, and docs must never describe features that
-users cannot run yet. Before writing or validating docs, check out the latest
-release tag in the local checkout:
+**Docs track the latest published release of each product, not its `main`
+branch.** `main` may contain unreleased work, and docs must never describe
+features that users cannot run yet. Before writing or validating docs, check
+out the latest release tag in the relevant checkout:
 
 ```bash
-cd ../vibexp
+cd ../vibexp   # or ../cli
 git fetch --tags
 git checkout "$(gh release view --repo vibexp/vibexp --json tagName -q .tagName)"
+# for the CLI: gh release view --repo vibexp/cli --json tagName -q .tagName
 ```
 
 Rules:
 
-- Every documentation change must be validated and verified against the main
-  project source at the latest release tag (features, commands, configuration,
-  API surface, UI flows).
-- Proactively keep the docs up to date: when a new VibeXP release is published,
-  review the docs against it and update anything stale or missing.
+- Every documentation change must be validated and verified against the
+  owning product's source at its latest release tag (features, commands,
+  configuration, API surface, UI flows).
+- Proactively keep the docs up to date: when a new release of either product
+  is published, review the docs against it and update anything stale or
+  missing.
 
 ### The `/update-docs` skill
 
 The whole sync runs end to end via the **`update-docs`** skill
-(`.claude/skills/update-docs/SKILL.md`): detect the latest release, audit all
-docs against the release source with file:line evidence, fix/add/remove
-content, validate the build, open a PR, and run the automated review loop
-until approved. Use it whenever the docs need to catch up with a release.
-The last synced release is recorded in `.vibexp-release` at the repo root;
-keep that file updated in every sync PR.
+(`.claude/skills/update-docs/SKILL.md`). It takes an optional scope argument,
+`core`, `cli`, or `both` (default `both`): detect each product's latest
+release, audit the in-scope docs against the release source with file:line
+evidence, fix/add/remove content, validate the build, open a PR, and run the
+automated review loop until approved. Use it whenever the docs need to catch
+up with a release. The last synced releases are recorded at the repo root in
+`.vibexp-release` (core) and `.vibexp-cli-release` (cli); keep those files
+updated in every sync PR.
 
 ## Commands
 
@@ -70,7 +80,8 @@ Docs live in `src/content/docs/` (Starlight content collection). Content is
 split into two top-level guides, one per audience:
 
 - **`user-guide/`** — for end users: how to use the VibeXP platform. Served
-  under `/user-guide/...`.
+  under `/user-guide/...`. This includes the VibeXP CLI (`user-guide/cli/`),
+  since the CLI is how end users drive the platform from a terminal.
 - **`developer-guide/`** — for application developers: how to develop, deploy,
   and manage the application. Served under `/developer-guide/...`.
 
