@@ -10,19 +10,25 @@ The VibeXP documentation site — a static [Astro](https://astro.build/) +
 
 ## Upstream projects
 
-This site documents two products. Local checkouts are expected as sibling
+This site documents these products. Local checkouts are expected as sibling
 directories of this repo (`$HOME/Projects/docs`):
 
-| Product | Repository | Sibling checkout | Docs surface |
-| --- | --- | --- | --- |
-| VibeXP core | [vibexp/vibexp](https://github.com/vibexp/vibexp) | `../vibexp` | the whole site except `user-guide/cli/` |
-| VibeXP CLI | [vibexp/cli](https://github.com/vibexp/cli) | `../cli` | `user-guide/cli/` |
+| Product | Repository | Sibling checkout | Docs surface | Guide |
+| --- | --- | --- | --- | --- |
+| VibeXP core | [vibexp/vibexp](https://github.com/vibexp/vibexp) | `../vibexp` | the whole site except the surfaces below | user + developer |
+| VibeXP CLI | [vibexp/cli](https://github.com/vibexp/cli) | `../cli` | `user-guide/cli/` | user |
+| Design system | [vibexp/design-system](https://github.com/vibexp/design-system) | `../design-system` | design-system content in `developer-guide/frontend/` | developer |
+| JS API client | [vibexp/api-client-js](https://github.com/vibexp/api-client-js) | `../api-client-js` | `developer-guide/api-clients/` | developer |
+| Go API client | [vibexp/api-client-go](https://github.com/vibexp/api-client-go) | `../api-client-go` | `developer-guide/api-clients/` | developer |
+
+The design system (`@vibexp/design-system` on npm) and the generated API
+clients (`@vibexp/api-client` on npm, `github.com/vibexp/api-client-go` Go
+module) are developer tools: document them only in the developer guide.
 
 If a checkout is missing, clone it first:
 
 ```bash
-git clone https://github.com/vibexp/vibexp.git ../vibexp
-git clone https://github.com/vibexp/cli.git ../cli
+git clone https://github.com/vibexp/<repo>.git ../<repo>
 ```
 
 **Docs track the latest published release of each product, not its `main`
@@ -31,11 +37,14 @@ features that users cannot run yet. Before writing or validating docs, check
 out the latest release tag in the relevant checkout:
 
 ```bash
-cd ../vibexp   # or ../cli
+cd ../<repo>
 git fetch --tags
-git checkout "$(gh release view --repo vibexp/vibexp --json tagName -q .tagName)"
-# for the CLI: gh release view --repo vibexp/cli --json tagName -q .tagName
+git checkout "$(gh release view --repo vibexp/<repo> --json tagName -q .tagName)"
 ```
+
+The API clients publish no GitHub releases; they version through git tags
+only (npm publish / Go module tags). For those, use the highest semver tag:
+`git tag --sort=-v:refname | head -1`.
 
 Rules:
 
@@ -50,13 +59,25 @@ Rules:
 
 The whole sync runs end to end via the **`update-docs`** skill
 (`.claude/skills/update-docs/SKILL.md`). It takes an optional scope argument,
-`core`, `cli`, or `both` (default `both`): detect each product's latest
+one or more of `core`, `cli`, `design-system`, `api-client-js`,
+`api-client-go`, or `all` (default `all`): detect each product's latest
 release, audit the in-scope docs against the release source with file:line
 evidence, fix/add/remove content, validate the build, open a PR, and run the
 automated review loop until approved. Use it whenever the docs need to catch
-up with a release. The last synced releases are recorded at the repo root in
-`.vibexp-release` (core) and `.vibexp-cli-release` (cli); keep those files
-updated in every sync PR.
+up with a release. The last synced release of each product is recorded in a
+marker file at the repo root (`.vibexp-release` for core,
+`.vibexp-<product>-release` for the rest; the skill's scope table lists them
+all); keep those files updated in every sync PR.
+
+## Related repositories (not documented here)
+
+Sibling web properties of the project. They are not upstream products of
+this site: never add doc pages about them or sync against their releases.
+
+- [vibexp/website](https://github.com/vibexp/website) (`../website`): the
+  marketing website at `vibexp.io`.
+- [vibexp/blog](https://github.com/vibexp/blog) (`../blog`): the official
+  blog at `blog.vibexp.io`.
 
 ## Commands
 
