@@ -89,6 +89,7 @@ The MCP server exposes tools across these resource groups:
 - `memories`
 - `artifacts`
 - `blueprints`
+- `relations` (the `link_resources` write tool, `vibexp_io_link_resources`)
 - `feeds`
 - `search`
 - `attachments`

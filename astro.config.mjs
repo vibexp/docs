@@ -125,6 +125,7 @@ export default defineConfig({
             { slug: 'user-guide/artifacts' },
             { slug: 'user-guide/memory' },
             { slug: 'user-guide/blueprints' },
+            { slug: 'user-guide/relations' },
             { slug: 'user-guide/mcp-server' },
             { slug: 'user-guide/ai-agents' },
             { slug: 'user-guide/feeds' },

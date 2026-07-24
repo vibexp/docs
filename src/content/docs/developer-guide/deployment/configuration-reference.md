@@ -68,6 +68,15 @@ local evaluation only.
 | `INSTANCE_ADMIN_EMAILS` | `auth.instance_admins` | Comma-separated emails granted the `/api/v1/admin` portal. Empty leaves the feature dormant. |
 | `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` | `auth.access_allowlist.*` | Optional. Restrict sign-in by email domain and/or exact address (comma-separated). A user is allowed if either matches; both empty means open. |
 
+:::note[Native-CLI login on REST auto-wires]
+Enabling the embedded AS (`OAUTH_AS_ISSUER_URL`) is enough for the native CLI's
+browser login (`vibexp auth login`) to work against the REST API (`/api/v1`).
+`/api/v1` JWT acceptance auto-derives from the AS, so you do **not** need to set
+`API_OAUTH_ISSUER` for this. The image also has no audiences env var, audiences
+auto-derive from `MCP_RESOURCE_URI`. Set `API_OAUTH_ISSUER` (issuer only) only
+to point `/api/v1` at an external IdP instead.
+:::
+
 :::caution
 Changing `DB_PASSWORD` after the first run does not retroactively change an
 already-initialized database. Set it before the first `docker compose up`, or

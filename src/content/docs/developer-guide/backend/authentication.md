@@ -204,6 +204,10 @@ auth configuration**:
   empty, it is auto-derived as `http://localhost:<server.port>`.
 - `mcp.resource_uri` is auto-derived as `<issuer>/mcp/v1/common`, and
   `mcp.oauth_issuer` defaults to the AS issuer.
+- Because the AS is enabled, `/api/v1` JWT acceptance auto-wires too:
+  `auth.api_oauth.issuer` fills with the AS issuer and
+  `auth.api_oauth.audiences` pins to `[mcp.resource_uri]`, so native-CLI login
+  works against the REST API with no extra config.
 
 Explicit configuration always wins — a value already set is never overwritten —
 and pointing `mcp.oauth_issuer` at an external issuer without enabling the AS
@@ -247,11 +251,20 @@ internal VibeXP user.
   strict RFC 8707 audience requirement — the token `aud` must include
   `mcp.resource_uri`. The token `sub` is the internal user ID (the embedded AS
   mints it that way), resolved directly.
-- **API surface** (`/api/v1/*`): when `auth.api_oauth.issuer` is set, bearer
-  JWTs are accepted alongside session cookies and API keys.
-  `auth.api_oauth.audiences` optionally pins the accepted audiences; by
-  default any audience is accepted **except** the MCP resource URI, so
-  MCP-bound tokens stay MCP-only.
+- **API surface** (`/api/v1/*`): bearer JWTs are accepted alongside session
+  cookies and API keys, with two ways to wire it:
+  - **Embedded AS (auto, the default self-hosted case).** When the embedded AS
+    is enabled and `auth.api_oauth.issuer` is left empty, VibeXP auto-derives
+    it: `api_oauth.issuer` is set to the AS issuer and `api_oauth.audiences` is
+    pinned to `[mcp.resource_uri]`. So the native CLI's browser login
+    (`vibexp auth login`) works on `/api/v1` with no manual config, and the
+    effective policy is "require the MCP resource URI audience". (The CLI's
+    token carries exactly that audience, which is why it is now accepted.)
+  - **External IdP (manual override).** Set `auth.api_oauth.issuer` explicitly
+    to point `/api/v1` at an external issuer; an explicit issuer always wins
+    over the auto-wiring. With `auth.api_oauth.audiences` left empty in this
+    case, the default policy is "accept any audience **except** the MCP
+    resource URI", so MCP-bound tokens stay MCP-only.
 
 :::note
 The `authkit` package name is historical — it predates the embedded

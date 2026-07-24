@@ -163,17 +163,29 @@ at `http://localhost:<server.port>` even when left empty. See
 
 ### API-surface OAuth (`auth.api_oauth`)
 
-When set, `/api/v1/*` accepts issuer-signed bearer JWTs (mobile / native PKCE
-clients) alongside session cookies and API keys.
+`/api/v1/*` accepts issuer-signed bearer JWTs (native PKCE clients, the CLI's
+`vibexp auth login`) alongside session cookies and API keys. These keys are
+**auto-wired when the embedded AS is enabled** and are override-only, not
+required for the embedded-AS path:
+
+- **Embedded AS (auto).** When `auth.oauth_as.issuer_url` is set (including the
+  local-dev auto-enable) and `auth.api_oauth.issuer` is left empty, VibeXP
+  auto-derives both: `issuer` is set to the AS issuer and `audiences` is pinned
+  to `[mcp.resource_uri]` (require that audience). Native-CLI login works on
+  `/api/v1` with no manual config.
+- **External IdP (manual override).** Set `auth.api_oauth.issuer` explicitly to
+  point `/api/v1` at an external issuer; an explicit issuer always wins over the
+  auto-wiring.
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `auth.api_oauth.issuer` | _(empty)_ | Issuer URL. Empty rejects non-API-key bearer tokens with 401. |
-| `auth.api_oauth.audiences` | `[]` | Optional `aud` allow-list. Default accepts any audience **except** the MCP resource URI. |
+| `auth.api_oauth.issuer` | _(empty)_ | Issuer URL. When the embedded AS is enabled, empty **auto-fills** with the AS issuer, so bearer JWTs are accepted. Only when the AS is **also disabled** does empty reject non-API-key bearer tokens with 401. Set explicitly to override with an external IdP. |
+| `auth.api_oauth.audiences` | `[]` | `aud` allow-list. When the embedded AS is enabled and this is empty, it **auto-pins** to `[mcp.resource_uri]` (require that audience) so the CLI's AS-issued token is accepted. With an external IdP issuer and this left empty, the policy is instead "accept any audience **except** the MCP resource URI". |
 
 :::caution
-With the default `auth.api_oauth.audiences`, any access token from the issuer
-for a provisioned user is an API credential. Never log or forward such tokens.
+With an external IdP issuer and an empty `auth.api_oauth.audiences`, any access
+token from that issuer for a provisioned user is an API credential. Never log or
+forward such tokens.
 :::
 
 ## MCP OAuth (resource server)
