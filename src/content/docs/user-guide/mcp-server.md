@@ -233,6 +233,16 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 
 One generic pair of read tools covers memories, artifacts, and blueprints (keyed by `resource_type`), mirroring `vibexp_io_delete_resource`.
 
+:::note[Reads carry relations]
+`vibexp_io_get_resource` (and the four resource detail reads) also return a `related` array (the resource's typed relation neighborhood, up to 20 edges) and a `similar` array (up to 5 semantically similar resources computed from embeddings). Both arrays are optional. See [Relations](/user-guide/relations/).
+:::
+
+### Relations
+
+- **vibexp_io_link_resources**: Create a typed relation between two resources. Records how one resource relates to another so a resource's neighborhood compounds for the whole team. Required parameters: `team_id` (UUID or slug), `project_id` (UUID; both resources must be in this project), `from_type`, `from_id`, `relation_type` (one of `governed-by`, `supersedes`, `built-from`, `explained-by`), `to_type`, and `to_id`. The `from_type`/`to_type` values are one of `artifact`, `memory`, `prompt`, or `blueprint`, and the relation type constrains the target: `governed-by` targets a blueprint, `built-from` a prompt, `explained-by` a memory, and `supersedes` a resource of the same type.
+
+Edges an AI creates are recorded as **suggested** for `governed-by` and `supersedes` (awaiting human confirmation) and **auto-confirmed** for `built-from` and `explained-by`. Re-linking an existing edge is a safe no-op. See the [Relations guide](/user-guide/relations/) for how suggested and confirmed edges work.
+
 ### Prompt Management
 
 - **vibexp_io_create_prompt**: Create a new prompt
