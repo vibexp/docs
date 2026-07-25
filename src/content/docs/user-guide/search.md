@@ -65,7 +65,9 @@ A team either has **its own complete profile** or **none at all** — there is n
 
 This one surprises people, so it is worth stating plainly.
 
-When recency ranking is enabled, VibeXP pulls the top matches by relevance and **re-ranks that pool in memory**. The pool size is the instance's **candidate cap** (200 by default). Results outside it are never re-ranked and are **not reachable by paging further** — the reported result count is clamped to the cap.
+When recency ranking is enabled, VibeXP pulls the top matches by relevance and **re-ranks that pool in memory**. The pool size is the instance's **candidate cap** (200 by default). Results outside it are never re-ranked and are **not reachable by paging further** — so the reported result count is clamped to the size of that pool. If your query matches more than the cap, you will see exactly the cap's worth of results and no more.
+
+With recency ranking **off**, none of this applies: pagination runs against the full result set as usual.
 
 The Search Settings page shows your deployment's actual cap in the Advanced section. If you need to page deeper than that, either narrow the query or ask your operator to raise the cap.
 

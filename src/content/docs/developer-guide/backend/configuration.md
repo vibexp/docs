@@ -261,7 +261,9 @@ default is at that moment.
 With recency ranking on, VibeXP pulls the top `rank_candidate_cap` rows by
 relevance and re-ranks that pool in memory. Rows outside the pool are never
 re-ranked and are **not reachable by paging further** — the reported total is
-clamped to the cap.
+clamped to the size of that pool, so a query matching more than the cap reports
+exactly the cap. With recency ranking off, pagination runs against the full
+result set as usual.
 
 It stays instance-only deliberately: raising it increases memory and latency for
 every query on the deployment, so one team must not be able to raise it for
