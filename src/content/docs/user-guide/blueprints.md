@@ -44,6 +44,8 @@ To edit, open a blueprint and choose **Edit**, make your changes, and save.
 
 The create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
 
+To query blueprints by the metadata they carry, see [Metadata filtering](/user-guide/metadata-filtering/).
+
 :::note
 A blueprint's slug is unique **per project**. Two projects can each have a blueprint with the same slug.
 :::

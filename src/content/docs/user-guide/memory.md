@@ -158,6 +158,8 @@ and are searchable.
 
 The memory create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
 
+To query memories by the metadata they carry, see [Metadata filtering](/user-guide/metadata-filtering/).
+
 ## Auto-Context Injection
 
 ### How It Works

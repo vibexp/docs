@@ -229,7 +229,8 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 
 - **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
 - **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type` — a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`
-- **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items — filterable (status, type, text search) and paginated; call `vibexp_io_get_resource` for a single item's full content
+- **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items — filterable (status, type, text search, [metadata](/user-guide/metadata-filtering/)) and paginated; call `vibexp_io_get_resource` for a single item's full content
+- **vibexp_io_list_resource_metadata**: Discover the metadata a team actually uses — omit `key` to list the distinct metadata keys on a `resource_type`, or supply `key` to list that key's distinct values, so a [metadata filter](/user-guide/metadata-filtering/) can be built from real values
 
 One generic pair of read tools covers memories, artifacts, and blueprints (keyed by `resource_type`), mirroring `vibexp_io_delete_resource`.
 

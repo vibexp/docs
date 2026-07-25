@@ -172,6 +172,8 @@ Access metadata in search and filtering.
 
 **Editing metadata:** the create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
 
+**Filtering by metadata:** see [Metadata filtering](/user-guide/metadata-filtering/) for querying artifacts by the metadata they carry, in the UI, the API, and over MCP.
+
 ## Bulk Operations
 
 ### Batch Delete
