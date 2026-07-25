@@ -68,7 +68,7 @@ Notable UI added in v0.7.0:
 - **Resource comments**: `components/comments/`, a detail-page sidebar panel, an
   all-comments dialog, and a "Recent comments" card on the homepage.
 - **Role management**: controls in team settings
-  (`pages/settings/teams/TeamDetailsPage.tsx`), gated by
+  (`pages/teams/TeamDetailsPage.tsx`), gated by
   `can('member.role.update')`.
 - **Copyable invitation link**: `components/invitations/`.
 
