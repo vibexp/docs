@@ -105,6 +105,12 @@ internet.
   endpoints **reject plain HTTP** (only localhost is exempt): terminate TLS at
   your reverse proxy / load balancer and forward the original scheme as
   `X-Forwarded-Proto: https`.
+- **`TRUSTED_PROXIES`**: if you run behind a reverse proxy or load balancer, set
+  this to its CIDR(s) (for example `10.0.0.0/8`). It is what allows VibeXP to
+  trust the forwarded client IP. Left empty behind a proxy, per-IP rate limits
+  collapse into a single shared bucket and logs record the proxy address instead
+  of the client. Leave it empty for a directly exposed instance. See
+  [Client IP and trusted proxies](/developer-guide/backend/configuration/#client-ip-and-trusted-proxies).
 - **`DB_SSLMODE`**: set to `require` for managed Postgres that mandates TLS.
 - **`INSTANCE_ADMIN_EMAILS`**: comma-separated emails that get the
   `/api/v1/admin` portal. Empty leaves it dormant.

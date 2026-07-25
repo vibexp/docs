@@ -46,13 +46,19 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | Post and reply | ✅ | ✅ | ✅ |
 | Delete their own post | ✅ | ✅ | ✅ |
 | Delete *someone else's* post (moderation) | ✅ | ✅ | — |
+| **Team settings** | | | |
+| Connect or disconnect GitHub | ✅ | ✅ | — |
+| Add, edit or delete embedding and model providers | ✅ | ✅ | — |
+| Validate a provider endpoint | ✅ | ✅ | — |
+| Re-embed the team, or clear all its embeddings | ✅ | ✅ | — |
 
 Everyone in a team can **view** the team, its members, its projects and all of its resources. Roles only govern what you can *change*.
 
-Two entries surprise people, so they're worth stating plainly:
+Three entries surprise people, so they're worth stating plainly:
 
 - **Members can update anyone's resources**, not just their own. VibeXP treats a team's prompts and memories as shared work. If that isn't what you want for a particular group of people, don't put them in the same team.
 - **Members hold no project permissions at all.** Projects are containers that Admins and Owners curate; Members work inside them.
+- **Members hold no team-settings permissions.** Connecting GitHub grants the whole team read access to that organisation's private repositories, and provider settings hold encrypted API keys and decide where the team's AI traffic goes. Those are Owner and Admin decisions.
 
 ## Personal workspaces
 
@@ -127,7 +133,7 @@ The complete set of permission strings:
 
 | Permission | Meaning |
 | --- | --- |
-| `team.update` | Change team name, slug or description |
+| `team.update` | Change team name, slug or description, and manage team settings (GitHub integration, embedding and model providers) |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
 | `member.invite` | Invite new members |

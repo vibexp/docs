@@ -20,6 +20,13 @@ encrypted. Nothing is configured through server environment variables.
 An embedding provider is any OpenAI-compatible `/v1/embeddings` endpoint:
 OpenAI, Ollama, LocalAI, vLLM, HuggingFace TEI, and similar.
 
+:::note[Owner or Admin only]
+Adding, editing, deleting and validating providers, and the reprocess and clear
+actions below, require the **Owner** or **Admin** team role. Provider settings
+hold encrypted API keys and decide where the team's content is sent. See
+[Team roles and permissions](/user-guide/team-roles-and-permissions/).
+:::
+
 ### Adding a provider
 
 1. Open **Settings** → **Integration** → **Embedding Providers**
@@ -40,6 +47,22 @@ OpenAI, Ollama, LocalAI, vLLM, HuggingFace TEI, and similar.
    dimensions.
 
 Once saved, embedding starts automatically for the team's existing content.
+
+:::caution[The base URL must be publicly routable]
+Outside local development, VibeXP refuses to call private addresses: loopback,
+RFC 1918 ranges (`10.x`, `172.16-31.x`, `192.168.x`), link-local including cloud
+metadata endpoints, and IPv6 unique-local. A blocked endpoint reports
+`destination_not_allowed` on validation.
+
+This applies to the stored provider too, not only the validation probe, and a
+hostname that resolves to a private address is rejected when the connection is
+made.
+
+A local checkout (`make backend-run-dev`, with a localhost `frontend.base_url`)
+is exempt, so the usual `http://localhost:11434/v1` Ollama workflow keeps
+working. Self-hosters running an embedding endpoint on a private IP inside a
+cluster are affected; an operator allowlist is planned.
+:::
 
 ### Coverage, reprocess, and clear
 

@@ -88,6 +88,29 @@ whenever you change the `Config` struct.
 | `server.max_body_size_bytes` | `10485760` (10 MiB) | Global request-body cap (memory-exhaustion backstop). Webhooks and the OAuth AS JSON endpoints cap at 64 KiB. |
 | `server.cors_allowed_origins` | _(empty)_ | Allowed CORS origins. Empty allows only the localhost dev origins (`:5173`, `:5174`); only needed when the SPA is served from a different origin than the API. |
 | `server.error_type_base_uri` | `about:blank` | RFC 9457 error `type` base URI (joined as `<base>/<code>`). |
+| `server.trusted_proxies` | _(empty)_ | CIDRs allowed to assert a client IP via `X-Forwarded-For` / `X-Real-IP`. Empty means those headers are ignored and the connecting peer is the client IP. **Set this if you run behind a reverse proxy.** See [Client IP and trusted proxies](#client-ip-and-trusted-proxies). |
+
+### Client IP and trusted proxies
+
+VibeXP resolves one client IP per request and uses it for per-IP rate limiting,
+request logs, resource-access events, and activity records.
+
+`X-Forwarded-For` and `X-Real-IP` are supplied by the caller, so they are only
+honoured when the connecting peer is inside a `server.trusted_proxies` CIDR.
+With no CIDRs configured, the headers are ignored entirely.
+
+| Deployment | `server.trusted_proxies` | Result |
+| --- | --- | --- |
+| Directly exposed | empty (default) | Correct. Forwarded headers cannot influence the rate-limit key. |
+| Behind a reverse proxy or load balancer | your proxy's CIDR(s) | Correct. Each client is limited and logged separately. |
+| Behind a proxy, left empty | empty | **Every request keys on the proxy**, so per-client rate limits collapse into one shared bucket and logs show the proxy address. The backend logs a warning at startup. |
+
+When the peer is trusted, VibeXP walks `X-Forwarded-For` right to left and takes
+the right-most entry that is not itself a trusted proxy. Entries a client
+prepends are therefore ignored.
+
+Entries must be CIDRs, not bare addresses: use `192.168.1.5/32` for a single
+host. An invalid entry fails startup.
 
 ## Database
 
@@ -331,6 +354,32 @@ empty for local dev — the provider stubs out.
 | `github.app_private_key` | `${GITHUB_APP_PRIVATE_KEY}` | Base64-encoded private key (raw PEM also accepted). A non-empty but invalid value fails startup on PEM parsing. |
 | `github.webhook_url` | _(empty)_ | Public URL GitHub sends events to. |
 | `github.webhook_secret` | `${GITHUB_WEBHOOK_SECRET}` | Secret used to verify webhook payloads. |
+| `github.app_client_id` | _(empty)_ | The App's OAuth **Client ID**. Required to connect an installation. |
+| `github.app_client_secret` | `${GITHUB_APP_CLIENT_SECRET}` | The App's OAuth **client secret**. Required to connect an installation. |
+
+### Required GitHub App setting
+
+Connecting an installation to a team requires proof that the person doing it can
+actually reach that installation on GitHub. VibeXP exchanges the authorization
+code GitHub returns after an install for a **user** access token and checks the
+installation against that user's own installation list.
+
+That needs two things on your GitHub App:
+
+1. Enable **Request user authorization (OAuth) during installation** in the App
+   settings.
+2. Copy the App's **Client ID** and generate a **client secret**, then set
+   `github.app_client_id` and `github.app_client_secret`.
+
+:::caution[The integration fails closed without these]
+With either value empty, the connect callback returns **503
+`github_user_auth_not_configured`** and no installation is bound. It does not
+fall back to a weaker check: without a user token there is no way to tell whether
+the caller has anything to do with the installation they submitted.
+:::
+
+Connecting and disconnecting also require the **Owner** or **Admin** team role.
+See [Team roles and permissions](/user-guide/team-roles-and-permissions/).
 
 ## Attachments (GCS)
 
@@ -347,6 +396,12 @@ be ≥ 1.
 | --- | --- | --- |
 | `rate_limit.auth_per_minute` | `100` | Per-IP limit on `/api/v1/auth/*` and the OAuth-AS endpoints. |
 | `rate_limit.api_per_minute` | `1000` | Per-IP limit on the authenticated API surface. |
+
+Limits key on the resolved client IP, so behind a reverse proxy they are only
+per-client once `server.trusted_proxies` is set. See
+[Client IP and trusted proxies](#client-ip-and-trusted-proxies).
+
+Limits are disabled in local development (a localhost `frontend.base_url`).
 
 ## Retention
 

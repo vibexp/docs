@@ -67,6 +67,21 @@ local evaluation only.
 | `MCP_RESOURCE_URI` | `mcp.resource_uri` | Public MCP URL, the required token audience (RFC 8707), e.g. `https://<your-app-host>/mcp/v1/common`. |
 | `INSTANCE_ADMIN_EMAILS` | `auth.instance_admins` | Comma-separated emails granted the `/api/v1/admin` portal. Empty leaves the feature dormant. |
 | `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` | `auth.access_allowlist.*` | Optional. Restrict sign-in by email domain and/or exact address (comma-separated). A user is allowed if either matches; both empty means open. |
+| `TRUSTED_PROXIES` | `server.trusted_proxies` | **Required if you run behind a reverse proxy or load balancer.** Comma-separated CIDRs allowed to assert a client IP via `X-Forwarded-For`. Empty ignores those headers and uses the connecting peer. |
+
+:::caution[Set `TRUSTED_PROXIES` when you are behind a proxy]
+Per-IP rate limiting, request logs, and access events all key on the resolved
+client IP. Forwarded headers are only trusted from a peer inside
+`TRUSTED_PROXIES`, so leaving it empty behind a proxy makes **every request look
+like it comes from the proxy**: per-client rate limits collapse into one shared
+bucket and your logs lose the real client address. The backend logs a warning at
+startup when this applies.
+
+Leaving it empty is the right choice for a directly exposed instance.
+
+Example: `TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12`. Entries must be CIDRs
+(`192.168.1.5/32` for one host); an invalid entry fails startup.
+:::
 
 :::note[Native-CLI login on REST auto-wires]
 Enabling the embedded AS (`OAUTH_AS_ISSUER_URL`) is enough for the native CLI's
@@ -114,6 +129,10 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   environment.
 - **Model providers**: per-team OpenAI-compatible LLM endpoints, also managed
   in the app with encrypted API keys.
+- **GitHub integration**: needs a GitHub App, including its OAuth Client ID and
+  secret and the "Request user authorization (OAuth) during installation"
+  setting. See
+  [GitHub App](/developer-guide/backend/configuration/#github-app).
 - **File attachments** — enable the GCS emulator service and the related `app`
   variables. See [Docker & Compose](/developer-guide/deployment/docker/).
 

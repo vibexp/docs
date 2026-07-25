@@ -91,6 +91,7 @@ Version history is bounded by an operator-configurable retention limit (**20 ver
 
 VibeXP can import AI-config files from a connected GitHub repository as per-tool blueprints, so you can bootstrap a project's rules from files you already keep in your repo.
 
+- Connecting the GitHub integration requires the **Owner** or **Admin** team role, and you must be able to administer the installation on GitHub itself. Importing, once connected, is open to any team member.
 - The repository must already exist as a VibeXP **project**.
 - Only **Markdown** files are imported, and there are per-file and total size caps.
 - Each imported file is classified into a blueprint type and subtype from its path (see [Blueprint paths](#blueprint-paths)).
