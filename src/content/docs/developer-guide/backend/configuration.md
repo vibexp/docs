@@ -321,16 +321,19 @@ not in `config.yaml`.
 
 ## GitHub App
 
-Optional integration (distinct from the `auth.github` web-login client). Leave
-empty for local dev — the provider stubs out.
+**There is no `github:` config section.** GitHub App credentials are registered
+**per team** in the app (Settings → Integrations → GitHub) and stored encrypted
+in the database — there is nothing to configure here, and no `GITHUB_APP_*` or
+`GITHUB_WEBHOOK_*` environment variable is read.
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `github.app_id` | _(empty)_ | App ID from your GitHub App settings. |
-| `github.app_slug` | _(empty)_ | The App's URL slug. |
-| `github.app_private_key` | `${GITHUB_APP_PRIVATE_KEY}` | Base64-encoded private key (raw PEM also accepted). A non-empty but invalid value fails startup on PEM parsing. |
-| `github.webhook_url` | _(empty)_ | Public URL GitHub sends events to. |
-| `github.webhook_secret` | `${GITHUB_WEBHOOK_SECRET}` | Secret used to verify webhook payloads. |
+A `config.yaml` that still declares a top-level `github:` section **fails at
+startup**, naming the section in the error. Upgrading from a release that had
+one? See
+[Migrating to per-team GitHub Apps](/user-guide/self-hosting/github-app-migration/).
+Team-admin setup is in [GitHub App](/user-guide/integrations/github-app/).
+
+Not to be confused with `auth.github.*` above — that is the GitHub **web-login**
+OAuth client, a separate credential set that is still configured here.
 
 ## Attachments (GCS)
 

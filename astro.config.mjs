@@ -138,6 +138,7 @@ export default defineConfig({
               items: [
                 { slug: 'user-guide/integrations/api-keys' },
                 { slug: 'user-guide/integrations/ai-providers' },
+                { slug: 'user-guide/integrations/github-app' },
               ],
             },
             {
@@ -148,6 +149,7 @@ export default defineConfig({
                 { slug: 'user-guide/self-hosting' },
                 { slug: 'user-guide/self-hosting/authentication' },
                 { slug: 'user-guide/self-hosting/instance-admin' },
+                { slug: 'user-guide/self-hosting/github-app-migration' },
                 { slug: 'user-guide/contributing' },
               ],
             },
