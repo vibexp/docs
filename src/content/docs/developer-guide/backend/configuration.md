@@ -232,14 +232,41 @@ relevance-only ordering; `true` blends relevance and freshness by the weights.
 Weights must be non-negative and not all zero; the half-life and candidate cap
 must be positive (validated at startup).
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `search.recency_ranking_enabled` | `false` | Enable the weighted relevance/freshness blend. |
-| `search.rank_weight_relevance` | `0.5` | Weight of semantic/keyword relevance. |
-| `search.rank_weight_created` | `0.3` | Weight of creation recency. |
-| `search.rank_weight_updated` | `0.2` | Weight of update recency. |
-| `search.rank_half_life_days` | `90.0` | Freshness decay half-life (max 36500). |
-| `search.rank_candidate_cap` | `200` | Re-rank candidate pool size (max 5000). |
+:::note[These are defaults, not absolutes]
+Five of the six keys below are **instance defaults that any team may override**
+from Settings → Search (see
+[Search Settings](/user-guide/search/)). A team inherits them until it saves its
+own profile; after that, changes here no longer affect that team. Changing these
+values takes effect for inheriting teams on restart.
+
+`search.rank_candidate_cap` is the exception — it is **instance-only** and
+applies to every team.
+:::
+
+| Key | Default | Team-overridable | Purpose |
+| --- | --- | :---: | --- |
+| `search.recency_ranking_enabled` | `false` | ✅ | Enable the weighted relevance/freshness blend. |
+| `search.rank_weight_relevance` | `0.5` | ✅ | Weight of semantic/keyword relevance. |
+| `search.rank_weight_created` | `0.3` | ✅ | Weight of creation recency. |
+| `search.rank_weight_updated` | `0.2` | ✅ | Weight of update recency. |
+| `search.rank_half_life_days` | `90.0` | ✅ | Freshness decay half-life (max 36500). |
+| `search.rank_candidate_cap` | `200` | — | Re-rank candidate pool size (max 5000). |
+
+A team stores either a **complete** ranking profile or none at all — there is no
+per-field inheritance. Resetting a team returns it to whatever the instance
+default is at that moment.
+
+### The candidate cap bounds pagination
+
+With recency ranking on, VibeXP pulls the top `rank_candidate_cap` rows by
+relevance and re-ranks that pool in memory. Rows outside the pool are never
+re-ranked and are **not reachable by paging further** — the reported total is
+clamped to the cap.
+
+It stays instance-only deliberately: raising it increases memory and latency for
+every query on the deployment, so one team must not be able to raise it for
+everyone. Raise it only if your instance can afford re-ranking a larger pool on
+every search.
 
 ## Embeddings
 

@@ -104,6 +104,11 @@ The backend has many more fields than the production-critical subset above
 (rate limits, retention, search ranking, email, GitHub App, telemetry, …). They
 live in `config.yaml`; `config.example.yaml` documents every one.
 
+Note that a few of these are **defaults rather than absolutes**: the
+`search:` ranking values are what each team inherits until it sets its own
+profile in the app (except `search.rank_candidate_cap`, which is instance-only).
+See [Search ranking](/developer-guide/backend/configuration/#search-ranking).
+
 → Full list: [Backend Configuration](/developer-guide/backend/configuration/).
 
 ## Optional services
