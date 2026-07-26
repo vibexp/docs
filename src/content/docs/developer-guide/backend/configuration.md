@@ -322,7 +322,7 @@ not in `config.yaml`.
 ## GitHub App
 
 **There is no `github:` config section.** GitHub App credentials are registered
-**per team** in the app (Settings → Integrations → GitHub) and stored encrypted
+**per team** in the app (open the team, then Settings → GitHub Integration) and stored encrypted
 in the database — there is nothing to configure here, and no `GITHUB_APP_*` or
 `GITHUB_WEBHOOK_*` environment variable is read.
 

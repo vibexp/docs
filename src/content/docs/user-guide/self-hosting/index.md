@@ -114,7 +114,7 @@ All disabled by default, enabled via env vars or a mounted `config.yaml` (see `b
 | **Web push** | `fcm.enabled` in a mounted `config.yaml` (Firebase Cloud Messaging) | Push disabled |
 | **Analytics** | `VITE_GTM_ENABLED` + `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4) | No analytics |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
-| **GitHub App** | Not an env var — each team registers its own App in the app under Settings → Integrations → GitHub ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
+| **GitHub App** | Not an env var — each team registers its own App in the app under its Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
 
 ## Branding
 

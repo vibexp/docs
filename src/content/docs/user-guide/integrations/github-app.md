@@ -5,9 +5,16 @@ sidebar:
   order: 3
 ---
 
-Each team brings its own GitHub App. The App is registered under
-**Settings** → **Integrations** → **GitHub**, its credentials are stored
-encrypted, and nothing is configured through server environment variables.
+Each team brings its own GitHub App. The App is registered on the team itself —
+open the team, then **Settings** → **GitHub Integration** — its credentials are
+stored encrypted, and nothing is configured through server environment
+variables.
+
+:::note[This is a team setting, not a personal one]
+The GitHub App belongs to a team, so it lives under that team's settings, not
+the personal **Settings** in the main navigation. If you cannot find it, check
+you are looking at the team rather than your own account.
+:::
 
 Upgrading an existing instance from the old instance-wide configuration? Start
 with
@@ -85,8 +92,8 @@ connect step fails closed rather than trusting the request.
 
 ## 2. Paste the credentials into VibeXP
 
-From the App's settings page on GitHub, copy these five values into
-**Settings** → **Integrations** → **GitHub**:
+From the App's settings page on GitHub, copy these five values into the team's
+**Settings** → **GitHub Integration**:
 
 | Field | Where to find it on GitHub |
 | --- | --- |

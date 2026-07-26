@@ -57,9 +57,10 @@ If you skip this, startup fails with:
 ```
 config file "/app/config.yaml" declares removed top-level section(s) —
 "github": GitHub App credentials are now configured per team in the UI
-(Settings → Integrations → GitHub), not instance-wide. Delete the `github:`
-section from your config.yaml and re-register the App on each team. Note this
-is NOT `auth.github` (the web-login OAuth client), which is unaffected.
+(open the team, then Settings → GitHub Integration), not instance-wide. Delete
+the `github:` section from your config.yaml and re-register the App on each
+team. Note this is NOT `auth.github` (the web-login OAuth client), which is
+unaffected.
 ```
 
 The failure is deliberate. Silently ignoring the section would leave you running
@@ -91,9 +92,8 @@ Keep `GITHUB_CLIENT_SECRET` — again, that one is the web login.
 
 The database migration **deletes every existing GitHub installation row**. That
 is what makes the new per-App ownership possible, and it means every team that
-used the GitHub integration must set it up again:
-
-**Settings** → **Integrations** → **GitHub**.
+used the GitHub integration must set it up again — open the team, then
+**Settings** → **GitHub Integration**.
 
 :::tip[You can reuse your existing App]
 You do **not** need to create a new GitHub App. Paste the same App ID, slug,
@@ -125,8 +125,8 @@ against the instance-wide secret that no longer exists — a redirect would land
 deliveries on an authentication failure that reads like a secret mismatch. They
 will be deleted entirely in a later release.
 
-After repointing the webhook, complete the install from
-**Settings** → **Integrations** → **GitHub**.
+After repointing the webhook, complete the install from the team's
+**Settings** → **GitHub Integration**.
 
 ## How much will actually break
 
@@ -158,6 +158,6 @@ it as sensitive and scope your log retention accordingly.
 - [ ] `GITHUB_APP_*` / `GITHUB_WEBHOOK_*` env vars removed from the deployment
 - [ ] `auth.github` and `GITHUB_CLIENT_SECRET` left untouched
 - [ ] New image starts cleanly
-- [ ] Each team re-registered its App under Settings → Integrations → GitHub
+- [ ] Each team re-registered its App under its own Settings → GitHub Integration
 - [ ] Each App's webhook URL and secret updated on GitHub
 - [ ] Each team re-connected its installation and can list repositories
