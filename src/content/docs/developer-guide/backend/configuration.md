@@ -281,10 +281,30 @@ not in `config.yaml`.
 
 ## Email
 
+This block configures the **instance** provider, which is also the **fallback**
+for every team that has not configured its own. A team that brings its own
+provider (see [Email Provider](/user-guide/integrations/email-provider/)) sends
+through that instead, and nothing here applies to it except support mail, which
+always uses the instance provider.
+
+Two consequences for operators:
+
+- Teams may configure any of the four types, including SMTP against a host they
+  supply, so **outbound connections to team-specified hosts are expected**.
+  Those destinations are SSRF-guarded: a host resolving into a reserved network
+  range is rejected before anything is stored or dialled.
+- A team with its own working provider keeps sending even when this block is the
+  no-op stub (blank `smtp.host` / `smtp.port`). Teams without one send nothing,
+  as before.
+
+Team provider credentials are encrypted at rest with `security.encryption_key`.
+Rotating or losing that key invalidates every stored team credential, and each
+team has to re-enter theirs.
+
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `email.provider` | `smtp` | `smtp`, `mailgun`, `postmark`, or `sendgrid`. |
-| `email.from_address` | `dev@vibexp.local` (example file) | Sender address for all providers. Empty falls back to `email.smtp.username`. |
+| `email.from_address` | `dev@vibexp.local` (example file) | Sender address for all providers. Empty falls back to `email.smtp.username`. A team with its own provider sets its own from address instead. |
 | `email.contact_recipient_address` | _(empty)_ | Inbox for support notification emails. Falls back to `from_address`, then `smtp.username`. |
 | `email.privacy_policy_url` | `https://example.com/privacy-policy` | Privacy-policy link in transactional email footers. |
 

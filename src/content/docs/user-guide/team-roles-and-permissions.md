@@ -127,7 +127,7 @@ The complete set of permission strings:
 
 | Permission | Meaning |
 | --- | --- |
-| `team.update` | Change team name, slug or description |
+| `team.update` | Change team name, slug or description, and configure the team's [email provider](/user-guide/integrations/email-provider/) |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
 | `member.invite` | Invite new members |
