@@ -149,6 +149,7 @@ export default defineConfig({
                 { slug: 'user-guide/self-hosting' },
                 { slug: 'user-guide/self-hosting/authentication' },
                 { slug: 'user-guide/self-hosting/instance-admin' },
+                { slug: 'user-guide/self-hosting/upgrading' },
                 { slug: 'user-guide/self-hosting/github-app-migration' },
                 { slug: 'user-guide/contributing' },
               ],
