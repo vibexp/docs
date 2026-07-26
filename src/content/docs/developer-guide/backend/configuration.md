@@ -107,7 +107,7 @@ migration behaviour.
 
 | Key | Default | Required | Purpose |
 | --- | --- | --- | --- |
-| `security.encryption_key` | `${ENCRYPTION_KEY}` | **Yes** | AES-256 key for encrypting sensitive data at rest (API keys, OAuth-AS signing keys). Must be exactly 32 bytes. |
+| `security.encryption_key` | `${ENCRYPTION_KEY}` | **Yes** | AES-256 key for encrypting sensitive data at rest (API keys, OAuth-AS signing keys, per-team email provider credentials). Must be exactly 32 bytes. |
 | `security.api_key_common` | `${API_KEY_COMMON}` | No | Shared API key for the common API surface. |
 | `security.backoffice_admin_api_key` | `${BACKOFFICE_ADMIN_API_KEY}` | No | Admin key for back-office endpoints (`/bo/*`). Separate from JWTs and regular API keys. |
 
