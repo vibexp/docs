@@ -142,7 +142,6 @@ OAuth is only for the **MCP endpoint**. API keys are still the way to authentica
 
 - The **VibeXP CLI**
 - The **REST API** (`https://<your-api-host>/api/v1/...` with `Authorization: Bearer vxk_…`)
-- IDE hook endpoints (`/api/v1/claude-code/hooks`, `/api/v1/cursor-ide/hooks`)
 - Resource-usage routes
 
 So you don't need an API key to connect to MCP, but you still create one for CLI and programmatic access. See the [API Keys guide](/user-guide/integrations/api-keys) for details.
@@ -407,17 +406,6 @@ Track MCP usage in your VibeXP dashboard:
 - **Tool Calls**: Monitor which tools are used
 - **Data Access**: See accessed prompts/artifacts/memories
 - **Performance**: Response times and errors
-
-### Session Tracking
-
-For Claude Code CLI specifically:
-
-1. Navigate to **MCP Server** → **Claude Code Sessions**
-2. View all sessions with:
-   - Duration and timing
-   - Tool usage statistics
-   - Hooks triggered
-   - Errors and warnings
 
 ### Connection Status
 
