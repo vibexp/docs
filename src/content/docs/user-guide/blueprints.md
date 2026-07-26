@@ -28,6 +28,8 @@ Blueprints sit alongside [Prompts](/user-guide/prompts/) and [Memory](/user-guid
 - **[Memory](/user-guide/memory/)** is durable context your AI reads and *updates as it learns* (facts, decisions, and preferences that accumulate over time).
 - **Blueprints** are the standing *rules and guidelines* that shape how the AI works: the conventions it should follow, organized per tool. They change deliberately, not as a side effect of a conversation.
 
+These three are not isolated: a resource can be marked `governed-by` the blueprint whose rules it must obey, which is how a blueprint's reach becomes explicit rather than implied. Because that link is higher-stakes, an AI-proposed one waits for a human to confirm it. See [Relations](/user-guide/relations/).
+
 ## Creating and editing blueprints
 
 1. Navigate to **Blueprints** in the sidebar.

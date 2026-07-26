@@ -112,6 +112,13 @@ Add searchable tags:
 - Domain: `frontend`, `backend`, `devops`
 - Purpose: `style-guide`, `architecture`, `deployment`
 
+### Linking Memories to What They Explain
+
+Tags group memories; relations connect them to specific resources. A memory that
+records *why* a decision was made can be attached to that resource, which is then
+`explained-by` the memory — so the reasoning surfaces next to the thing it
+justifies rather than only in search. See [Relations](/user-guide/relations/).
+
 ## Memory Lifecycle Status
 
 Every memory has a lifecycle **status** that controls where it appears:

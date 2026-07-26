@@ -100,6 +100,13 @@ one of your team's configured types.
 
 Change status anytime without deleting artifacts.
 
+### Linking to other resources
+
+Beyond projects and status, artifacts can be linked to the resources they came
+from. A new version of a document `supersedes` the one it replaces, and an
+artifact is `built-from` the prompt that produced it — so the chain from
+instruction to output stays visible. See [Relations](/user-guide/relations/).
+
 ## Searching and Filtering
 
 ### Full-Text Search
