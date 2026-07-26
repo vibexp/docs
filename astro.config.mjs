@@ -179,6 +179,7 @@ export default defineConfig({
                 { slug: 'developer-guide/frontend/overview' },
                 { slug: 'developer-guide/frontend/configuration' },
                 { slug: 'developer-guide/frontend/building' },
+                { slug: 'developer-guide/frontend/api-integration' },
               ],
             },
             {
