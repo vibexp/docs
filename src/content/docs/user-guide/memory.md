@@ -150,6 +150,11 @@ Semantic search requires the deployment to have an embedding provider configured
 Filter memories by:
 - **Tag**: Custom tag filtering (tags come from memory metadata)
 - **Status**: Memory lifecycle status
+- **Metadata**: The metadata filter matches on any metadata key-value pairs.
+  Pick a key, then one or more values (with typeahead from the values your
+  team actually uses). Keys combine with AND, values within a key with OR.
+  Tag filtering is the same mechanism applied to `metadata.tags`, and all of
+  it is applied server-side
 - **Project**: Use the global project selector in the app header to scope the
   list to one project (or all)
 
@@ -173,10 +178,12 @@ When using AI tools connected via MCP:
 ### Relevance Matching
 
 Memories are ranked by **semantic relevance** to the query (vector
-similarity). When the instance enables recency ranking, relevance is blended
-with how recently a memory was created or updated. Without an embedding
-provider, matching falls back to keyword (full-text) search with typo
-tolerance.
+similarity). When recency ranking is enabled, relevance is blended with how
+recently a memory was created or updated. Ranking is configurable **per
+team** on the team's Search Settings page (presets or advanced tuning of the
+relevance/created/updated weights and half-life), falling back to the
+instance defaults. Without an embedding provider, matching falls back to
+keyword (full-text) search with typo tolerance.
 
 ### Manual Reference
 
@@ -198,15 +205,13 @@ Connected AI tools can search and retrieve specific memories on demand.
 3. Update text or metadata
 4. Save changes
 
-### Version Notes
+### Version History
 
-Add a note when making significant changes:
-
-```
-Updated: 2024-01-15
-Changes: Added new TypeScript conventions
-Previous: Used any types, now strict typing
-```
+Every save snapshots the memory's content as a **version**. The memory view
+keeps the full version history: browse earlier snapshots, diff them against
+the current text, and restore an older version when a change went wrong.
+The instance keeps the 20 most recent versions per memory by default
+(`retention.content_version_limit`).
 
 ## MCP Integration
 

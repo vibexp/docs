@@ -99,7 +99,10 @@ then the frontend:
 
 1. Edit `backend/openapi.yaml` (via `paths/` + `schemas/`) and regenerate the
    server bindings.
-2. Release a new `@vibexp/api-client` from the `api-client-js` repo.
+2. Merge to `main`. Both generated clients (`@vibexp/api-client` on npm and
+   the Go module `github.com/vibexp/api-client-go`) publish **automatically**
+   with an auto-minor bump, dispatched by `publish-api-client.yml`. Never
+   hand-publish or hand-tag a client for a spec change.
 3. Bump the `@vibexp/api-client` dependency in the frontend and build against it.
 
 See [Code Conventions](/developer-guide/contributing/code-conventions/) for the

@@ -26,7 +26,7 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 - **Embedding & Model Providers** - Bring your own AI endpoints per team, powering semantic search and LLM access
 - **API Keys** - Secure access for your favorite development tools
 
-Self-hosting? Instance-wide operators get a read-only [instance admin portal](/user-guide/self-hosting/instance-admin) for stats, users, and teams.
+Self-hosting? Instance-wide operators get an [instance admin portal](/user-guide/self-hosting/instance-admin) for stats, user/team/project management, and account suspension.
 
 ## Why Choose VibeXP?
 

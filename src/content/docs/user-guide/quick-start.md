@@ -126,4 +126,4 @@ Direct connection between AI tools and your VibeXP data for seamless workflows.
 ## Need Help?
 
 - Visit [vibexp.io](https://vibexp.io)
-- Email support@example.com
+- Open an issue on [GitHub](https://github.com/vibexp/vibexp/issues)

@@ -50,7 +50,7 @@ A blueprint's slug is unique **per project**. Two projects can each have a bluep
 
 ## Project scoping
 
-Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate, and filter the Blueprints list by project, status, or a search term across title, description, and content.
+Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate, and filter the Blueprints list by project, status, a search term across title, description, and content, or **metadata**: the metadata filter matches on any metadata key-value pairs (pick a key, then values, with typeahead from the values your team actually uses; keys combine with AND, values within a key with OR).
 
 ## Blueprint paths
 

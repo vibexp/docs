@@ -119,7 +119,9 @@ Filter by:
 - **Type**: any of your team's artifact types
 - **Status**: active or expired
 - **Creation Date**: Date range filtering
-- **Metadata**: Custom metadata fields
+- **Metadata**: Match on any metadata key-value pairs. Pick a key, then one
+  or more values (with typeahead from the values your team actually uses).
+  Keys combine with AND, values within a key with OR
 
 ### Sort Options
 

@@ -112,9 +112,9 @@ No. MCP is optional. You can use prompts by copying them to any AI tool. MCP jus
 ### Why aren't my MCP-enabled prompts showing up in my tool?
 
 Check that:
-1. The prompt status is Published (recommended for stability)
+1. The prompt status is Published (only published prompts can be exposed over MCP)
 2. Your MCP server is configured correctly in the tool
-3. Your API key has the necessary permissions
+3. Your MCP client completed the OAuth connect flow (paste `https://<your-mcp-host>/mcp/v1/common`; API keys are rejected with 401)
 4. The tool's MCP client is connected to VibeXP
 
 See the [MCP Server guide](/user-guide/mcp-server) for troubleshooting.

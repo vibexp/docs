@@ -142,8 +142,6 @@ OAuth is only for the **MCP endpoint**. API keys are still the way to authentica
 
 - The **VibeXP CLI**
 - The **REST API** (`https://<your-api-host>/api/v1/...` with `Authorization: Bearer vxk_…`)
-- IDE hook endpoints (`/api/v1/claude-code/hooks`, `/api/v1/cursor-ide/hooks`)
-- Resource-usage routes
 
 So you don't need an API key to connect to MCP, but you still create one for CLI and programmatic access. See the [API Keys guide](/user-guide/integrations/api-keys) for details.
 
@@ -229,7 +227,8 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 
 - **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
 - **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type` — a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`
-- **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items — filterable (status, type, text search) and paginated; call `vibexp_io_get_resource` for a single item's full content
+- **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items, filterable (status, type, text search, metadata) and paginated; call `vibexp_io_get_resource` for a single item's full content. The `metadata` parameter takes a JSON object of key to array of string values: keys are combined with AND, values within a key with OR, and an empty array means "the key exists"
+- **vibexp_io_list_resource_metadata**: Discover the metadata keys and values a team actually uses, so a metadata filter can be built from real data instead of guesses. Omit `key` to list the distinct metadata keys for a `resource_type` (`memory`, `artifact`, or `blueprint`); supply `key` to list that key's distinct values. Every value returned works directly in the `metadata` filter of `vibexp_io_list_resources`
 
 One generic pair of read tools covers memories, artifacts, and blueprints (keyed by `resource_type`), mirroring `vibexp_io_delete_resource`.
 
@@ -527,7 +526,7 @@ AI tools may temporarily cache data during sessions, but it's not persisted. You
 
 - **Documentation**: [docs.vibexp.io](https://docs.vibexp.io)
 - **Status Page**: your deployment's status page (e.g. `https://<your-status-page>`)
-- **Email Support**: support@example.com
+- **Issues**: [github.com/vibexp/vibexp/issues](https://github.com/vibexp/vibexp/issues)
 - **GitHub**: [github.com/vibexp/vibexp](https://github.com/vibexp/vibexp)
 
 ## Related Features

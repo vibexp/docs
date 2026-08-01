@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.7.0
+  ghcr.io/vibexp/vibexp:0.9.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -64,6 +64,10 @@ These are the only hard requirements to boot the backend. Everything else is opt
 :::note
 Database migrations run automatically on boot; upgrading is a straight image
 bump. The published image is multi-arch (`linux/amd64` + `linux/arm64`).
+Upgrading to v0.9.0 drops the retired billing/subscription, AI-tool activity
+ingestion, and web-push tables automatically, and moves GitHub App
+configuration from `config.yaml` to per-team setup (re-register the App on
+each team after upgrading).
 :::
 
 There is no embedding env var: embedding and model providers are configured
@@ -111,7 +115,6 @@ All disabled by default, enabled via env vars or a mounted `config.yaml` (see `b
 | --- | --- | --- |
 | **Object storage** (attachments) | GCS-compatible storage: `GCS_RESOURCE_ATTACHMENTS_BUCKET` (+ `STORAGE_EMULATOR_HOST` for an emulator) | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
-| **Web push** | `fcm.enabled` in a mounted `config.yaml` (Firebase Cloud Messaging) | Push disabled |
 | **Analytics** | `VITE_GTM_ENABLED` + `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4) | No analytics |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
 

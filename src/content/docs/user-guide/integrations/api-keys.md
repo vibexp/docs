@@ -49,10 +49,6 @@ When creating an API key, you can select which integrations it can access. This 
 
 **Available Integrations:**
 
-- **AI Tools Integration** (`ai_tools`)
-  - Use with Claude Code, Cursor IDE, and other AI-powered development tools
-  - Access prompts, artifacts, and memories for AI-assisted development
-
 - **VibeXP CLI** (`cli`)
   - Access VibeXP from command-line interface for automation and scripting
   - Manage resources programmatically via CLI commands
@@ -64,9 +60,8 @@ When creating an API key, you can select which integrations it can access. This 
 **Multi-Integration Keys:**
 
 You can select multiple integrations for a single API key. For example:
-- **"Development Setup"**: AI Tools + CLI (for both IDE integration and command-line access)
 - **"Automation Pipeline"**: CLI only (for CI/CD automation)
-- **"Full Access"**: AI Tools + CLI (for comprehensive tool access)
+- **"Development Setup"**: CLI (for command-line access from a dev machine)
 
 :::tip[Best Practice]
 Create separate keys for different use cases rather than using one key with all integrations. This improves security and makes it easier to track usage.
@@ -151,7 +146,6 @@ In the API Keys dashboard, you can see:
 - **Key Name**: Your descriptive name
 - **Prefix**: First few characters (e.g., `vxk_1234...`)
 - **Integrations**: Color-coded badges showing which integrations the key can access
-  - 🔵 **AI Tools** (blue badge)
   - 🟢 **CLI** (green badge)
   - 🟣 **MCP Server** (purple badge) — legacy; the MCP endpoint now uses OAuth 2.1, so this permission no longer applies to `/mcp/v1/common`
 - **Legacy Badge**: Yellow badge indicates keys migrated from the old system
@@ -219,23 +213,15 @@ Recommended rotation frequency: Every 90 days
 
 **By Use Case (Recommended)**:
 ```
-Development Setup (AI Tools + CLI)
 CI/CD Pipeline (CLI only)
 Automation Scripts (CLI only)
-```
-
-**By Tool**:
-```
-Work Laptop - Claude Code (AI Tools)
-Work Laptop - Cursor (AI Tools)
-CI/CD Pipeline - GitHub Actions (CLI only)
+Development Machine (CLI)
 ```
 
 **By Environment**:
 ```
-Development - Local (AI Tools + CLI)
 Staging - Test Server (CLI)
-Production - Main App (CLI only)
+Production - Main App (CLI)
 CI/CD - Automated Tests (CLI)
 ```
 
@@ -404,16 +390,14 @@ No automatic expiration, but we recommend rotating keys every 90 days for securi
 ### Can I limit what an API key can access?
 
 Yes! When creating an API key, you can select which integrations it can access:
-- **AI Tools Integration**: For Claude Code, Cursor IDE, and AI development tools
-- **VibeXP CLI**: For command-line access and automation
+- **VibeXP CLI** (`cli`): For command-line access and automation
 
 This allows you to follow the principle of least privilege by granting only the permissions each key needs. (The MCP endpoint authenticates via OAuth 2.1, not API keys, so MCP access is not controlled by an API-key integration permission — see [MCP Server Integration](/user-guide/mcp-server).)
 
 ### Are there different types of API keys?
 
 API keys are differentiated by their integration permissions. You can create keys with:
-- Single integration access (e.g., CLI only)
-- Multiple integration access (e.g., AI Tools + CLI)
+- Single integration access (CLI)
 - Full access (all integrations)
 
 Legacy keys from the old system automatically have all integration permissions.

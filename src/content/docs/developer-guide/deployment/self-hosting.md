@@ -60,7 +60,7 @@ instead, mount your own `config.yaml` over the baked path (there is a commented
 `volumes:` entry on the `app` service) — start from `backend/config.example.yaml`.
 
 Compose is optional: with a reachable pgvector-enabled PostgreSQL, a single
-`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.7.0` works
+`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.9.0` works
 anywhere. The image is multi-arch (`linux/amd64` + `linux/arm64`). See
 [Docker & Compose](/developer-guide/deployment/docker/) and the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/).
@@ -104,7 +104,9 @@ internet.
   OAuth 2.1 Authorization Server that issues MCP tokens. In production its
   endpoints **reject plain HTTP** (only localhost is exempt): terminate TLS at
   your reverse proxy / load balancer and forward the original scheme as
-  `X-Forwarded-Proto: https`.
+  `X-Forwarded-Proto: https`. Behind a proxy, also set `TRUSTED_PROXIES` to
+  its CIDR(s) so per-IP rate limiting keys on the real client IP instead of
+  collapsing every client into one bucket.
 - **`DB_SSLMODE`**: set to `require` for managed Postgres that mandates TLS.
 - **`INSTANCE_ADMIN_EMAILS`**: comma-separated emails that get the
   `/api/v1/admin` portal. Empty leaves it dormant.

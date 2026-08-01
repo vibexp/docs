@@ -44,8 +44,11 @@ A change that touches the API contract flows through three repos in order:
 
 1. **Update `backend/openapi.yaml`** (via `paths/` + `schemas/`) and regenerate
    the server bindings.
-2. **Release a new `@vibexp/api-client`** from the `api-client-js` repo — the
-   typed client is generated from the spec.
+2. **Merge to `main`**. Both generated clients (`@vibexp/api-client` on npm,
+   `github.com/vibexp/api-client-go` Go module) publish **automatically** with
+   an auto-minor bump, dispatched by `publish-api-client.yml`. Do not
+   hand-publish or hand-tag either client: publishing by hand races the
+   automation and can duplicate a version.
 3. **Bump the `@vibexp/api-client` dependency** in the frontend and build against
    it.
 
@@ -67,10 +70,11 @@ bundle.
 
 ### No precaching service worker
 
-VibeXP does **not** ship a PWA/precaching service worker. The only worker is the
-on-demand `firebase-messaging-sw.js` for push. `src/utils/serviceWorker.ts` and
-`public/{sw,dev-sw}.js` exist solely to evict legacy workers. Do not reintroduce
-a precaching service worker without a cleanup story.
+VibeXP does **not** ship a PWA/precaching service worker, and web push
+(Firebase) was removed in v0.9.0. `src/utils/serviceWorker.ts` and
+`public/{sw,dev-sw}.js` exist solely to evict legacy workers from returning
+browsers. Do not reintroduce a precaching service worker without a cleanup
+story.
 
 ## Secrets and environment
 

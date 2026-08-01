@@ -27,6 +27,7 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | --- | :---: | :---: | :---: |
 | **Team** | | | |
 | Change team name, slug, description | ✅ | ✅ | — |
+| Change team settings (search ranking, email provider, GitHub App) | ✅ | ✅ | — |
 | Delete the team | ✅ | — | — |
 | Transfer ownership | ✅ | — | — |
 | **Members** | | | |
@@ -106,6 +107,7 @@ Team payloads from the API carry a `permissions` array listing exactly what *you
   "role": "admin",
   "permissions": [
     "team.update",
+    "team.settings.update",
     "member.invite",
     "member.remove",
     "member.role.update",
@@ -130,6 +132,7 @@ The complete set of permission strings:
 | `team.update` | Change team name, slug or description |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
+| `team.settings.update` | Change team-level settings such as search ranking |
 | `member.invite` | Invite new members |
 | `member.remove` | Remove members from the team |
 | `member.role.update` | Change a member's role |

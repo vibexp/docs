@@ -78,10 +78,15 @@ curl -X GET \
 
 **Query parameters:**
 - `status` - Filter by status (`draft` or `published`)
-- `label` - Filter by label
+- `labels` - Comma-separated list of labels to filter by
 - `search` - Search in title, description, or content
+- `project_id` - Filter by project
+- `mcp_expose` - Filter by MCP exposure flag (`true`/`false`)
+- `shared` - Filter by share status (`true`/`false`)
+- `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
+- `sort_order` - `asc` or `desc` (default `desc`)
 - `page` - Page number for pagination
-- `per_page` - Results per page (max 100)
+- `limit` - Results per page (max 100)
 
 ### Get Specific Prompt
 
@@ -362,7 +367,7 @@ headers = {"Authorization": f"Bearer {API_KEY}"}
 response = requests.get(
     f"{BASE_URL}/{TEAM_ID}/prompts",
     headers=headers,
-    params={"label": "marketing"}
+    params={"labels": "marketing"}
 )
 prompts = response.json()["prompts"]
 

@@ -101,7 +101,7 @@ release stamps.
 ## Backend fields
 
 The backend has many more fields than the production-critical subset above
-(rate limits, retention, search ranking, email, GitHub App, telemetry, …). They
+(rate limits, retention, search ranking, email, telemetry, …). They
 live in `config.yaml`; `config.example.yaml` documents every one.
 
 → Full list: [Backend Configuration](/developer-guide/backend/configuration/).

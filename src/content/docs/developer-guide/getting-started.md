@@ -19,7 +19,7 @@ the `make` targets below.
   work.
 - **Go 1.25.x**: the `Makefile` pins `GOTOOLCHAIN=go1.25.12`, so Go downloads
   and uses that exact toolchain on demand even if your system Go is newer.
-- **Node.js >= 20** — for the frontend (its `engines` field requires `>=20`).
+- **Node.js >= 22.22.0** for the frontend (its `engines` field requires `>=22.22.0`).
 - **`pre-commit`** — required; commits are gated on it. Install with
   `pipx install pre-commit` or `brew install pre-commit`.
 - **air** — for backend hot reload. Install with
@@ -111,7 +111,7 @@ make backend-lint         # golangci-lint
 make backend-check        # lint + vulncheck + security scan
 
 # Frontend
-make frontend-test        # jest
+make frontend-test        # vitest
 make frontend-lint        # eslint
 make frontend-type-check  # tsc
 ```
