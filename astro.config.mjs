@@ -138,6 +138,7 @@ export default defineConfig({
               items: [
                 { slug: 'user-guide/integrations/api-keys' },
                 { slug: 'user-guide/integrations/ai-providers' },
+                { slug: 'user-guide/integrations/email-provider' },
               ],
             },
             {

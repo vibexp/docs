@@ -331,9 +331,10 @@ not in `config.yaml`.
 
 The instance provider is also the **fallback** for teams without their own
 provider: each team can configure its own provider in the app (Teams →
-Settings → Email Provider), and team credentials are stored encrypted with
-`security.encryption_key`, and rotating that key invalidates them. Support mail
-always uses the instance provider.
+Settings → Email Provider; see [Email Provider](/user-guide/integrations/email-provider/)),
+and team credentials are stored encrypted with `security.encryption_key`, and
+rotating that key invalidates them. Support mail always uses the instance
+provider.
 
 ## GitHub App
 

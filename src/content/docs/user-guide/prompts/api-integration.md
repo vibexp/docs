@@ -72,7 +72,7 @@ curl -X GET \
   ],
   "total": 42,
   "page": 1,
-  "per_page": 20
+  "per_page": 10
 }
 ```
 
@@ -86,7 +86,7 @@ curl -X GET \
 - `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
 - `sort_order` - `asc` or `desc` (default `desc`)
 - `page` - Page number for pagination
-- `limit` - Results per page (max 100)
+- `limit` - Results per page (default 10, max 100)
 
 ### Get Specific Prompt
 
