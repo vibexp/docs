@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.7.0
+  ghcr.io/vibexp/vibexp:0.9.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -64,6 +64,10 @@ These are the only hard requirements to boot the backend. Everything else is opt
 :::note
 Database migrations run automatically on boot; upgrading is a straight image
 bump. The published image is multi-arch (`linux/amd64` + `linux/arm64`).
+Upgrading to v0.9.0 drops the retired billing/subscription, AI-tool activity
+ingestion, and web-push tables automatically, and moves GitHub App
+configuration from `config.yaml` to per-team setup (re-register the App on
+each team after upgrading).
 :::
 
 There is no embedding env var: embedding and model providers are configured
@@ -95,6 +99,18 @@ Embeddings are generated **in-process** — an event-bus worker chunks, embeds, 
 
 The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
 
+:::tip[Recommended prefixes per model family]
+Asymmetric embedding models want different instruction prefixes for queries vs. documents. The provider dialog ships one-click presets:
+
+| Model family | Query prefix | Document prefix |
+| --- | --- | --- |
+| mxbai-embed-large / BGE (English) | `Represent this sentence for searching relevant passages: ` | *(none)* |
+| E5 family | `query: ` | `passage: ` |
+| Symmetric models (e.g. OpenAI `text-embedding-3-*`) | *(none)* | *(none)* |
+
+Prefixes are added only to the text sent to the provider; nothing extra is stored. Leaving both empty is correct for symmetric models.
+:::
+
 The settings page also shows embedding **coverage** per team, with one-click **Reprocess pending** and **Clear all embeddings** actions. Changing a provider's identity (endpoint or model) wipes and re-embeds that team's data automatically.
 
 Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
@@ -111,9 +127,9 @@ All disabled by default, enabled via env vars or a mounted `config.yaml` (see `b
 | --- | --- | --- |
 | **Object storage** (attachments) | GCS-compatible storage: `GCS_RESOURCE_ATTACHMENTS_BUCKET` (+ `STORAGE_EMULATOR_HOST` for an emulator) | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
-| **Web push** | `fcm.enabled` in a mounted `config.yaml` (Firebase Cloud Messaging) | Push disabled |
 | **Analytics** | `VITE_GTM_ENABLED` + `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4) | No analytics |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
+| **GitHub App** | Not an env var: each team registers its own App in-app under Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
 
 ## Branding
 

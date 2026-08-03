@@ -43,8 +43,8 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 
 ### Frontend (TypeScript / React)
 
-- **lint-staged** (format & autofix), **eslint**, **type-check** (`tsc`),
-  **test** (Jest), and **build**.
+- **lint-staged** (format & autofix), **eslint**, **type-check** (`tsc -b`),
+  **test** (Vitest), and **build**.
 - **security scan**, **dependency audit** (on lockfile changes), and a
   **complexity check**.
 
@@ -57,12 +57,34 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 - **no-commit-to-branch** — blocks direct commits to `main`.
 - **Block `nolint` comments** (backend) and **block `eslint-disable`**
   (frontend) — suppressions are not allowed outside the documented exceptions.
+- **no-docs-directory**: a top-level `docs/` tree is rejected. Documentation
+  lives in the [vibexp/docs](https://github.com/vibexp/docs) repo (published
+  at docs.vibexp.io), not here. Package-level `README.md` files next to the
+  code they describe are the sanctioned exception.
 
 :::note
-A duplicate-migration check (`.github/scripts/check-duplicate-migrations.sh`) is
-available via `make backend-check-migrations` and is enforced in CI on merge to
-catch two migrations claiming the same sequence number.
+A duplicate-migration check (`.github/scripts/check-duplicate-migrations.sh`)
+is available locally via `make backend-check-migrations` and runs in CI as a
+**PR-only** `migrations` job in merge mode against `origin/main`, catching two
+PRs that claim the same migration sequence number. The
+`migration-renumbering` PR label is the escape hatch for deliberate
+renumberings such as post-release consolidations.
 :::
+
+## Pinned tool versions
+
+CI pins every analyzer, and the pre-commit hooks invoke whatever binary is on
+your `PATH`, so a version skew either way reports failures CI does not. Install
+the exact versions:
+
+| Tool | Pinned version |
+| --- | --- |
+| Go toolchain | `go1.25.12` (`GOTOOLCHAIN` in the Makefile) |
+| golangci-lint | `v2.12.2` |
+| gosec | `v2.28.0` |
+| govulncheck | `v1.6.0` |
+| mockery | `v2.53.6` |
+| redocly | `2.5.0` |
 
 ## What CI runs
 
@@ -71,17 +93,28 @@ best predictor of a green build.
 
 ### `ci.yml`
 
-Backend and frontend CI are consolidated into a single `ci.yml` (issue #390).
-Its jobs:
+Backend and frontend CI are consolidated into a single `ci.yml` (issue #390),
+fanned out into parallel jobs (#638). Its jobs:
 
 | Job | What it does |
 | --- | --- |
 | `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. |
-| `build-and-test` | Backend build + tests. Runs unit **and** integration-tagged tests together against a `pgvector` Postgres service container, with coverage. |
+| `migrations` | PR-only duplicate-migration gate (merge mode against `origin/main`); skipped when the PR carries the `migration-renumbering` label. |
+| `unit` | Backend build plus the **untagged** test suite (whole module, no Postgres), with coverage. Also gates the config-schema, Wire, and mock drift checks. |
+| `integration` | The `integration`-tagged tests only (`internal/repositories/postgres` and `internal/services/projectmigration`, pinned in the Makefile) against a `pgvector` Postgres service container, with coverage. |
+| `security` | `govulncheck` + `gosec` (split out of the test job in #638). |
 | `lint` | Backend `golangci-lint`. |
-| `openapi` | OpenAPI validation plus config-schema and embedded-bundle drift checks. |
-| `build-lint-test` | Frontend install, lint, type-check, test, and build. |
-| `sonar` | SonarCloud scan fed by both test jobs' coverage artifacts. |
+| `openapi` | OpenAPI validation plus the embedded-bundle and strict-server drift checks. |
+| `frontend-static` | Frontend install, lint, dependency audit, and type-check. |
+| `frontend-test` | Frontend Vitest coverage run plus the production build. |
+| `sonar` | SonarCloud scan fed by the unit, integration, and frontend coverage artifacts. |
+
+The Go test suite is **sharded** across `unit` (untagged) and `integration`
+(`-tags=integration`), and the two halves must stay exhaustive together;
+`make backend-check-integration-shard` guards that no integration-tagged file
+lands in a package outside the pinned list. CI restores a shared Go build
+cache on every Go job; the `unit` job is the sole saver (on pushes to `main`
+and on a total cache miss).
 
 The `go-version` in this workflow must stay in sync with `GO_VERSION`
 (`1.25.12`) in the `Makefile`.
@@ -112,6 +145,12 @@ embedded into the Go backend) and publishes it:
 A `workflow_dispatch` input is available as a manual escape hatch to build from
 the current ref without a release. The old per-component `backend-v*` /
 `frontend-v*` tags (and their split images) are legacy and no longer released.
+
+Once the image is published, the release workflow's `dispatch-cli-e2e` job
+cross-repo dispatches the [VibeXP CLI](https://github.com/vibexp/cli)
+end-to-end suite against the latest CLI release with the new platform image,
+and links the run in the job summary. It is dispatch-and-link only: the CLI
+verdict is never awaited and cannot fail or roll back a release.
 
 ## SHA-pinned actions
 

@@ -44,7 +44,6 @@ Notes:
   HTTP or HTTPS, and must be 1 MB or smaller.
 - The base URL cannot be changed after creation. Delete and re-add the agent
   to point at a new URL.
-- The number of agents per team is bounded by your plan's resource limit.
 - Agents cannot be moved between teams.
 
 ### Host restrictions
@@ -203,7 +202,7 @@ agents you build and host yourself.
 
 ### How many agents can I connect?
 
-Agent count per team is bounded by your plan's resource limit.
+There is no built-in limit on the number of agents per team.
 
 ### Are conversations private?
 

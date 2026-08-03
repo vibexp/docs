@@ -66,6 +66,16 @@ make frontend-build
 For the full picture of what runs on every commit and in CI, see
 [Pre-commit & CI](/developer-guide/contributing/pre-commit-and-ci/).
 
+## Documentation changes go to vibexp/docs
+
+The core repo has **no `docs/` directory**; a pre-commit hook rejects one.
+User- and contributor-facing documentation lives in the
+[vibexp/docs](https://github.com/vibexp/docs) repo (published at
+docs.vibexp.io), so a docs change means a PR there, and docs track the latest
+published release rather than `main`. The only documentation kept here is
+code-adjacent: package-level `README.md` files next to the code they
+describe, plus the root `README.md` and `CLAUDE.md`.
+
 ## Licensing
 
 VibeXP is open-core under **AGPL-3.0-or-later**. When you add files, follow the

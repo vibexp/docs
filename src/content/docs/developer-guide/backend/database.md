@@ -36,13 +36,18 @@ Migration files live in `backend/migrations/`.
 The early history was squashed: `001_baseline` is a `pg_dump`-style baseline
 replacing the original incremental migrations, and `002_consolidated` squashes
 everything that accumulated after the backend-v0.2.0 release (memory lifecycle
-status, the OAuth Authorization Server tables). Four release migrations have
-shipped since: `003` (per-team embedding providers, v0.4.0), `004` (provider
+status, the OAuth Authorization Server tables). Release migrations shipped
+since: `003` (per-team embedding providers, v0.4.0), `004` (provider
 concurrency + model providers, v0.5.0), `005` (search and embedding
-enhancements, v0.6.0), and `006_consolidated` (RBAC foundation + resource
-comments, v0.7.0). A pre-existing pre-v0.3.0 database must be stamped to
-the matching version so the consolidated files are never re-run against a
-populated schema.
+enhancements, v0.6.0), `006_consolidated` (RBAC foundation + resource
+comments, v0.7.0), `007` (blueprint sync, v0.8.0), `008` (attachment relative
+paths, v0.8.0), `009` (blueprint source content SHA, v0.8.0), `010` (typed
+resource relations, v0.8.0), and `011_consolidated` (v0.9.0, squashing the
+post-v0.8.0 increments: user status, per-team search settings, per-team
+GitHub App configs, per-team email providers, and the removal of AI-tool
+hook ingestion, billing/subscriptions, and Firebase web push). A pre-existing
+pre-v0.3.0 database must be stamped to the matching version so the
+consolidated files are never re-run against a populated schema.
 :::
 
 ## File naming
@@ -63,6 +68,11 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 004_provider_concurrency_and_model_providers.up.sql
 005_search_and_embedding_enhancements.up.sql
 006_consolidated.up.sql
+007_blueprint_sync.up.sql
+008_attachment_relative_path.up.sql
+009_blueprint_source_content_sha.up.sql
+010_resource_relations.up.sql
+011_consolidated.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -112,17 +122,21 @@ make backend-check-migrations
 ```
 
 This detects duplicate migration numbers (two files claiming the same `NNN`),
-which would otherwise cause non-deterministic ordering.
+which would otherwise cause non-deterministic ordering. CI additionally runs
+the check as a PR-only `migrations` job in merge mode against `origin/main`,
+which catches two parallel PRs claiming the same number, the collision local
+runs cannot see. The `migration-renumbering` PR label is the escape hatch for
+deliberate renumberings such as post-release consolidations.
 
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `006` as the newest shipped migration, the next one is `007`).
+   `011` as the newest shipped migration, the next one is `012`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/007_add_widgets_table.up.sql
-   touch backend/migrations/007_add_widgets_table.down.sql
+   touch backend/migrations/012_add_widgets_table.up.sql
+   touch backend/migrations/012_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

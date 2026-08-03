@@ -14,10 +14,8 @@ assembled.
 make frontend-build
 ```
 
-This runs the production build (`npm run build`: `scripts/generate-sw-config.js`
-first, then TypeScript type-check and `vite build`), emitting static assets to
-`frontend/dist/`. The generate step writes the Firebase service-worker config
-from the `VITE_FIREBASE_*` variables. For day-to-day work use
+This runs the production build (`npm run build`: `tsc -b` type-check, then
+`vite build`), emitting static assets to `frontend/dist/`. For day-to-day use
 `make frontend-run-dev` instead — see
 [Frontend Overview](/developer-guide/frontend/overview/).
 

@@ -29,6 +29,7 @@ make backend-test-integration
 ```
 
 Integration tests run the repository layer (`internal/repositories/postgres/...`)
+and the project-migration service (`internal/services/projectmigration/...`)
 against a **live Postgres** instance — locally via Docker Compose, in CI via a
 service container. They are gated behind the `integration` build tag, so the
 default `make backend-test` does not run them.
@@ -36,10 +37,16 @@ default `make backend-test` does not run them.
 - Override the target database with the `POSTGRES_TEST_DSN` environment variable.
 - The timeout is 180s to allow for migrations and real I/O.
 
-Since issue #390, CI runs the unit and integration-tagged tests **together in a
-single execution** (`make backend-test-coverage-integration`) against a real
-Postgres service container, so integration coverage now counts toward the
-reported total.
+Locally, `make backend-test-coverage-integration` runs both suites in one
+process against a real Postgres. In CI the suite is **sharded** (since #638):
+the `unit` job runs the whole module untagged
+(`make backend-test-unit-coverage`, no Postgres) and the `integration` job runs
+only the two integration-tagged packages
+(`make backend-test-integration-coverage`) against a Postgres service
+container. `make backend-check-integration-shard` guards the split: an
+integration-tagged file added to a third package fails CI until the package is
+added to the shard list. Both jobs publish coverage, so integration coverage
+counts toward the reported total.
 
 :::tip
 Start the local stack first (`make backend-run-dev` brings up Postgres), or point

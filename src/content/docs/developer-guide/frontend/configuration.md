@@ -85,28 +85,12 @@ backend's `frontend.gtm_*` / `frontend.ga4_measurement_id` config.
 | `VITE_GTM_ID` | — | GTM container ID (e.g. `GTM-XXXXXXX`). Empty disables GTM. |
 | `VITE_GA4_MEASUREMENT_ID` | — | GA4 Measurement ID (e.g. `G-XXXXXXXXXX`) for client-ID capture. |
 
-## Firebase Cloud Messaging (web push)
+## Web push (removed)
 
-Browser push notifications are **disabled unless all** of these are set. The
-on-demand `firebase-messaging-sw.js` service worker is only registered when
-Firebase is fully configured — there is no precaching service worker.
-
-| Variable |
-|---|
-| `VITE_FIREBASE_API_KEY` |
-| `VITE_FIREBASE_AUTH_DOMAIN` |
-| `VITE_FIREBASE_PROJECT_ID` |
-| `VITE_FIREBASE_STORAGE_BUCKET` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` |
-| `VITE_FIREBASE_APP_ID` |
-| `VITE_FIREBASE_VAPID_KEY` |
-
-:::note
-These are **build-time only** (the service-worker config is generated during
-`npm run build`), and the published image does not set them — web push is
-disabled in the stock image. To enable it, build your own image with the
-`VITE_FIREBASE_*` values present at build time.
-:::
+Browser push notifications (Firebase Cloud Messaging) were **removed in
+v0.9.0** along with the seven `VITE_FIREBASE_*` variables.
+`src/utils/serviceWorker.ts` and `public/{sw,dev-sw}.js` still exist solely to
+evict legacy workers from returning browsers.
 
 ## Related
 

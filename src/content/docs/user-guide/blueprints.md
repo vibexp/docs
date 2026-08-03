@@ -28,6 +28,8 @@ Blueprints sit alongside [Prompts](/user-guide/prompts/) and [Memory](/user-guid
 - **[Memory](/user-guide/memory/)** is durable context your AI reads and *updates as it learns* (facts, decisions, and preferences that accumulate over time).
 - **Blueprints** are the standing *rules and guidelines* that shape how the AI works: the conventions it should follow, organized per tool. They change deliberately, not as a side effect of a conversation.
 
+These three are not isolated: a resource can be marked `governed-by` the blueprint whose rules it must obey, which is how a blueprint's reach becomes explicit rather than implied. Because that link is higher-stakes, an AI-proposed one waits for a human to confirm it. See [Relations](/user-guide/relations/).
+
 ## Creating and editing blueprints
 
 1. Navigate to **Blueprints** in the sidebar.
@@ -44,13 +46,15 @@ To edit, open a blueprint and choose **Edit**, make your changes, and save.
 
 The create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
 
+To query blueprints by the metadata they carry, see [Metadata filtering](/user-guide/metadata-filtering/).
+
 :::note
 A blueprint's slug is unique **per project**. Two projects can each have a blueprint with the same slug.
 :::
 
 ## Project scoping
 
-Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate, and filter the Blueprints list by project, status, or a search term across title, description, and content.
+Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate, and filter the Blueprints list by project, status, a search term across title, description, and content, or **metadata**: the metadata filter matches on any metadata key-value pairs (pick a key, then values, with typeahead from the values your team actually uses; keys combine with AND, values within a key with OR).
 
 ## Blueprint paths
 
@@ -92,6 +96,7 @@ Version history is bounded by an operator-configurable retention limit (**20 ver
 VibeXP can import AI-config files from a connected GitHub repository as per-tool blueprints, so you can bootstrap a project's rules from files you already keep in your repo.
 
 - The repository must already exist as a VibeXP **project**.
+- Connecting the team's [GitHub App](/user-guide/integrations/github-app/) is Owner or Admin only, and you must be able to administer its installation on GitHub. Importing files from an already-connected repository is open to any team member.
 - Only **Markdown** files are imported, and there are per-file and total size caps.
 - Each imported file is classified into a blueprint type and subtype from its path (see [Blueprint paths](#blueprint-paths)).
 

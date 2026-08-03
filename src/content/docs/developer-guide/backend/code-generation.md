@@ -57,8 +57,15 @@ Service interfaces are mocked with [mockery](https://github.com/vektra/mockery) 
 handlers and services can be unit-tested against fakes.
 
 ```bash
-make backend-mock-generate   # regenerate all mocks (mockery --all)
+make backend-mock-generate   # regenerate all mocks
+make backend-mock-check      # drift gate (also run in CI)
 ```
+
+Mockery runs **without `--all`**: the per-package `interfaces:` lists in
+`backend/.mockery.yaml` are authoritative, so mockery emits exactly those
+interfaces. **Adding a mockable interface means adding its entry to
+`.mockery.yaml` first**: a mock committed without an entry disappears on the
+next regenerate and fails `backend-mock-check`.
 
 The generated `mock_*.go` files are committed. See
 [Testing](/developer-guide/backend/testing/) for how the mocks are used.
@@ -100,7 +107,7 @@ change as any spec edit.
 | --- | --- | --- |
 | oapi-codegen | `make backend-generate-openapi-server` | strict-server handlers + `internal/server/gen/types` |
 | Wire | `make backend-wire-gen` (`backend-wire-check` to verify) | `internal/container/wire_gen.go` |
-| mockery | `make backend-mock-generate` | `mock_*.go` files |
+| mockery | `make backend-mock-generate` (`backend-mock-check` to verify) | `mock_*.go` files |
 | gen-config-schema | `make backend-generate-config-schema` (`backend-config-schema-check` to verify) | `backend/config.schema.json` |
 | OpenAPI bundle | `make backend-generate-openapi-bundle` (`backend-openapi-bundle-check` to verify) | `internal/server/openapispec/openapi.bundled.{yaml,json}` |
 

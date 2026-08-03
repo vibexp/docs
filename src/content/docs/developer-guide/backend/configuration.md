@@ -24,6 +24,10 @@ automatically if `config.yaml` is missing).
    resolved against the process environment (see the grammar below).
 5. **Validation.** Invariants are checked before the server starts — the
    service fails closed on a bad config rather than running misconfigured.
+   Sections removed in past releases fail loudly: a leftover top-level
+   `github:` block aborts startup with guidance to re-register the App per
+   team (removed in v0.9.0), while a leftover `embedding:` block is silently
+   ignored.
 
 The published Docker image bakes a production-neutral default config
 (`config.docker.yaml`) at `/app/config.yaml` and sets `VIBEXP_CONFIG_FILE`
@@ -87,6 +91,7 @@ whenever you change the `Config` struct.
 | `server.release_sha` / `server.release_date` | `dev` / `unknown` | Build metadata. |
 | `server.max_body_size_bytes` | `10485760` (10 MiB) | Global request-body cap (memory-exhaustion backstop). Webhooks and the OAuth AS JSON endpoints cap at 64 KiB. |
 | `server.cors_allowed_origins` | _(empty)_ | Allowed CORS origins. Empty allows only the localhost dev origins (`:5173`, `:5174`); only needed when the SPA is served from a different origin than the API. |
+| `server.trusted_proxies` | _(empty)_ | CIDRs of trusted reverse proxies. Empty ignores `X-Forwarded-For`/`X-Real-IP`, so the connecting peer is the client IP. Behind a proxy, list its CIDR(s) (e.g. `TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12`) or every client collapses into one rate-limit bucket. Malformed CIDRs fail startup. |
 | `server.error_type_base_uri` | `about:blank` | RFC 9457 error `type` base URI (joined as `<base>/<code>`). |
 
 ## Database
@@ -232,6 +237,11 @@ relevance-only ordering; `true` blends relevance and freshness by the weights.
 Weights must be non-negative and not all zero; the half-life and candidate cap
 must be positive (validated at startup).
 
+These are **instance defaults**: each team inherits them and can override them
+on its Search Settings page (Teams → Settings → Search) or via
+`/api/v1/{team_id}/settings/search`, except `search.rank_candidate_cap`, which
+is instance-only and never team-overridable.
+
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `search.recency_ranking_enabled` | `false` | Enable the weighted relevance/freshness blend. |
@@ -319,18 +329,24 @@ not in `config.yaml`.
 | --- | --- |
 | `email.sendgrid.api_key` | `${SENDGRID_API_KEY}` — API key with the "Mail Send" permission (required). |
 
+The instance provider is also the **fallback** for teams without their own
+provider: each team can configure its own provider in the app (Teams →
+Settings → Email Provider; see [Email Provider](/user-guide/integrations/email-provider/)),
+and team credentials are stored encrypted with `security.encryption_key`, and
+rotating that key invalidates them. Support mail always uses the instance
+provider.
+
 ## GitHub App
 
-Optional integration (distinct from the `auth.github` web-login client). Leave
-empty for local dev — the provider stubs out.
+There is **no `github` block** in `config.yaml` since v0.9.0. GitHub App
+integration is configured **per team** in the app (open the team → Settings →
+GitHub Integration); credentials are stored encrypted in the
+`github_app_configs` table. A leftover top-level `github:` section in an old
+config file **fails startup**; delete it and re-register the App on each
+team. (`auth.github`, the web-login OAuth client, is unaffected.)
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `github.app_id` | _(empty)_ | App ID from your GitHub App settings. |
-| `github.app_slug` | _(empty)_ | The App's URL slug. |
-| `github.app_private_key` | `${GITHUB_APP_PRIVATE_KEY}` | Base64-encoded private key (raw PEM also accepted). A non-empty but invalid value fails startup on PEM parsing. |
-| `github.webhook_url` | _(empty)_ | Public URL GitHub sends events to. |
-| `github.webhook_secret` | `${GITHUB_WEBHOOK_SECRET}` | Secret used to verify webhook payloads. |
+Team-admin setup is in [GitHub App](/user-guide/integrations/github-app/); the
+one-time instance upgrade is [Migrating to per-team GitHub Apps](/user-guide/self-hosting/github-app-migration/).
 
 ## Attachments (GCS)
 
@@ -362,12 +378,6 @@ be ≥ 1.
 | --- | --- | --- |
 | `a2a.default_timeout` | `5m` | Max time to wait for synchronous agent-to-agent HTTP responses. |
 | `a2a.stream_timeout` | `2h` | Max lifetime of a streaming (SSE) agent task. Decoupled from the sync timeout so long-running streams are not cut short. |
-
-## FCM (web push)
-
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `fcm.enabled` | `false` | Opt-in Firebase Cloud Messaging web-push channel. |
 
 ## Deployment environment detection
 

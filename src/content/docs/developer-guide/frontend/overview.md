@@ -15,7 +15,7 @@ artifact/release — a single image serves the SPA and the API.
 - **React 19** with **TypeScript** — UI layer.
 - **React Router** — client-side routing.
 
-Node.js **>= 20** is required (enforced by the `engines` field in
+Node.js **>= 22.22.0** is required (enforced by the `engines` field in
 `package.json`).
 
 ## The two external `@vibexp/*` packages
@@ -57,19 +57,25 @@ frontend/src/
 └── routes.tsx    The route table
 ```
 
-## v0.7.0 surfaces
-
-Notable UI added in v0.7.0:
+## Notable UI surfaces
 
 - **Instance-admin portal**: the `/admin` routes behind a `RequireInstanceAdmin`
-  route guard (`routes.tsx`), covering instance stats, users, and teams views.
+  route guard (`routes.tsx`), in their own shell (`pages/admin/`): a metrics
+  dashboard plus users (filtering, suspension, guarded delete), teams, and
+  projects management.
 - **Metadata editor**: `MetadataEditor` (`components/metadata/`) for editable
   key-value metadata on Blueprint, Artifact, and Memory forms.
 - **Resource comments**: `components/comments/`, a detail-page sidebar panel, an
   all-comments dialog, and a "Recent comments" card on the homepage.
-- **Role management**: controls in team settings
-  (`pages/settings/teams/TeamDetailsPage.tsx`), gated by
+- **Role management**: controls in the team members page, gated by
   `can('member.role.update')`.
+- **Team information architecture**: team pages live at top-level `/teams/**`
+  (`pages/teams/TeamRoutes.tsx`) with team-scoped settings under
+  `/teams/:id/settings/*` (GitHub App, search ranking, email provider, model
+  and embedding providers); `/settings` is personal settings only.
+- **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
+  popover with value typeahead, on the Blueprint, Artifact, and Memory list
+  pages.
 - **Copyable invitation link**: `components/invitations/`.
 
 ## How it talks to the backend

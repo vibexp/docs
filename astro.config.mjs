@@ -125,12 +125,14 @@ export default defineConfig({
             { slug: 'user-guide/artifacts' },
             { slug: 'user-guide/memory' },
             { slug: 'user-guide/blueprints' },
+            { slug: 'user-guide/metadata-filtering' },
             { slug: 'user-guide/relations' },
             { slug: 'user-guide/mcp-server' },
             { slug: 'user-guide/ai-agents' },
             { slug: 'user-guide/feeds' },
             { slug: 'user-guide/comments' },
             { slug: 'user-guide/resource-access-analytics' },
+            { slug: 'user-guide/search' },
             { slug: 'user-guide/team-roles-and-permissions' },
             {
               label: 'Integrations',
@@ -138,6 +140,8 @@ export default defineConfig({
               items: [
                 { slug: 'user-guide/integrations/api-keys' },
                 { slug: 'user-guide/integrations/ai-providers' },
+                { slug: 'user-guide/integrations/email-provider' },
+                { slug: 'user-guide/integrations/github-app' },
               ],
             },
             {
@@ -148,6 +152,8 @@ export default defineConfig({
                 { slug: 'user-guide/self-hosting' },
                 { slug: 'user-guide/self-hosting/authentication' },
                 { slug: 'user-guide/self-hosting/instance-admin' },
+                { slug: 'user-guide/self-hosting/upgrading' },
+                { slug: 'user-guide/self-hosting/github-app-migration' },
                 { slug: 'user-guide/contributing' },
               ],
             },
