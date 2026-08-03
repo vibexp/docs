@@ -99,6 +99,18 @@ Embeddings are generated **in-process** — an event-bus worker chunks, embeds, 
 
 The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
 
+:::tip[Recommended prefixes per model family]
+Asymmetric embedding models want different instruction prefixes for queries vs. documents. The provider dialog ships one-click presets:
+
+| Model family | Query prefix | Document prefix |
+| --- | --- | --- |
+| mxbai-embed-large / BGE (English) | `Represent this sentence for searching relevant passages: ` | *(none)* |
+| E5 family | `query: ` | `passage: ` |
+| Symmetric models (e.g. OpenAI `text-embedding-3-*`) | *(none)* | *(none)* |
+
+Prefixes are added only to the text sent to the provider; nothing extra is stored. Leaving both empty is correct for symmetric models.
+:::
+
 The settings page also shows embedding **coverage** per team, with one-click **Reprocess pending** and **Clear all embeddings** actions. Changing a provider's identity (endpoint or model) wipes and re-embeds that team's data automatically.
 
 Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
@@ -117,6 +129,7 @@ All disabled by default, enabled via env vars or a mounted `config.yaml` (see `b
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
 | **Analytics** | `VITE_GTM_ENABLED` + `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4) | No analytics |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
+| **GitHub App** | Not an env var: each team registers its own App in-app under Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
 
 ## Branding
 

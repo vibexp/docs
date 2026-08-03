@@ -37,12 +37,12 @@ The API is organised into these domains (one `paths/*.yaml` file each):
 | `health` | `invitations` |
 | `memories` | `metadata` |
 | `model-providers` | `notifications` |
-| `preferences` | `projects` |
-| `prompts` | `relations` |
-| `search` | `support` |
-| `team-email-provider` | `team-settings` |
-| `teams` | `types` |
-| `user` | `webhooks` |
+| `projects` | `prompts` |
+| `relations` | `search` |
+| `support` | `team-email-provider` |
+| `team-settings` | `teams` |
+| `types` | `user` |
+| `webhooks` | |
 
 Shared schema definitions live in `schemas/common.yaml`; other `schemas/*.yaml`
 files mirror the path domains.
@@ -60,6 +60,23 @@ unauthenticated callers alike get **404**. The surface is not advertised.
 The `comments` domain (`paths/comments.yaml`) is new in v0.7.0 and **REST-only**
 (no MCP). It is team-scoped under `/api/v1/{team_id}/comments` and lets users
 comment on resources.
+
+### Typed resource relations
+
+The `relations` domain (`paths/relations.yaml`) is team-scoped under
+`/api/v1/{team_id}/relations` and records typed links between prompts,
+blueprints, memories and artifacts. Unlike `comments`, it has both a REST and an
+MCP surface: AI tools create links through the `vibexp_io_link_resources` tool
+rather than through the endpoints.
+
+Five operations: `listRelations` (a resource's relations), `createRelation`,
+`confirmRelation` (promote an AI-suggested link to confirmed), `deleteRelation`,
+and `seedRelations` (backfill suggestions from embedding similarity).
+
+Resource reads carry the result: a `GET` on a prompt, blueprint, memory or
+artifact gains `related` (typed links) and `similar` (embedding neighbours). See
+[Relations](/user-guide/relations/) for the relation types, the type-constraint
+matrix and the suggested-vs-confirmed trust tiers.
 
 ## Bundling
 

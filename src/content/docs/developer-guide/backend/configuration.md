@@ -345,6 +345,9 @@ GitHub Integration); credentials are stored encrypted in the
 config file **fails startup**; delete it and re-register the App on each
 team. (`auth.github`, the web-login OAuth client, is unaffected.)
 
+Team-admin setup is in [GitHub App](/user-guide/integrations/github-app/); the
+one-time instance upgrade is [Migrating to per-team GitHub Apps](/user-guide/self-hosting/github-app-migration/).
+
 ## Attachments (GCS)
 
 | Key | Default | Purpose |

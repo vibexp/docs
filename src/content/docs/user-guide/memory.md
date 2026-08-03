@@ -112,6 +112,13 @@ Add searchable tags:
 - Domain: `frontend`, `backend`, `devops`
 - Purpose: `style-guide`, `architecture`, `deployment`
 
+### Linking Memories to What They Explain
+
+Tags group memories; relations connect them to specific resources. A memory that
+records why a decision was made can be attached to that resource, which is then
+`explained-by` the memory, so the reasoning surfaces next to the thing it
+justifies rather than only in search. See [Relations](/user-guide/relations/).
+
 ## Memory Lifecycle Status
 
 Every memory has a lifecycle **status** that controls where it appears:
@@ -145,6 +152,22 @@ Surfaces memories about React hooks and best practices even when they use differ
 Semantic search requires the deployment to have an embedding provider configured. When it doesn't, VibeXP automatically falls back to keyword full-text search — same search box, exact-word matching instead of matching by meaning.
 :::
 
+#### Keyword search syntax
+
+In keyword mode (no embedding provider) the search box supports these operators:
+
+- `"exact phrase"`: words in quotes must appear together, in order.
+- `word1 OR word2`: match either term (plain words are ANDed by default).
+- `term -excluded`: exclude results containing a term.
+
+Title matches rank highest, and ranking is length-normalized so a short,
+on-topic title beats a long document that merely mentions the term. A single
+mistyped word still matches by typo tolerance.
+
+In **semantic mode** (embedding provider configured) the query is embedded as
+text, so these operators are treated as ordinary words rather than search
+operators.
+
 ### Advanced Filters
 
 Filter memories by:
@@ -162,6 +185,8 @@ Fields like category and priority live in each memory's free-form metadata
 and are searchable.
 
 The memory create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
+
+To query memories by the metadata they carry, see [Metadata filtering](/user-guide/metadata-filtering/).
 
 ## Auto-Context Injection
 

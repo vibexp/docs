@@ -100,6 +100,13 @@ one of your team's configured types.
 
 Change status anytime without deleting artifacts.
 
+### Linking to other resources
+
+Beyond projects and status, artifacts can be linked to the resources they came
+from. A new version of a document `supersedes` the one it replaces, and an
+artifact is `built-from` the prompt that produced it, so the chain from
+instruction to output stays visible. See [Relations](/user-guide/relations/).
+
 ## Searching and Filtering
 
 ### Full-Text Search
@@ -173,6 +180,8 @@ Add custom metadata for enhanced organization:
 Access metadata in search and filtering.
 
 **Editing metadata:** the create and edit form includes a key-value metadata editor for adding or changing metadata pairs directly in the UI.
+
+**Filtering by metadata:** see [Metadata filtering](/user-guide/metadata-filtering/) for querying artifacts by the metadata they carry, in the UI, the API, and over MCP.
 
 ## Bulk Operations
 

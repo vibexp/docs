@@ -61,7 +61,7 @@ Your **personal workspace** is a team like any other, with you as its Owner. Bec
 
 ## Managing roles
 
-Both actions live on **Settings → Teams → (your team)**.
+Both actions live on **Teams → (your team)**, reachable from **Teams** in the sidebar.
 
 ### Change someone's role
 

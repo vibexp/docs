@@ -1,11 +1,11 @@
 ---
 title: API Keys
-description: Create and manage API keys for secure authentication of the VibeXP CLI, REST API, and IDE hook endpoints.
+description: Create and manage API keys for secure authentication of the VibeXP CLI and REST API.
 sidebar:
   order: 1
 ---
 
-API Keys provide secure authentication for the VibeXP CLI and programmatic access to the VibeXP REST API, plus IDE hook endpoints — or build custom integrations.
+API Keys provide secure authentication for the VibeXP CLI and programmatic access to the VibeXP REST API, or build custom integrations.
 
 :::note[MCP uses OAuth, not API keys]
 The MCP endpoint (`https://<your-mcp-host>/mcp/v1/common`) now authenticates via **OAuth 2.1**, not API keys. Do not use an API key to connect to MCP — see [MCP Server Integration](/user-guide/mcp-server). API keys remain the way to authenticate the CLI and REST API, which is what this guide covers.

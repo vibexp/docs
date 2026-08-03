@@ -15,6 +15,16 @@ Each team brings its own AI endpoints. Two provider types are configured under
 Both are team-scoped, managed entirely in the app, and store API keys
 encrypted. Nothing is configured through server environment variables.
 
+:::caution[Owner or Admin, and a publicly routable URL]
+Adding or editing a provider needs the **Owner** or **Admin** role (the
+`team.settings.update` permission; see [Team roles and permissions](/user-guide/team-roles-and-permissions/)).
+The base URL must be publicly routable: VibeXP rejects loopback, private, and
+link-local addresses (including cloud metadata endpoints like `169.254.169.254`)
+with `destination_not_allowed`, and the check applies to the stored provider,
+not just the initial connectivity test. Local development against `localhost` is
+exempt.
+:::
+
 ## Embedding providers
 
 An embedding provider is any OpenAI-compatible `/v1/embeddings` endpoint:

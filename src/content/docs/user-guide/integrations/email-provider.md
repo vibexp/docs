@@ -49,6 +49,15 @@ The page shows whether the last observed send succeeded, with the last
 delivery error retained for diagnosis. Deleting the team's provider returns
 the team to the instance provider.
 
+:::caution[A broken provider does not fall back]
+Automatic fallback to the instance provider happens only when a team has **no**
+provider of its own. Once a team configures one, all of its mail goes through
+it: if the credential breaks or the from address starts hard-bouncing, the
+team's mail fails rather than reverting to the instance. Watch the health
+status, and verify the from domain (SPF/DKIM) with your provider so messages
+are accepted.
+:::
+
 ## API
 
 The provider is a singleton sub-resource of the team, available under both

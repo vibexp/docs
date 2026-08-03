@@ -407,17 +407,6 @@ Track MCP usage in your VibeXP dashboard:
 - **Data Access**: See accessed prompts/artifacts/memories
 - **Performance**: Response times and errors
 
-### Session Tracking
-
-For Claude Code CLI specifically:
-
-1. Navigate to **MCP Server** → **Claude Code Sessions**
-2. View all sessions with:
-   - Duration and timing
-   - Tool usage statistics
-   - Hooks triggered
-   - Errors and warnings
-
 ### Connection Status
 
 Because MCP uses OAuth, there is no API key to manage for the MCP endpoint. To re-authorize a client, simply re-run its connect flow (it will prompt you to log in again). Access tokens are short-lived and refreshed automatically, so there is nothing to rotate or revoke manually for MCP.

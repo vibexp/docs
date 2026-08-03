@@ -112,6 +112,13 @@ Format: {{output_format}}
 
 Build modular, composable prompts by referencing existing ones using the `@` syntax.
 
+:::note
+`@` references compose prompts *with each other*. To connect a prompt to the
+artifact it produced or the blueprint it follows, use
+[Relations](/user-guide/relations/): an artifact is `built-from` the prompt
+behind it.
+:::
+
 ### How to Reference Prompts
 
 1. In the prompt editor, type `@`
