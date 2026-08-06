@@ -13,6 +13,18 @@ and apply every migration in between.
 
 ## Breaking changes
 
+### Bundled Postgres upgraded from 16 to 17
+
+The Postgres image shipped in the combined-image `docker-compose.yml` moved from
+`pgvector/pgvector:pg16` to `pgvector/pgvector:pg17`. Postgres data files are
+**not compatible across major versions**, so a Postgres 17 image started on a
+data directory created by Postgres 16 refuses to start. If you run the bundled
+Postgres with a populated data volume, you must dump-and-restore (or
+`pg_upgrade`) the volume once before pulling the new image. Managed / external
+Postgres is unaffected — VibeXP supports both 16 and 17.
+
+→ [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/)
+
 ### GitHub App configuration moved to per-team settings
 
 GitHub App credentials used to be instance-wide: one App in `config.yaml`,
