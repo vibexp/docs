@@ -6,6 +6,31 @@ description: Breaking changes in VibeXP releases and the migration each one need
 Most VibeXP releases upgrade in place: pull the new image, restart, done. This
 page lists the exceptions.
 
+## Versioning and support
+
+VibeXP publishes one image, `ghcr.io/vibexp/vibexp`, tagged `X.Y.Z` per release.
+
+| Tag | Points at |
+| --- | --- |
+| `X.Y.Z` | that exact release, immutable |
+| `latest` | the newest release |
+
+The bundled `docker-compose.yml` tracks `latest`. Pin to `X.Y.Z` instead if you
+want upgrades to be a deliberate step:
+
+```yaml
+image: ghcr.io/vibexp/vibexp:0.9.0
+```
+
+**Patch releases are supported on the newest minor line only.** Once `0.10.0`
+ships, fixes go to `0.10.x`, not `0.9.x`. To stay on a supported version, follow
+the newest minor.
+
+A patch release (`0.9.0` to `0.9.1`) contains bug fixes and security fixes only.
+It never adds a database migration and never changes the API, so it is always a
+straight image bump with no action on your side. Anything that needs a schema or
+API change ships as a minor release and appears below if it requires action.
+
 **Anything below requires action *before* the new image will start.** Each entry
 links to a full migration guide with the exact steps. Entries are newest first:
 if you are skipping several releases, work upwards from the version you are on

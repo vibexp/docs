@@ -76,6 +76,63 @@ published release rather than `main`. The only documentation kept here is
 code-adjacent: package-level `README.md` files next to the code they
 describe, plus the root `README.md` and `CLAUDE.md`.
 
+## Releases and backports
+
+**Always target `main`, including urgent bug fixes.** You never need to open a
+PR against a release branch. If a fix is needed in a patch release, a maintainer
+cherry-picks it after it lands on `main`.
+
+### How releases are cut
+
+| Release | Cut from | Contains |
+| --- | --- | --- |
+| Minor (`0.9.0` to `0.10.0`) | `main` | everything merged since the last tag |
+| Patch (`0.9.0` to `0.9.1`) | `release/0.9.x` | cherry-picks only |
+
+A `release/X.Y.x` branch is created from the release tag the first time that
+line needs a patch, then reused for later patches on the same line. Only the
+newest minor line receives patches.
+
+### Why fixes go to `main` first
+
+A fix that lives only on a release branch is a fix the next minor silently
+reintroduces. Landing on `main` first makes that impossible: the release branch
+is the disposable copy, and `main` is where the fix has to survive.
+
+Maintainers verify this with `git cherry main release/0.9.x`, which must print
+no `+` lines.
+
+### What a patch release may contain
+
+A patch contains bug fixes and security fixes only. It may **not** change:
+
+- `backend/openapi.yaml` (or `paths/`, `schemas/`). Both API clients publish
+  automatically from `main` merges, so a spec change on a release branch
+  produces a client matching no released image.
+- `backend/migrations/`. Migrations are identified by their numeric prefix
+  alone, so a separately numbered migration on a release branch permanently
+  forks the schema lineage. Upgrading `0.9.0` to `0.9.1` to `0.10.0` must reach
+  the same schema state as `0.9.0` straight to `0.10.0`.
+
+If a fix requires either, it ships as a minor release instead.
+
+### Backporting (maintainers)
+
+```bash
+# 1. The fix is already merged to main.
+# 2. Create the line branch, first patch on this line only.
+git switch -c release/0.9.x v0.9.0
+git push -u origin release/0.9.x
+
+# 3. One cherry-pick per PR, based on the release branch.
+git switch -c patch/123-fix-something release/0.9.x
+git cherry-pick -x <sha-from-main>
+```
+
+`-x` records the source commit, which is what makes the two lines auditable
+later. Never merge a release branch into `main`: cherry-pick individual commits
+instead.
+
 ## Licensing
 
 VibeXP is open-core under **AGPL-3.0-or-later**. When you add files, follow the
