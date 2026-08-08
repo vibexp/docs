@@ -5,7 +5,7 @@ description: PostgreSQL, pgvector, and the golang-migrate workflow in the VibeXP
 
 The backend stores all data in **PostgreSQL** with the
 [pgvector](https://github.com/pgvector/pgvector) extension for semantic search.
-The local dev stack (started by `make backend-run-dev`) runs a `pg15` container
+The local dev stack (started by `make backend-run-dev`) runs a `pg17` container
 with pgvector enabled, plus Mailpit and a local TEI embedding service (see
 [Getting Started](/developer-guide/getting-started/)).
 
@@ -45,7 +45,8 @@ paths, v0.8.0), `009` (blueprint source content SHA, v0.8.0), `010` (typed
 resource relations, v0.8.0), and `011_consolidated` (v0.9.0, squashing the
 post-v0.8.0 increments: user status, per-team search settings, per-team
 GitHub App configs, per-team email providers, and the removal of AI-tool
-hook ingestion, billing/subscriptions, and Firebase web push). A pre-existing
+hook ingestion, billing/subscriptions, and Firebase web push), and `012`
+(schedules, v0.10.0). A pre-existing
 pre-v0.3.0 database must be stamped to the matching version so the
 consolidated files are never re-run against a populated schema.
 :::
@@ -73,6 +74,7 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 009_blueprint_source_content_sha.up.sql
 010_resource_relations.up.sql
 011_consolidated.up.sql
+012_schedules.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -123,20 +125,21 @@ make backend-check-migrations
 
 This detects duplicate migration numbers (two files claiming the same `NNN`),
 which would otherwise cause non-deterministic ordering. CI additionally runs
-the check as a PR-only `migrations` job in merge mode against `origin/main`,
-which catches two parallel PRs claiming the same number, the collision local
+the check as a PR-only `migrations` job in merge mode against the branch the PR
+targets (`main` normally, the `release/X.Y.x` line for a backport), which
+catches two parallel PRs claiming the same number, the collision local
 runs cannot see. The `migration-renumbering` PR label is the escape hatch for
 deliberate renumberings such as post-release consolidations.
 
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `011` as the newest shipped migration, the next one is `012`).
+   `012` as the newest shipped migration, the next one is `013`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/012_add_widgets_table.up.sql
-   touch backend/migrations/012_add_widgets_table.down.sql
+   touch backend/migrations/013_add_widgets_table.up.sql
+   touch backend/migrations/013_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

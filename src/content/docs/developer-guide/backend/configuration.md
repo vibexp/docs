@@ -115,6 +115,37 @@ migration behaviour.
 | `security.encryption_key` | `${ENCRYPTION_KEY}` | **Yes** | AES-256 key for encrypting sensitive data at rest (API keys, OAuth-AS signing keys). Must be exactly 32 bytes. |
 | `security.api_key_common` | `${API_KEY_COMMON}` | No | Shared API key for the common API surface. |
 | `security.backoffice_admin_api_key` | `${BACKOFFICE_ADMIN_API_KEY}` | No | Admin key for back-office endpoints (`/bo/*`). Separate from JWTs and regular API keys. |
+| `security.outbound_allowed_cidrs` | `[]` (env `${OUTBOUND_ALLOWED_CIDRS}`, comma-separated) | No | Networks the SSRF guard may dial even though they are loopback, private, or IPv6 unique-local. Empty refuses every reserved range. |
+
+### Outbound network policy
+
+The SSRF guard covers every destination a team can point VibeXP at: embedding
+providers, model providers, A2A agent endpoints, and team-supplied SMTP or
+Mailgun hosts. By default it refuses loopback, private (RFC 1918), and IPv6
+unique-local addresses, because a team member could otherwise aim one of those
+endpoints at your internal network and read back the response. GitHub App calls
+are not affected; they always talk to a hardcoded `https://api.github.com`.
+
+That default is what makes a **self-hosted embedding or model sidecar**
+unreachable. TEI, Ollama, and llama.cpp typically sit on a private Docker subnet
+or on localhost, so declare the range:
+
+```yaml
+security:
+  outbound_allowed_cidrs: ["172.16.0.0/12"]
+```
+
+or, in the combined image, `OUTBOUND_ALLOWED_CIDRS=172.16.0.0/12` (comma-separate
+several). Common values: `172.16.0.0/12` for Docker bridge networks,
+`127.0.0.1/32` for a same-host Ollama, `10.42.0.0/24` for your own cluster
+subnet.
+
+The list only widens the loopback/private tier. Link-local (`169.254.0.0/16`,
+`fe80::/10`, which covers the cloud-metadata address) and multicast
+(`224.0.0.0/4`, `ff00::/8`) stay blocked no matter what, and an entry that
+overlaps them fails startup, so `0.0.0.0/0` cannot be used to switch the guard
+off. A malformed CIDR fails startup too. Local development needs none of this: a
+localhost `frontend.base_url` already permits reserved destinations.
 
 ## Authentication
 
@@ -223,7 +254,7 @@ built-in defaults.
 | `frontend.brand_logo_url` | _(empty)_ | Logo URL. |
 | `frontend.mcp_endpoint` | _(empty)_ | MCP endpoint URL shown in the connect UI. |
 | `frontend.error_type_base_uri` | _(empty)_ | RFC 9457 base URI the SPA links error codes to. |
-| `frontend.gtm_id` / `frontend.gtm_enabled` / `frontend.ga4_measurement_id` | _(empty)_ | Optional analytics. GTM is off unless `gtm_enabled` is exactly `"true"`. |
+| `frontend.gtm_id` / `frontend.ga4_measurement_id` | _(empty)_ | Optional analytics. Setting `gtm_id` **is** the opt-in: the SPA loads Google Tag Manager only when it is non-empty. There is no separate enable flag, and VibeXP ships no cookie-consent gate of its own, so configure consent inside your own tag container. |
 
 :::danger
 `/config.js` is **world-readable** — only non-secret values belong in the
@@ -378,6 +409,44 @@ be ≥ 1.
 | --- | --- | --- |
 | `a2a.default_timeout` | `5m` | Max time to wait for synchronous agent-to-agent HTTP responses. |
 | `a2a.stream_timeout` | `2h` | Max lifetime of a streaming (SSE) agent task. Decoupled from the sync timeout so long-running streams are not cut short. |
+
+## Scheduler
+
+The platform's own engine for recurring work, meant to remove the need for an
+external cron as features move onto it. A ticker loop claims each due schedule
+under its own Postgres advisory lock, which keeps it correct across replicas:
+two instances ticking at once never double-run the same schedule. Due-ness is
+computed from the database clock, not the app server's, so replica clock skew
+does not matter. A job that panics, fails, or times out is logged and the
+schedule still advances; on shutdown the loop waits for the job in flight to
+return before exiting.
+
+Nothing has moved onto it yet, so the externally driven
+[internal job endpoints](#internal-jobs-pubsub-oidc) (`/internal/jobs/*`,
+retention and digests) still need their external scheduler.
+
+Schedules live in the `schedules` table (migration `012_schedules`) and their
+interval has a **1-hour floor**, enforced both in code and by a database check
+constraint.
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `scheduler.enabled` | `true` | Turns the loop on. `false` means nothing is claimed or run. |
+| `scheduler.tick_interval` | `1m` | How often the loop looks for due schedules. A polling cadence, not a job cadence. |
+| `scheduler.job_timeout` | `10m` | Bounds a single job handler invocation. |
+| `scheduler.due_limit` | `100` | Caps how many due schedules one tick claims. |
+
+:::note
+These four keys have **no `${VAR}` wiring in the image's baked config**, so they
+cannot be set with an environment variable. Mount your own `config.yaml` to
+change them.
+:::
+
+:::caution[No user-facing schedules yet]
+As of v0.10.0 this is platform plumbing only. No job types are registered, no
+schedule rows are created, and there is no API, MCP tool, or UI for schedules.
+The engine runs and does nothing until a feature registers a handler.
+:::
 
 ## Deployment environment detection
 

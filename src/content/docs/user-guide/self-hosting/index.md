@@ -12,7 +12,7 @@ This page summarizes the deployment setup in the [`vibexp/vibexp`](https://githu
 ## Prerequisites
 
 - **Docker + Docker Compose** (for the quick start), **or** Node 20+ / Go 1.25+ for local dev.
-- **PostgreSQL 15/16 with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg16`).
+- **PostgreSQL with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg17`). On managed Postgres the connecting role must be allowed to `CREATE EXTENSION` for `vector`, `pg_trgm`, `pgcrypto`, and `uuid-ossp`, or migrations fail at startup. Already running the bundled Postgres on a populated volume? See [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/) before you pull.
 - A **login provider** for production sign-in — Google, GitHub, or any OIDC provider (see [Authentication](#authentication)) — or use the dev-login bypass for local evaluation.
 - *(For semantic search)* an OpenAI-compatible embeddings endpoint configured in-app — see [Search and embeddings](#search-and-embeddings). No external embedding service is required to boot.
 
@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.9.0
+  ghcr.io/vibexp/vibexp:0.10.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -115,6 +115,10 @@ The settings page also shows embedding **coverage** per team, with one-click **R
 
 Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
 
+:::caution[Running the endpoint on your own private network?]
+An SSRF guard refuses outbound calls to loopback and private addresses, so a sidecar on a Docker subnet or on localhost is unreachable by default. Declare its range in `OUTBOUND_ALLOWED_CIDRS` (for example `172.16.0.0/12` for Docker bridge networks, or `127.0.0.1/32` for a same-host Ollama). Link-local (cloud metadata) and multicast ranges can never be allowlisted, and an entry that overlaps them fails startup. Local development is already exempt.
+:::
+
 :::caution
 Without a configured embedding provider, CRUD operations still work, but **semantic search is unavailable**: search falls back to keyword (full-text) mode, which since v0.6.0 includes typo tolerance.
 :::
@@ -127,7 +131,8 @@ All disabled by default, enabled via env vars or a mounted `config.yaml` (see `b
 | --- | --- | --- |
 | **Object storage** (attachments) | GCS-compatible storage: `GCS_RESOURCE_ATTACHMENTS_BUCKET` (+ `STORAGE_EMULATOR_HOST` for an emulator) | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
-| **Analytics** | `VITE_GTM_ENABLED` + `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4) | No analytics |
+| **Analytics** | `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4). Setting `VITE_GTM_ID` **is** the opt-in; there is no separate enable flag, and VibeXP ships no cookie-consent gate of its own | No analytics |
+| **Private-network outbound calls** | `OUTBOUND_ALLOWED_CIDRS` (comma-separated, e.g. `172.16.0.0/12`) so the SSRF guard may reach a self-hosted embedding or model sidecar | Loopback and private destinations are refused |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
 | **GitHub App** | Not an env var: each team registers its own App in-app under Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
 

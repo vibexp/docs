@@ -23,6 +23,11 @@ link-local addresses (including cloud metadata endpoints like `169.254.169.254`)
 with `destination_not_allowed`, and the check applies to the stored provider,
 not just the initial connectivity test. Local development against `localhost` is
 exempt.
+
+Self-hosting the endpoint on your own private network (Ollama, TEI, vLLM on a
+Docker subnet)? An operator can declare that range in `OUTBOUND_ALLOWED_CIDRS`
+so the guard allows it. See
+[Self-Hosting](/user-guide/self-hosting/#search-and-embeddings).
 :::
 
 ## Embedding providers

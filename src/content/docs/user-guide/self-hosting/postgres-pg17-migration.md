@@ -1,12 +1,12 @@
 ---
 title: Upgrading Postgres to 17
-description: Upgrade guide for the release that moves the bundled Postgres image from 16 to 17. Postgres data files are not compatible across major versions, so a populated data volume needs a one-time dump-and-restore (or pg_upgrade) before the new image will start.
+description: Upgrade guide for v0.10.0, which moves the bundled Postgres image from 16 to 17. Postgres data files are not compatible across major versions, so a populated data volume needs a one-time dump-and-restore (or pg_upgrade) before the new image will start.
 sidebar:
   order: 5
 ---
 
 :::danger[Read this before you pull the new image]
-This release moves the bundled Postgres image from **16 to 17**
+**v0.10.0** moves the bundled Postgres image from **16 to 17**
 (`pgvector/pgvector:pg16` → `pgvector/pgvector:pg17`). Postgres **on-disk data
 files are not compatible across major versions**: a Postgres 17 image started on
 a data directory created by Postgres 16 **refuses to start** with a fatal error
@@ -120,7 +120,8 @@ extension needs to be dropped or reinstalled during the upgrade.
 If you run Postgres outside the bundled container (a managed service such as RDS,
 Cloud SQL, or your own cluster), this release does **not** force you to 17 — the
 image pin only governs the Postgres that ships **inside** the combined image's
-compose file. VibeXP supports Postgres 16 and 17. Upgrade your managed instance
+compose file. VibeXP sets no Postgres version requirement of its own beyond the
+extensions its migrations create. Upgrade your managed instance
 on your provider's normal major-version-upgrade path whenever you choose; there
 is no VibeXP-specific step.
 

@@ -52,6 +52,11 @@ In production, VibeXP refuses agent URLs that resolve to loopback, private,
 link-local, or cloud-metadata addresses. In local development these hosts are
 allowed, so you can test against an agent running on `localhost`.
 
+An operator can reopen specific loopback or private ranges with
+`OUTBOUND_ALLOWED_CIDRS` (see
+[Self-Hosting](/user-guide/self-hosting/#optional-integrations)). Link-local and
+cloud-metadata addresses stay blocked either way.
+
 ## The agent card
 
 The agent detail page renders the card as declared by the agent:

@@ -65,7 +65,8 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
 :::note
 A duplicate-migration check (`.github/scripts/check-duplicate-migrations.sh`)
 is available locally via `make backend-check-migrations` and runs in CI as a
-**PR-only** `migrations` job in merge mode against `origin/main`, catching two
+**PR-only** `migrations` job in merge mode against the branch the PR targets
+(`main` normally, the `release/X.Y.x` line for a backport), catching two
 PRs that claim the same migration sequence number. The
 `migration-renumbering` PR label is the escape hatch for deliberate
 renumberings such as post-release consolidations.
@@ -99,9 +100,9 @@ fanned out into parallel jobs (#638). Its jobs:
 | Job | What it does |
 | --- | --- |
 | `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. |
-| `migrations` | PR-only duplicate-migration gate (merge mode against `origin/main`); skipped when the PR carries the `migration-renumbering` label. |
+| `migrations` | PR-only duplicate-migration gate (merge mode against the branch the PR targets); skipped when the PR carries the `migration-renumbering` label. |
 | `unit` | Backend build plus the **untagged** test suite (whole module, no Postgres), with coverage. Also gates the config-schema, Wire, and mock drift checks. |
-| `integration` | The `integration`-tagged tests only (`internal/repositories/postgres` and `internal/services/projectmigration`, pinned in the Makefile) against a `pgvector` Postgres service container, with coverage. |
+| `integration` | The `integration`-tagged tests only (`internal/repositories/postgres`, `internal/scheduler`, and `internal/services/projectmigration`, pinned in the Makefile) against a `pgvector` Postgres service container, with coverage. |
 | `security` | `govulncheck` + `gosec` (split out of the test job in #638). |
 | `lint` | Backend `golangci-lint`. |
 | `openapi` | OpenAPI validation plus the embedded-bundle and strict-server drift checks. |
