@@ -76,14 +76,17 @@ All optional, with neutral defaults. In production these come from the backend's
 
 ## Analytics (Google Tag Manager / GA4)
 
-Disabled by default — must be explicitly enabled. Runtime-injectable via the
-backend's `frontend.gtm_*` / `frontend.ga4_measurement_id` config.
+Off by default: set a container ID to opt in. Runtime-injectable via the
+backend's `frontend.gtm_id` / `frontend.ga4_measurement_id` config.
 
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_GTM_ENABLED` | `false` | Set to `true` to enable GTM. |
-| `VITE_GTM_ID` | — | GTM container ID (e.g. `GTM-XXXXXXX`). Empty disables GTM. |
+| `VITE_GTM_ID` | — | GTM container ID (e.g. `GTM-XXXXXXX`). Setting it **is** the opt-in: GTM loads only when it is non-empty. There is no separate enable flag. |
 | `VITE_GA4_MEASUREMENT_ID` | — | GA4 Measurement ID (e.g. `G-XXXXXXXXXX`) for client-ID capture. |
+
+VibeXP ships no cookie-consent gate of its own: once an ID is set, the tag loads
+unconditionally. If your deployment needs Consent Mode, configure it inside your
+own GTM container.
 
 ## Web push (removed)
 

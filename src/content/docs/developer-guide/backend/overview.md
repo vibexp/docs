@@ -72,6 +72,8 @@ internal/
   models/          domain models shared across layers
   observability/   OpenTelemetry tracing/metrics + environment detection
   repositories/    data access; postgres/ holds the SQL implementations
+  scheduler/       in-process job scheduler: ticker loop, Postgres advisory
+                   locks, per-job-type handler registry
   server/          chi router, middleware, generated handlers
   services/        business logic interfaces + implementations
   specconformance/ tests that the running server matches the OpenAPI spec

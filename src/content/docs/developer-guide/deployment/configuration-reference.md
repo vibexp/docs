@@ -68,6 +68,7 @@ local evaluation only.
 | `INSTANCE_ADMIN_EMAILS` | `auth.instance_admins` | Comma-separated emails granted the `/api/v1/admin` portal. Empty leaves the feature dormant. |
 | `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` | `auth.access_allowlist.*` | Optional. Restrict sign-in by email domain and/or exact address (comma-separated). A user is allowed if either matches; both empty means open. |
 | `TRUSTED_PROXIES` | `server.trusted_proxies` | Set if you run behind a reverse proxy or load balancer. Comma-separated CIDRs allowed to assert a client IP via `X-Forwarded-For` / `X-Real-IP` (e.g. `10.0.0.0/8,172.16.0.0/12`; `192.168.1.5/32` for one host). Empty ignores those headers and uses the connecting peer, correct for a directly exposed instance. Left empty behind a proxy, per-IP rate limits collapse into one bucket and logs show the proxy address; the backend warns at startup. An invalid CIDR fails startup. |
+| `OUTBOUND_ALLOWED_CIDRS` | `security.outbound_allowed_cidrs` | Comma-separated CIDRs the SSRF guard may dial even though they are loopback or private. Empty (the default) refuses every reserved range, which is what blocks a self-hosted embedding or model sidecar on a private Docker subnet. Declare only the network your own service runs on (e.g. `172.16.0.0/12`, or `127.0.0.1/32` for a same-host Ollama). Link-local (`169.254.0.0/16`, `fe80::/10`, i.e. cloud metadata) and multicast (`224.0.0.0/4`, `ff00::/8`) can never be allowlisted; a malformed CIDR or one overlapping those ranges fails startup. Local development is exempt: a localhost `FRONTEND_BASE_URL` already permits reserved ranges. |
 
 :::note[Native-CLI login on REST auto-wires]
 Enabling the embedded AS (`OAUTH_AS_ISSUER_URL`) is enough for the native CLI's
@@ -117,6 +118,10 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   in the app with encrypted API keys.
 - **File attachments** — enable the GCS emulator service and the related `app`
   variables. See [Docker & Compose](/developer-guide/deployment/docker/).
+- **Scheduler**: the in-process scheduler loop runs recurring work without an
+  external cron. It is on by default and has **no env var in the baked image
+  config**, so tuning `scheduler.*` means mounting your own `config.yaml`. See
+  [Backend Configuration](/developer-guide/backend/configuration/#scheduler).
 
 Every running instance serves its own API spec at `/openapi.yaml` and
 `/openapi.json`.
