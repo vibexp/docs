@@ -47,7 +47,7 @@ The Postgres image shipped in the combined-image `docker-compose.yml` moved from
 data directory created by Postgres 16 refuses to start. If you run the bundled
 Postgres with a populated data volume, you must dump-and-restore (or
 `pg_upgrade`) the volume once before pulling the new image. Managed / external
-Postgres is unaffected: VibeXP supports both 16 and 17.
+Postgres is unaffected: the pin only governs the bundled container.
 
 → [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/)
 

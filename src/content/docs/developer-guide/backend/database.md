@@ -125,8 +125,9 @@ make backend-check-migrations
 
 This detects duplicate migration numbers (two files claiming the same `NNN`),
 which would otherwise cause non-deterministic ordering. CI additionally runs
-the check as a PR-only `migrations` job in merge mode against `origin/main`,
-which catches two parallel PRs claiming the same number, the collision local
+the check as a PR-only `migrations` job in merge mode against the branch the PR
+targets (`main` normally, the `release/X.Y.x` line for a backport), which
+catches two parallel PRs claiming the same number, the collision local
 runs cannot see. The `migration-renumbering` PR label is the escape hatch for
 deliberate renumberings such as post-release consolidations.
 

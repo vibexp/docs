@@ -28,10 +28,10 @@ for how to regenerate mocks when an interface changes.
 make backend-test-integration
 ```
 
-Integration tests run the repository layer (`internal/repositories/postgres/...`)
-and the project-migration service (`internal/services/projectmigration/...`)
-against a **live Postgres** instance — locally via Docker Compose, in CI via a
-service container. They are gated behind the `integration` build tag, so the
+Integration tests run the repository layer (`internal/repositories/postgres/...`),
+the scheduler (`internal/scheduler/...`), and the project-migration service
+(`internal/services/projectmigration/...`) against a **live Postgres** instance:
+locally via Docker Compose, in CI via a service container. They are gated behind the `integration` build tag, so the
 default `make backend-test` does not run them.
 
 - Override the target database with the `POSTGRES_TEST_DSN` environment variable.
@@ -41,7 +41,7 @@ Locally, `make backend-test-coverage-integration` runs both suites in one
 process against a real Postgres. In CI the suite is **sharded** (since #638):
 the `unit` job runs the whole module untagged
 (`make backend-test-unit-coverage`, no Postgres) and the `integration` job runs
-only the two integration-tagged packages
+only the integration-tagged packages
 (`make backend-test-integration-coverage`) against a Postgres service
 container. `make backend-check-integration-shard` guards the split: an
 integration-tagged file added to a third package fails CI until the package is

@@ -118,9 +118,9 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   in the app with encrypted API keys.
 - **File attachments** — enable the GCS emulator service and the related `app`
   variables. See [Docker & Compose](/developer-guide/deployment/docker/).
-- **Scheduler**: the in-process scheduler loop runs recurring work without an
-  external cron. It is on by default and has **no env var in the baked image
-  config**, so tuning `scheduler.*` means mounting your own `config.yaml`. See
+- **Scheduler**: the in-process loop for recurring work. On by default, but no
+  job types ship yet, and it has **no env var in the baked image config**, so
+  tuning `scheduler.*` means mounting your own `config.yaml`. See
   [Backend Configuration](/developer-guide/backend/configuration/#scheduler).
 
 Every running instance serves its own API spec at `/openapi.yaml` and

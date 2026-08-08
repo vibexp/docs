@@ -124,7 +124,7 @@ providers, model providers, A2A agent endpoints, and team-supplied SMTP or
 Mailgun hosts. By default it refuses loopback, private (RFC 1918), and IPv6
 unique-local addresses, because a team member could otherwise aim one of those
 endpoints at your internal network and read back the response. GitHub App calls
-are not affected; they always talk to a hardcoded `github.com`.
+are not affected; they always talk to a hardcoded `https://api.github.com`.
 
 That default is what makes a **self-hosted embedding or model sidecar**
 unreachable. TEI, Ollama, and llama.cpp typically sit on a private Docker subnet
@@ -412,13 +412,18 @@ be ≥ 1.
 
 ## Scheduler
 
-The in-process scheduler runs recurring work, so **no external cron is
-required**. A ticker loop claims each due schedule under its own Postgres
-advisory lock, which keeps it correct across replicas: two instances ticking at
-once never double-run the same schedule. Due-ness is computed from the database
-clock, not the app server's, so replica clock skew does not matter. A job that
-panics, fails, or times out is logged and the schedule still advances; a
-shutdown drains the job in flight rather than interrupting it mid-write.
+The platform's own engine for recurring work, meant to remove the need for an
+external cron as features move onto it. A ticker loop claims each due schedule
+under its own Postgres advisory lock, which keeps it correct across replicas:
+two instances ticking at once never double-run the same schedule. Due-ness is
+computed from the database clock, not the app server's, so replica clock skew
+does not matter. A job that panics, fails, or times out is logged and the
+schedule still advances; on shutdown the loop waits for the job in flight to
+return before exiting.
+
+Nothing has moved onto it yet, so the externally driven
+[internal job endpoints](#internal-jobs-pubsub-oidc) (`/internal/jobs/*`,
+retention and digests) still need their external scheduler.
 
 Schedules live in the `schedules` table (migration `012_schedules`) and their
 interval has a **1-hour floor**, enforced both in code and by a database check
