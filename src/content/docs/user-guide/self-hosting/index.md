@@ -12,7 +12,7 @@ This page summarizes the deployment setup in the [`vibexp/vibexp`](https://githu
 ## Prerequisites
 
 - **Docker + Docker Compose** (for the quick start), **or** Node 20+ / Go 1.25+ for local dev.
-- **PostgreSQL with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg17`). On managed Postgres the connecting role must be allowed to `CREATE EXTENSION` for `vector` and `pg_trgm`, or migrations fail at startup. Already running the bundled Postgres on a populated volume? See [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/) before you pull.
+- **PostgreSQL with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg17`). On managed Postgres the connecting role must be allowed to `CREATE EXTENSION` for `vector`, `pg_trgm`, `pgcrypto`, and `uuid-ossp`, or migrations fail at startup. Already running the bundled Postgres on a populated volume? See [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/) before you pull.
 - A **login provider** for production sign-in — Google, GitHub, or any OIDC provider (see [Authentication](#authentication)) — or use the dev-login bypass for local evaluation.
 - *(For semantic search)* an OpenAI-compatible embeddings endpoint configured in-app — see [Search and embeddings](#search-and-embeddings). No external embedding service is required to boot.
 

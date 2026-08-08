@@ -121,7 +121,7 @@ If you run Postgres outside the bundled container (a managed service such as RDS
 Cloud SQL, or your own cluster), this release does **not** force you to 17 — the
 image pin only governs the Postgres that ships **inside** the combined image's
 compose file. VibeXP sets no Postgres version requirement of its own beyond the
-`vector` and `pg_trgm` extensions. Upgrade your managed instance
+extensions its migrations create. Upgrade your managed instance
 on your provider's normal major-version-upgrade path whenever you choose; there
 is no VibeXP-specific step.
 
