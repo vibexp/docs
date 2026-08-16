@@ -26,7 +26,7 @@ Embeddings are generated asynchronously after a resource is saved, so a brand ne
 
 ### Workspace search
 
-Workspace search answers "which team holds the project called X". It is **MCP only**: the `vibexp_io_list_teams_and_projects` tool is the single way to reach it. There is no REST endpoint and no web-app equivalent (the search box on the projects list is an unrelated substring filter over project names).
+Workspace search answers "which team holds the project called X". It is **MCP only**: the `vibexp_io_list_teams_and_projects` tool is the single way to reach it. There is no REST endpoint and no web-app equivalent (the search box on the projects list is an unrelated substring filter over one team's project names, descriptions, and slugs).
 
 Teams and projects are **not embedded**, so this search is keyword only. What each entity matches:
 
