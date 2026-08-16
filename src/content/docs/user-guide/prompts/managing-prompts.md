@@ -25,9 +25,8 @@ Use the search bar at the top of the Prompt Management page to find prompts quic
 **Search by:**
 - Prompt name
 - Description text
-- Prompt content
 
-Simply type your search term and the list updates instantly to show matching prompts.
+Search does **not** look inside the prompt body, so a phrase you only wrote in the prompt text will not match. Type your search term and the list updates to show matching prompts.
 
 **Example searches:**
 - "blog" - finds all blog-related prompts
@@ -36,30 +35,23 @@ Simply type your search term and the list updates instantly to show matching pro
 
 ## Filtering Prompts
 
-Use the filter dropdowns to narrow down your prompt list:
+The filter bar sits above the list: a search box and three dropdowns.
 
-### Filter by Status
+| Filter | Options | What it does |
+| --- | --- | --- |
+| **Status** | All statuses, Published, Draft | Focus on work in progress, or only production-ready templates |
+| **Sharing** | All, Shared, Not shared | Find prompts with an active share link |
+| **Freshness** | All freshness, Stale only | Show only prompts nobody has used lately |
 
-Click the **All Status** dropdown to filter by:
-- **All Status**: Show all prompts regardless of status
-- **Draft**: Show only work-in-progress prompts
-- **Published**: Show only finalized prompts
+The filters combine, so **Published** plus **Stale only** answers "which of our finished prompts has gone quiet".
 
-Use this to focus on prompts that need finishing or to view only production-ready templates.
+### Filter by Freshness
 
-### Filter by Type
+**Stale only** lists the prompts your team's freshness rules currently flag. Flagged prompts also carry a quiet **Stale** badge in the list, which you can hover to see when the prompt was last used. If your team has no freshness rules, nothing is ever flagged. See [Resource Freshness](/user-guide/resource-freshness/).
 
-Click the **All Prompts** dropdown to filter by prompt type or special characteristics.
+### Filtering by label
 
-### Filter by Labels
-
-Click the **All Labels** dropdown to filter by assigned labels.
-
-If you've organized your prompts with labels like `marketing`, `engineering`, or `email`, you can quickly view all prompts with a specific label.
-
-### Advanced Filtering
-
-Click the filter icon on the far right to access additional filtering options.
+There is no label dropdown on the list page. Filter by label through the API's `labels` parameter instead, described in [API Integration](/user-guide/prompts/api-integration/).
 
 ## Sorting Prompts
 
@@ -68,6 +60,8 @@ Click any column header to sort the prompt list:
 - **Name**: Alphabetical order (A-Z or Z-A)
 - **Status**: Group by Draft or Published
 - **Updated**: Most recent or oldest first
+
+The API also sorts by **Created** (`sort_by=created_at`).
 
 The currently sorted column displays an arrow indicator showing the sort direction.
 

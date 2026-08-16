@@ -24,6 +24,7 @@ VibeXP uses an open-core license split. The **application core is AGPL-3.0-or-la
 | Documentation site | `vibexp/docs` | AGPL-3.0-or-later |
 | Command-line client | `vibexp/cli` | MIT |
 | Generated TS API client (`@vibexp/api-client`) | `vibexp/api-client-js` | MIT |
+| Generated Go API client (`github.com/vibexp/api-client-go`) | `vibexp/api-client-go` | MIT |
 | Design tokens + brand (`@vibexp/design-system`) | separate package | MIT |
 
 When you add files, follow the license of the repository they live in.
@@ -36,8 +37,9 @@ VibeXP is split across several repositories under [`github.com/vibexp`](https://
 | --- | --- | --- |
 | `backend/` (in `vibexp/vibexp`) | Core REST + MCP API | Go, PostgreSQL + pgvector |
 | `frontend/` (in `vibexp/vibexp`) | Web application | React + Vite |
-| `vibexp/cli` | Command-line client | TypeScript + Bun |
+| `vibexp/cli` | Command-line client | Go |
 | `vibexp/api-client-js` | Generated TS API client (`@vibexp/api-client`) | TypeScript |
+| `vibexp/api-client-go` | Generated Go API client (`github.com/vibexp/api-client-go`) | Go |
 | `vibexp/website` | Marketing site | Astro + React |
 | `vibexp/blog` | Content blog | Astro |
 | `vibexp/docs` | User & developer documentation | Astro Starlight |

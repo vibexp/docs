@@ -54,6 +54,8 @@ frontend/src/
 ├── constants/    Shared constants
 ├── styles/       Global styles
 ├── types/        Shared TypeScript types
+├── assets/       Static assets imported by the bundler
+├── __tests__/    Top-level test suites (co-located tests also live beside their code)
 └── routes.tsx    The route table
 ```
 
@@ -71,8 +73,18 @@ frontend/src/
   `can('member.role.update')`.
 - **Team information architecture**: team pages live at top-level `/teams/**`
   (`pages/teams/TeamRoutes.tsx`) with team-scoped settings under
-  `/teams/:id/settings/*` (GitHub App, search ranking, email provider, model
-  and embedding providers); `/settings` is personal settings only.
+  `/teams/:id/settings/*` (GitHub App, search ranking, freshness, email
+  provider, model and embedding providers); `/settings` is personal settings
+  only.
+- **Resource freshness** (new in v0.11.0): a `FreshnessBadge` plus a
+  `FreshnessFilterSelect` ("stale only") on the prompt, artifact, blueprint and
+  memory list pages, and a team-settings section at
+  `/teams/:id/settings/freshness` with rule management, an analytics tab
+  (over-time, by-type, by-project, by-rule) and an audit tab whose entries
+  deep-link to all four resource types. Files:
+  `components/FreshnessBadge.tsx`, `components/FreshnessFilterSelect.tsx`,
+  `pages/teams/settings/freshness/`, `services/freshnessService.ts`. See
+  [Resource Freshness](/user-guide/resource-freshness/).
 - **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
   popover with value typeahead, on the Blueprint, Artifact, and Memory list
   pages.

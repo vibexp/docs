@@ -45,8 +45,12 @@ paths, v0.8.0), `009` (blueprint source content SHA, v0.8.0), `010` (typed
 resource relations, v0.8.0), and `011_consolidated` (v0.9.0, squashing the
 post-v0.8.0 increments: user status, per-team search settings, per-team
 GitHub App configs, per-team email providers, and the removal of AI-tool
-hook ingestion, billing/subscriptions, and Firebase web push), and `012`
-(schedules, v0.10.0). A pre-existing
+hook ingestion, billing/subscriptions, and Firebase web push), `012`
+(schedules, v0.10.0), and `013_consolidated` (v0.11.0, squashing the
+post-v0.10.0 increments: the resource-freshness schema (four tables plus
+per-medium `last_accessed_*` columns on the four resource tables), the
+narrowed `update_memories_updated_at` trigger, and the teams/projects
+keyword-search indexes). A pre-existing
 pre-v0.3.0 database must be stamped to the matching version so the
 consolidated files are never re-run against a populated schema.
 :::
@@ -75,6 +79,7 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 010_resource_relations.up.sql
 011_consolidated.up.sql
 012_schedules.up.sql
+013_consolidated.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -114,6 +119,59 @@ Migration `005` enables the `pg_trgm` extension and creates the trigram
 indexes. It also adds per-provider `query_prefix` / `document_prefix` columns
 to `embedding_providers` for asymmetric embedding models.
 
+Since v0.11.0 the same three-pass ladder also covers **teams and projects**.
+`013_consolidated` adds four indexes for it:
+
+| Index | Kind | Covers |
+| --- | --- | --- |
+| `idx_teams_fts` | GIN full-text | team name + description |
+| `idx_projects_fts` | GIN full-text | project name + description |
+| `idx_teams_name_trgm` | GIN `gin_trgm_ops` | team name only |
+| `idx_projects_name_trgm` | GIN `gin_trgm_ops` | project name only |
+
+It creates no extension: `pg_trgm` was already installed by `005`, so
+self-hosters on managed Postgres need no new action.
+
+:::caution
+The index expressions must stay **byte-identical** to the expressions
+`internal/repositories/postgres/entity_search.go` emits (`ftsMatchExpr` /
+`trgmNameExpr`), or the planner silently ignores them and every pass falls back
+to a sequential scan. Column qualification is the one permitted difference
+(`t.name` in the query vs `name` in the index).
+:::
+
+## Resource freshness (v0.11.0)
+
+`013_consolidated` creates the schema behind
+[Resource Freshness](/user-guide/resource-freshness/):
+
+| Table | Holds |
+| --- | --- |
+| `resource_freshness` | System-owned state. A row exists only **while** a resource is stale; clearing it deletes the row. |
+| `freshness_rules` | The team's staleness policy (resource types, mediums, threshold in days, optional project scope). |
+| `team_freshness_settings` | One row per team (evaluation interval, reversibility). No row means "inherit the defaults", so `DELETE` is the reset path. |
+| `resource_freshness_audit` | Append-only mark/clear log. |
+
+It also denormalizes four per-medium columns,
+`last_accessed_web_at` / `last_accessed_cli_at` / `last_accessed_mcp_at` /
+`last_accessed_api_at`, onto `prompts`, `artifacts`, `blueprints` and
+`memories`, so rule evaluation is an indexed column compare instead of an
+aggregate over `resource_access_events`. The columns are nullable with no
+default, which keeps each `ALTER` a catalog-only change on four hot tables.
+
+Three design points worth knowing before you extend this schema:
+
+- **No backfill, on purpose.** `resource_access_events` is pruned on
+  `retention.access_event_days` (default 90), so seeding the new columns from
+  it would produce a partial, silently wrong history. Everything starts NULL
+  and rules stay quiet until post-deploy access data accrues.
+- **`resource_freshness.resource_id` is polymorphic with no foreign key.** One
+  column cannot reference four tables, so cleanup is application level (the
+  same pattern as comments and relations).
+- **The enum-ish text columns carry no `CHECK` constraints.** The valid sets
+  for `status`, `action`, `reason`, `resource_types` and `mediums` are owned by
+  the service layer, so extending one never needs a migration.
+
 ## Validating migrations
 
 The CI and pre-commit hooks check that migrations are well-formed. Run the same
@@ -128,18 +186,20 @@ which would otherwise cause non-deterministic ordering. CI additionally runs
 the check as a PR-only `migrations` job in merge mode against the branch the PR
 targets (`main` normally, the `release/X.Y.x` line for a backport), which
 catches two parallel PRs claiming the same number, the collision local
-runs cannot see. The `migration-renumbering` PR label is the escape hatch for
-deliberate renumberings such as post-release consolidations.
+runs cannot see. That job is path-filtered: a `dorny/paths-filter` gate in the
+`changes` job runs it only on pull requests that touch `backend/migrations/`.
+The `migration-renumbering` PR label is the escape hatch for deliberate
+renumberings such as post-release consolidations.
 
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `012` as the newest shipped migration, the next one is `013`).
+   `013_consolidated` as the newest shipped migration, the next one is `014`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/013_add_widgets_table.up.sql
-   touch backend/migrations/013_add_widgets_table.down.sql
+   touch backend/migrations/014_add_widgets_table.up.sql
+   touch backend/migrations/014_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

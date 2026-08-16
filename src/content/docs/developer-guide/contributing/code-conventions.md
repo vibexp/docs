@@ -32,6 +32,12 @@ code is stale relative to the spec (for example, `backend-wire-check` fails if
 [Code Generation](/developer-guide/backend/code-generation/) for the full set of
 commands.
 
+A **new API operation** carries two extra obligations: it must ship with a
+spec-validated response test (`specconformance.AssertConformsToSpec`), and any
+required array field in its response must be declared `models.JSONArray[T]` so
+it can never serialize as `null`. See
+[API & OpenAPI](/developer-guide/backend/api-and-openapi/#response-conformance).
+
 :::caution
 Editing a `*_gen.go`, `mock_*.go`, or `wire_gen.go` file by hand will be
 overwritten on the next regeneration and will fail CI. Change the source (spec,

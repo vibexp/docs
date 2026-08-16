@@ -54,7 +54,14 @@ A blueprint's slug is unique **per project**. Two projects can each have a bluep
 
 ## Project scoping
 
-Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate, and filter the Blueprints list by project, status, a search term across title, description, and content, or **metadata**: the metadata filter matches on any metadata key-value pairs (pick a key, then values, with typeahead from the values your team actually uses; keys combine with AND, values within a key with OR).
+Blueprints are organized by **project**, and a blueprint is addressed by its project plus its slug. Use projects to keep each tool's or repository's rules separate (the project itself is chosen in the global header selector). The Blueprints list filters on:
+
+- **Search**: a term matched across title, description, and content.
+- **Type**: All types, General, Claude Code, Claude, Cursor, or Codex.
+- **Freshness**: "Stale only" narrows the list to the blueprints your team's freshness rules currently flag. See [Resource Freshness](/user-guide/resource-freshness/).
+- **Metadata**: match on any metadata key-value pairs (pick a key, then values, with typeahead from the values your team actually uses; keys combine with AND, values within a key with OR).
+
+A flagged blueprint also carries a quiet **Stale** badge next to its title in the list. Both blueprint list endpoints accept `freshness=stale` for the same filter over the API.
 
 ## Blueprint paths
 
@@ -134,9 +141,9 @@ Re-importing an existing blueprint reconciles by outcome, and **your local VibeX
 
 When your AI assistant is connected to VibeXP through the [MCP server](/user-guide/mcp-server/), it can create and update blueprints directly, and discover them through semantic search.
 
-- `vibexp_io_create_blueprint`: create a new blueprint (project, slug, title, content, optional type/status/metadata, and an optional `path`). When `path` is omitted, VibeXP derives the canonical path from the type, subtype, and slug.
+- `vibexp_io_create_blueprint`: create a new blueprint. Required: `team_id` (UUID or slug) and `project_id` (UUID). Plus `slug`, `title`, `content`, and optional `description`, `type` (defaults to `general`), `subtype` (when it is `sub-agents`, `metadata.model` is required), `status` (`active` or `expired`), and `metadata`. There is **no** `path` parameter: VibeXP always derives the canonical path from the type, subtype, and slug.
 - `vibexp_io_update_blueprint`: update an existing blueprint, located by its project and slug.
-- `vibexp_io_get_resource` / `vibexp_io_list_resources`: read blueprints by passing `resource_type: "blueprint"`: fetch one by `project_id` and `slug` (with full content), or list a project's blueprints as slim, filterable, paginated items.
+- `vibexp_io_get_resource` / `vibexp_io_list_resources`: read blueprints by passing `resource_type: "blueprint"`: fetch one by `project_id` and `slug` (with full content), or list a project's blueprints as slim, filterable, paginated items. A blueprint fetched with `vibexp_io_get_resource` also carries its typed `related` neighborhood, its computed `similar` neighborhood, and a `freshness` object when it is currently flagged stale.
 - `vibexp_io_search`: find blueprints (and prompts, artifacts, and memories) by meaning; narrow to blueprints with the `types` filter.
 - `vibexp_io_delete_resource`: delete a blueprint by passing `resource_type: "blueprint"` with its `project_id` and `slug`. The blueprint's search embeddings are removed alongside it.
 

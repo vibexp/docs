@@ -100,7 +100,7 @@ whenever you change the `Config` struct.
 | --- | --- | --- | --- |
 | `database.host` | `localhost` | **Yes** | Postgres host. May be a Unix socket path (Cloud SQL) when it starts with `/`. |
 | `database.port` | `5432` | **Yes** | Postgres port. |
-| `database.user` | `vibexp_app` | **Yes** | Database user. |
+| `database.user` | `postgres` | **Yes** | Database user. The code default is `postgres`; `config.example.yaml` sets `vibexp_app` for local dev and the published image resolves `${DB_USER:-vibexp}`. |
 | `database.password` | `${DB_PASSWORD}` | **Yes** | Database password (secret — resolved from the environment). |
 | `database.name` | `vibexp_io` | **Yes** | Database name. |
 | `database.sslmode` | `disable` | No | Connection TLS mode. `disable` (no TLS) or `require` (encrypt, no cert verification). Set `require` for managed Postgres that mandates TLS. |
@@ -379,11 +379,51 @@ team. (`auth.github`, the web-login OAuth client, is unaffected.)
 Team-admin setup is in [GitHub App](/user-guide/integrations/github-app/); the
 one-time instance upgrade is [Migrating to per-team GitHub Apps](/user-guide/self-hosting/github-app-migration/).
 
-## Attachments (GCS)
+## Attachments (object storage)
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `storage.attachments_bucket` | _(empty)_ | GCS bucket for attachments. Empty disables attachments (upload/download/delete return 503). |
+`storage.backend` selects the object store backing file attachments. Accepted
+values: `gcs`, `s3` (covers MinIO and any S3-compatible store), `filesystem`,
+or empty. Empty preserves the pre-selector behaviour: GCS when
+`storage.attachments_bucket` is set, otherwise attachments are disabled and
+upload/download/delete return 503.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `storage.backend` | _(empty)_ | `STORAGE_BACKEND` | Store selector: `gcs`, `s3`, `filesystem`, or empty to infer. |
+| `storage.attachments_bucket` | _(empty)_ | `GCS_RESOURCE_ATTACHMENTS_BUCKET` | Bucket name for the `gcs` and `s3` backends. |
+| `storage.s3_endpoint` | _(empty)_ | `S3_ENDPOINT` | S3 API endpoint (e.g. `http://minio:9000`). Empty targets AWS S3 in `s3_region`. |
+| `storage.s3_region` | _(empty)_ | `S3_REGION` | S3 region. Required by the SDK even for MinIO, which ignores the value. |
+| `storage.s3_access_key` | _(empty)_ | `S3_ACCESS_KEY` | Static S3 access key (secret). |
+| `storage.s3_secret_key` | _(empty)_ | `S3_SECRET_KEY` | Static S3 secret key (secret). Both empty falls back to the AWS SDK default credential chain (env vars, shared config, IAM). |
+| `storage.s3_path_style` | `false` | _(none, literal `false`)_ | Force path-style addressing (`endpoint/bucket/key`), required by MinIO and most self-hosted S3-compatible stores. |
+| `storage.fs_root_dir` | _(empty)_ | `STORAGE_FS_ROOT_DIR` | Root directory for the `filesystem` backend. Created at startup if missing, so mount a volume at this path or attachments vanish with the container. |
+
+Validation fails startup (fail closed, so a typo surfaces at boot rather than
+as 503s at upload time) when:
+
+- `storage.backend` is not one of the four accepted values,
+- `gcs` or `s3` is selected without `storage.attachments_bucket`,
+- `s3` is selected without `storage.s3_region`,
+- exactly one of the two S3 credentials is set (they are both-or-neither),
+- `filesystem` is selected without `storage.fs_root_dir`.
+
+A valid configuration whose client still fails to initialize (bad credentials,
+unreachable endpoint) logs a warning and disables attachments rather than
+crashing the server, so uploads return 503 and the rest of the instance keeps
+running.
+
+:::caution[MinIO needs a mounted config.yaml]
+`storage.s3_path_style` is the one storage knob with **no environment
+variable**: `${VAR}` interpolation is string-only, so a boolean cannot be
+wired through it and the baked image config carries a literal `false`. MinIO
+and most self-hosted S3-compatible stores require path-style addressing, so
+those deployments must mount their own `config.yaml` with
+`storage.s3_path_style: true`. AWS S3 works on the default.
+:::
+
+`STORAGE_EMULATOR_HOST` is not a VibeXP config key: it is read directly by the
+Google Cloud Storage SDK and only applies when you point the `gcs` backend at
+a GCS emulator.
 
 ## Rate limiting
 
@@ -421,32 +461,41 @@ does not matter. A job that panics, fails, or times out is logged and the
 schedule still advances; on shutdown the loop waits for the job in flight to
 return before exiting.
 
-Nothing has moved onto it yet, so the externally driven
-[internal job endpoints](#internal-jobs-pubsub-oidc) (`/internal/jobs/*`,
-retention and digests) still need their external scheduler.
+Schedules live in the `schedules` table and their interval has a **1-hour
+floor**, enforced both in code and by a database check constraint.
 
-Schedules live in the `schedules` table (migration `012_schedules`) and their
-interval has a **1-hour floor**, enforced both in code and by a database check
-constraint.
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `scheduler.enabled` | `true` | `SCHEDULER_ENABLED` | Turns the loop on. `false` means nothing is claimed or run. |
+| `scheduler.tick_interval` | `1m` | `SCHEDULER_TICK_INTERVAL` | How often the loop looks for due schedules. A polling cadence, not a job cadence. Must be > 0. |
+| `scheduler.job_timeout` | `10m` | `SCHEDULER_JOB_TIMEOUT` | Bounds a single job handler invocation. Must be > 0. |
+| `scheduler.due_limit` | `100` | `SCHEDULER_DUE_LIMIT` | Caps how many due schedules one tick claims. Must be ≥ 1. |
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `scheduler.enabled` | `true` | Turns the loop on. `false` means nothing is claimed or run. |
-| `scheduler.tick_interval` | `1m` | How often the loop looks for due schedules. A polling cadence, not a job cadence. |
-| `scheduler.job_timeout` | `10m` | Bounds a single job handler invocation. |
-| `scheduler.due_limit` | `100` | Caps how many due schedules one tick claims. |
-
-:::note
-These four keys have **no `${VAR}` wiring in the image's baked config**, so they
-cannot be set with an environment variable. Mount your own `config.yaml` to
-change them.
+:::note[Settable by environment since v0.11.0]
+All four keys are wired as `${VAR:-default}` in the image's baked config, so
+`SCHEDULER_ENABLED=false` (or any of the other three) takes effect with no
+mounted `config.yaml`. Values are parsed and validated at startup: a
+non-boolean `SCHEDULER_ENABLED`, an undecodable duration, or an out-of-range
+`SCHEDULER_DUE_LIMIT` fails startup rather than falling back to the default.
 :::
 
-:::caution[No user-facing schedules yet]
-As of v0.10.0 this is platform plumbing only. No job types are registered, no
-schedule rows are created, and there is no API, MCP tool, or UI for schedules.
-The engine runs and does nothing until a feature registers a handler.
-:::
+### What runs on it
+
+One job type is registered: **`freshness_evaluate`**, which evaluates a team's
+[resource freshness](/user-guide/resource-freshness/) rules. Schedule rows are
+created, updated, and deleted automatically as a team edits its freshness rules
+and settings in the app, so there is nothing to provision by hand.
+
+A team's cadence comes from its own freshness `interval_seconds` setting
+(default `86400`, one day; floor 1 hour, ceiling 365 days), **not** from
+`scheduler.tick_interval`, which only governs how often the loop polls for work
+that is already due.
+
+`SCHEDULER_ENABLED=false` stops freshness evaluation instance-wide.
+
+The externally driven [internal job endpoints](#internal-jobs-pubsub-oidc)
+(`/internal/jobs/*`, retention and digests) have **not** moved onto the
+scheduler and still need their external scheduler.
 
 ## Deployment environment detection
 

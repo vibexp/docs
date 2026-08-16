@@ -86,8 +86,8 @@ cherry-picks it after it lands on `main`.
 
 | Release | Cut from | Contains |
 | --- | --- | --- |
-| Minor (`0.9.0` to `0.10.0`) | `main` | everything merged since the last tag |
-| Patch (`0.9.0` to `0.9.1`) | `release/0.9.x` | cherry-picks only |
+| Minor (`0.10.0` to `0.11.0`) | `main` | everything merged since the last tag |
+| Patch (`0.11.0` to `0.11.1`) | `release/0.11.x` | cherry-picks only |
 
 A `release/X.Y.x` branch is created from the release tag the first time that
 line needs a patch, then reused for later patches on the same line. Only the
@@ -99,7 +99,7 @@ A fix that lives only on a release branch is a fix the next minor silently
 reintroduces. Landing on `main` first makes that impossible: the release branch
 is the disposable copy, and `main` is where the fix has to survive.
 
-Maintainers verify this with `git cherry main release/0.9.x`, which must print
+Maintainers verify this with `git cherry main release/0.11.x`, which must print
 no `+` lines.
 
 ### What a patch release may contain
@@ -111,21 +111,24 @@ A patch contains bug fixes and security fixes only. It may **not** change:
   produces a client matching no released image.
 - `backend/migrations/`. Migrations are identified by their numeric prefix
   alone, so a separately numbered migration on a release branch permanently
-  forks the schema lineage. Upgrading `0.9.0` to `0.9.1` to `0.10.0` must reach
-  the same schema state as `0.9.0` straight to `0.10.0`.
+  forks the schema lineage. Upgrading `0.11.0` to `0.11.1` to `0.12.0` must
+  reach the same schema state as `0.11.0` straight to `0.12.0`.
 
-If a fix requires either, it ships as a minor release instead.
+If a fix requires either, it ships as a minor release instead. This is exactly
+why the `013_consolidated` squash shipped as a minor: a renumbering rewrites
+`main`'s migration filenames on purpose, and the collision gate rejects that
+without the `migration-renumbering` label.
 
 ### Backporting (maintainers)
 
 ```bash
 # 1. The fix is already merged to main.
 # 2. Create the line branch, first patch on this line only.
-git switch -c release/0.9.x v0.9.0
-git push -u origin release/0.9.x
+git switch -c release/0.11.x v0.11.0
+git push -u origin release/0.11.x
 
 # 3. One cherry-pick per PR, based on the release branch.
-git switch -c patch/123-fix-something release/0.9.x
+git switch -c patch/123-fix-something release/0.11.x
 git cherry-pick -x <sha-from-main>
 ```
 
@@ -141,12 +144,14 @@ license of the directory they live in.
 ## Security disclosures
 
 Please do **not** report security vulnerabilities through public GitHub issues.
-Follow the private disclosure process in the repository's
-[`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md).
+Use GitHub's private reporting on the
+[vibexp/vibexp repository](https://github.com/vibexp/vibexp) (Security tab,
+"Report a vulnerability"), or contact the maintainers privately, rather than
+opening a public issue or pull request.
 
 ## Code of Conduct
 
 This project adheres to the
-[Contributor Covenant](https://www.contributor-covenant.org/). By participating,
-you are expected to uphold it — see the repository's
-[`CODE_OF_CONDUCT.md`](https://github.com/vibexp/vibexp/blob/main/CODE_OF_CONDUCT.md).
+[Contributor Covenant](https://www.contributor-covenant.org/), and by
+participating you are expected to uphold it. Be respectful in issues, pull
+requests and reviews.

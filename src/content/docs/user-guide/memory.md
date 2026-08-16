@@ -149,7 +149,7 @@ Search: "React hooks best practices"
 Surfaces memories about React hooks and best practices even when they use different wording. Semantic search is the default.
 
 :::note[Keyword fallback]
-Semantic search requires the deployment to have an embedding provider configured. When it doesn't, VibeXP automatically falls back to keyword full-text search — same search box, exact-word matching instead of matching by meaning.
+Semantic search requires your team to have an embedding provider configured (providers are per team, not instance wide). When there isn't one, VibeXP automatically falls back to keyword full-text search: same search box, exact-word matching instead of matching by meaning.
 :::
 
 #### Keyword search syntax
@@ -160,9 +160,10 @@ In keyword mode (no embedding provider) the search box supports these operators:
 - `word1 OR word2`: match either term (plain words are ANDed by default).
 - `term -excluded`: exclude results containing a term.
 
-Title matches rank highest, and ranking is length-normalized so a short,
-on-topic title beats a long document that merely mentions the term. A single
-mistyped word still matches by typo tolerance.
+A memory's title and body are matched together as one document, so a term is
+equally findable wherever it appears. Results are ordered by Postgres's standard
+full-text relevance score. A single mistyped word still matches, through a
+typo-tolerant fallback against resource titles.
 
 In **semantic mode** (embedding provider configured) the query is embedded as
 text, so these operators are treated as ordinary words rather than search
@@ -173,6 +174,8 @@ operators.
 Filter memories by:
 - **Tag**: Custom tag filtering (tags come from memory metadata)
 - **Status**: Memory lifecycle status
+- **Freshness**: "Stale only" shows just the memories your team's freshness
+  rules currently flag. See [Resource Freshness](/user-guide/resource-freshness/)
 - **Metadata**: The metadata filter matches on any metadata key-value pairs.
   Pick a key, then one or more values (with typeahead from the values your
   team actually uses). Keys combine with AND, values within a key with OR.
@@ -180,6 +183,9 @@ Filter memories by:
   it is applied server-side
 - **Project**: Use the global project selector in the app header to scope the
   list to one project (or all)
+
+A flagged memory carries a quiet **Stale** badge next to its title in the list.
+Hover it to see how long the memory has gone unused and how many rules flagged it.
 
 Fields like category and priority live in each memory's free-form metadata
 and are searchable.
@@ -280,6 +286,10 @@ vibexp_io_get_resource({
   id: "<memory-uuid>"
 })
 ```
+
+The response carries the memory's full content, its `related` and `similar`
+neighborhoods, and a `freshness` object when the memory is currently flagged
+stale. See [Resource Freshness](/user-guide/resource-freshness/).
 
 ### Updating Memories
 
@@ -405,8 +415,11 @@ Code Review Guidelines:
 All memory endpoints are team-scoped:
 
 ```bash
-# List memories (optional filters: project_id, search, status, ...)
+# List memories (optional filters: project_id, search, status, freshness, ...)
 GET /api/v1/{team_id}/memories?project_id={project_id}
+
+# List only memories currently flagged stale
+GET /api/v1/{team_id}/memories?freshness=stale
 
 # Get specific memory
 GET /api/v1/{team_id}/memories/{memory_id}
@@ -420,6 +433,10 @@ PUT /api/v1/{team_id}/memories/{memory_id}
 # Delete memory
 DELETE /api/v1/{team_id}/memories/{memory_id}
 ```
+
+`freshness` accepts exactly one value, `stale`; anything else returns a `400`
+rather than silently returning the unfiltered list. Memory payloads also carry an
+optional `freshness` object, which is absent when the memory is fresh.
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.
 

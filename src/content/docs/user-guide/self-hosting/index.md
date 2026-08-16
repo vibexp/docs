@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.10.0
+  ghcr.io/vibexp/vibexp:0.11.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -67,7 +67,9 @@ bump. The published image is multi-arch (`linux/amd64` + `linux/arm64`).
 Upgrading to v0.9.0 drops the retired billing/subscription, AI-tool activity
 ingestion, and web-push tables automatically, and moves GitHub App
 configuration from `config.yaml` to per-team setup (re-register the App on
-each team after upgrading).
+each team after upgrading). Upgrading to v0.11.0 from v0.10.0 or any earlier
+published release needs no action: its consolidated `013_consolidated`
+migration applies automatically on boot.
 :::
 
 There is no embedding env var: embedding and model providers are configured
@@ -125,16 +127,17 @@ Without a configured embedding provider, CRUD operations still work, but **seman
 
 ## Optional integrations
 
-All disabled by default, enabled via env vars or a mounted `config.yaml` (see `backend/config.example.yaml`):
+Configured via env vars or a mounted `config.yaml` (see `backend/config.example.yaml`). All are disabled by default except resource freshness, which ships on:
 
 | Integration | Enable via | Behavior when off |
 | --- | --- | --- |
-| **Object storage** (attachments) | GCS-compatible storage: `GCS_RESOURCE_ATTACHMENTS_BUCKET` (+ `STORAGE_EMULATOR_HOST` for an emulator) | Uploads return `503` |
+| **Object storage** (attachments) | `STORAGE_BACKEND` picks the store: `filesystem` (+ `STORAGE_FS_ROOT_DIR`, mount a volume there), `s3` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and for MinIO `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`), or `gcs` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`; leaving `STORAGE_BACKEND` unset auto-detects this from the bucket). MinIO also needs a mounted `config.yaml` with `storage.s3_path_style: true`, since that boolean has no env var | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
 | **Analytics** | `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4). Setting `VITE_GTM_ID` **is** the opt-in; there is no separate enable flag, and VibeXP ships no cookie-consent gate of its own | No analytics |
 | **Private-network outbound calls** | `OUTBOUND_ALLOWED_CIDRS` (comma-separated, e.g. `172.16.0.0/12`) so the SSRF guard may reach a self-hosted embedding or model sidecar | Loopback and private destinations are refused |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
 | **GitHub App** | Not an env var: each team registers its own App in-app under Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
+| **Resource freshness** | On by default. Rules and the evaluation interval are configured per team in the app ([Resource Freshness](/user-guide/resource-freshness/)); the instance kill switch is `SCHEDULER_ENABLED=false` | No freshness evaluation runs |
 
 ## Branding
 

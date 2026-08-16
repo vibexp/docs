@@ -162,6 +162,8 @@ You: "List my prompts in the acme-engineering team"
 AI: *Calls a prompt tool with team_id="acme-engineering"*
 ```
 
+If `team_id` is missing, or does not match a team you belong to, the tool returns an error telling the assistant to call `vibexp_io_list_teams_and_projects` and pick a valid identifier. For anti-enumeration reasons, "no such team" and "you are not a member of that team" are deliberately indistinguishable: both produce the same access-denied message, so a caller cannot probe for the existence of teams it cannot see.
+
 :::tip
 You only need a team identifier once per conversation. After the AI discovers your teams (see below), it can reuse the same `team_id` for subsequent calls in that session.
 :::
@@ -171,11 +173,11 @@ You only need a team identifier once per conversation. After the AI discovers yo
 There are two ways to get a team's UUID or slug:
 
 1. **From the app** — Open the **MCP Connect** page in VibeXP. Each of your teams is listed with its UUID and slug, ready to copy.
-2. **From the MCP tool** — Ask your AI assistant to call **`vibexp_io_list_teams`**. It returns every team you belong to, so the assistant can pick the right identifier without you leaving your editor.
+2. **From the MCP tool**: Ask your AI assistant to call **`vibexp_io_list_teams_and_projects`**. It returns every team you belong to with its `uuid`, `name`, `slug` and `project_count`, so the assistant can pick the right identifier without you leaving your editor.
 
-### Discovering teams with `vibexp_io_list_teams`
+### Discovering teams and projects with `vibexp_io_list_teams_and_projects`
 
-The `vibexp_io_list_teams` tool returns the teams the authenticated user belongs to. Each entry includes the team's `uuid`, `name`, and `slug`:
+`vibexp_io_list_teams_and_projects` is the single workspace-discovery tool. Called with no arguments it returns the teams you belong to, each with the number of projects it holds:
 
 ```json
 {
@@ -183,30 +185,87 @@ The `vibexp_io_list_teams` tool returns the teams the authenticated user belongs
     {
       "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       "name": "Acme Engineering",
-      "slug": "acme-engineering"
+      "slug": "acme-engineering",
+      "project_count": 7
     },
     {
       "uuid": "9b2e6f1a-3c4d-4e5f-8a6b-1c2d3e4f5a6b",
       "name": "Personal",
-      "slug": "personal"
+      "slug": "personal",
+      "project_count": 2
     }
   ]
 }
 ```
 
-A typical flow looks like this:
+The same tool answers three questions, depending on what you already know:
+
+| Call | What you get |
+| --- | --- |
+| No arguments | Every team you belong to, with its project count (orientation) |
+| `query` | A ranked, cross-team search over team **and** project names, slugs, descriptions and project git URLs, with matching projects nested under their team |
+| `team_id`, no query | That one team's projects |
+
+Optional arguments:
+
+| Argument | Meaning |
+| --- | --- |
+| `query` | Search text, matched across every team you belong to. Typo tolerant: a single mistyped character still matches |
+| `team_id` | Team UUID or slug. Narrows the result to one team |
+| `scope` | `teams`, `projects`, or `both` (default `both`) |
+| `page` | Page number (default `1`) |
+| `limit` | Items per page (default `10`, max `25` per entity type) |
+
+A search response nests each matching project under the team that holds it:
+
+```json
+{
+  "teams": [
+    {
+      "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "Acme Engineering",
+      "slug": "acme-engineering",
+      "project_count": 7,
+      "projects": [
+        {
+          "id": "3f1c9d20-8b7e-4a11-9d55-2c6f0b8e4a13",
+          "slug": "checkout-service",
+          "name": "Checkout Service",
+          "description": "Payments and checkout flow.",
+          "score": 0.84
+        }
+      ]
+    }
+  ]
+}
+```
+
+Project descriptions are truncated to 160 characters, and paging through search results reaches at most 100 results.
+
+A typical flow when you name the team looks like this:
 
 ```
 You: "Save this snippet to my Acme Engineering artifacts"
 
-AI: *Calls vibexp_io_list_teams to discover teams*
+AI: *Calls vibexp_io_list_teams_and_projects to discover teams*
     *Finds "Acme Engineering" → slug "acme-engineering"*
     *Calls vibexp_io_create_artifact with team_id="acme-engineering"*
     *Confirms: "Saved to Acme Engineering"*
 ```
 
+And when the agent knows only a repository or project name:
+
+```
+You: "Log this decision against the checkout-service project"
+
+AI: *Calls vibexp_io_list_teams_and_projects with query="checkout-service"*
+    *Gets one hit: project "checkout-service" nested under team "acme-engineering"*
+    *Calls vibexp_io_create_memory with team_id="acme-engineering"
+     and project_id="3f1c9d20-…"*
+```
+
 :::note
-`vibexp_io_list_teams` is the one tool that does **not** take a `team_id` — it exists precisely to help you (or the AI) discover one.
+`vibexp_io_list_teams_and_projects` and `vibexp_io_get_user` are the only tools that do **not** require a `team_id`. The discovery tool optionally **accepts** `team_id` to narrow its results to one team.
 :::
 
 ## Available Tools
@@ -214,14 +273,24 @@ AI: *Calls vibexp_io_list_teams to discover teams*
 Once connected, AI assistants can use these tools.
 
 :::note
-Tools that read or write team data require a `team_id` (UUID or slug) argument. Use `vibexp_io_list_teams` to discover valid identifiers — see [Working With Teams](#working-with-teams).
+Tools that read or write team data require a `team_id` (UUID or slug) argument. Use `vibexp_io_list_teams_and_projects` to discover valid identifiers (see [Working With Teams](#working-with-teams)).
 :::
 
 ### Workspace and Context
 
 - **vibexp_io_get_user**: Get basic information about the currently authenticated user
-- **vibexp_io_list_teams**: List the teams you belong to (returns `uuid`, `name`, `slug`). Use the result to supply `team_id` to other tools
-- **vibexp_io_list_projects**: List a team's projects, with optional search and pagination
+- **vibexp_io_list_teams_and_projects**: Discover the workspace. With no arguments it returns the teams you belong to with their project counts; with `query` it searches team and project names, slugs, descriptions and project git URLs across **all** your teams at once, returning matching projects nested under their team and ranked; with `team_id` and no query it lists that team's projects. Optional `scope` (`teams`, `projects`, `both`), `page` and `limit` (default 10, max 25). Typo tolerant
+- **vibexp_io_list_teams** *(deprecated)*: List the teams you belong to. Superseded by a no-argument `vibexp_io_list_teams_and_projects`
+- **vibexp_io_list_projects** *(deprecated)*: List a team's projects. Superseded by `vibexp_io_list_teams_and_projects` with a `team_id`
+
+:::caution[Deprecated: vibexp_io_list_teams and vibexp_io_list_projects]
+Both tools still work in this release, but they are superseded by `vibexp_io_list_teams_and_projects` and **will be removed in the next release**.
+
+- Replace `vibexp_io_list_teams` with a no-argument `vibexp_io_list_teams_and_projects` call.
+- Replace `vibexp_io_list_projects` with `vibexp_io_list_teams_and_projects` plus a `team_id`.
+
+Update any prompt, skill, or agent configuration that names the old tools now, so nothing breaks when they are removed.
+:::
 
 ### Search and resource reads
 
@@ -234,6 +303,12 @@ One generic pair of read tools covers memories, artifacts, and blueprints (keyed
 
 :::note[Reads carry relations]
 `vibexp_io_get_resource` (and the four resource detail reads) also return a `related` array (the resource's typed relation neighborhood, up to 20 edges) and a `similar` array (up to 5 semantically similar resources computed from embeddings). Both arrays are optional. See [Relations](/user-guide/relations/).
+:::
+
+:::note[Reads carry freshness, and are recorded]
+For memories, artifacts, and blueprints, `vibexp_io_get_resource` also returns a `freshness` object when the resource is **currently flagged stale** by your team's freshness rules. The field is absent when the resource is fresh, so an assistant can warn you before treating a stale document as current. See [Resource Freshness](/user-guide/resource-freshness/).
+
+A successful `vibexp_io_get_resource` also records a resource access event with source **MCP**, tracked separately from web and CLI reads. Those events feed [Access Analytics](/user-guide/resource-access-analytics/) and [Resource Freshness](/user-guide/resource-freshness/), whose rules can watch the `web`, `cli`, and `mcp` mediums independently. List tools (`vibexp_io_list_resources`, `vibexp_io_search`) do **not** record per-resource accesses: only fetching a resource's full content counts.
 :::
 
 ### Relations
@@ -501,7 +576,7 @@ Because the MCP endpoint is now an OAuth 2.1 Resource Server and no longer accep
 
 ### Why do I need to pass a `team_id` now?
 
-The MCP endpoint used to embed your team UUID in the URL (`/mcp/v1/teams/{team_uuid}/common`). That URL has been removed. You now connect to a single team-agnostic URL (`/mcp/v1/common`) and tell each team-scoped tool which team to act on via the `team_id` parameter. This lets one MCP connection work across all of your teams. Use `vibexp_io_list_teams` to find a team's UUID or slug.
+The MCP endpoint used to embed your team UUID in the URL (`/mcp/v1/teams/{team_uuid}/common`). That URL has been removed. You now connect to a single team-agnostic URL (`/mcp/v1/common`) and tell each team-scoped tool which team to act on via the `team_id` parameter. This lets one MCP connection work across all of your teams. Use `vibexp_io_list_teams_and_projects` to find a team's UUID or slug, and to find which team holds a project when you only know the project or repository name.
 
 ### My MCP server stopped working after an update — what changed?
 

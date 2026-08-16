@@ -27,7 +27,7 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | --- | :---: | :---: | :---: |
 | **Team** | | | |
 | Change team name, slug, description | ✅ | ✅ | — |
-| Change team settings (search ranking, email provider, GitHub App) | ✅ | ✅ | — |
+| Change team settings (search ranking, resource freshness rules, embedding and model providers, email provider, GitHub App) | ✅ | ✅ | — |
 | Delete the team | ✅ | — | — |
 | Transfer ownership | ✅ | — | — |
 | **Members** | | | |
@@ -48,7 +48,7 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | Delete their own post | ✅ | ✅ | ✅ |
 | Delete *someone else's* post (moderation) | ✅ | ✅ | — |
 
-Everyone in a team can **view** the team, its members, its projects and all of its resources. Roles only govern what you can *change*.
+Everyone in a team can **view** the team, its members, its projects and all of its resources. Roles only govern what you can *change*. That extends to team settings: reading the [Resource Freshness](/user-guide/resource-freshness/) rules, its analytics and its audit log is open to every member, and only the writes need the permission.
 
 Two entries surprise people, so they're worth stating plainly:
 
@@ -132,7 +132,7 @@ The complete set of permission strings:
 | `team.update` | Change team name, slug or description |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
-| `team.settings.update` | Change team-level settings such as search ranking |
+| `team.settings.update` | Change team-level settings: search ranking, resource freshness rules and settings, embedding and model providers, the email provider, the GitHub App |
 | `member.invite` | Invite new members |
 | `member.remove` | Remove members from the team |
 | `member.role.update` | Change a member's role |

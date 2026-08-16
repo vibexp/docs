@@ -80,7 +80,8 @@ the exact versions:
 
 | Tool | Pinned version |
 | --- | --- |
-| Go toolchain | `go1.25.12` (`GOTOOLCHAIN` in the Makefile) |
+| Go toolchain | `go1.25.13` (`GOTOOLCHAIN` in the Makefile) |
+| Node | `22` in CI; `>=22.22.0` in `frontend/package.json` `engines` |
 | golangci-lint | `v2.12.2` |
 | gosec | `v2.28.0` |
 | govulncheck | `v1.6.0` |
@@ -99,8 +100,8 @@ fanned out into parallel jobs (#638). Its jobs:
 
 | Job | What it does |
 | --- | --- |
-| `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. |
-| `migrations` | PR-only duplicate-migration gate (merge mode against the branch the PR targets); skipped when the PR carries the `migration-renumbering` label. |
+| `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. On a **fork** PR it also uploads a `pr-number` artifact, which `sonar-fork.yml` consumes. |
+| `migrations` | PR-only duplicate-migration gate (merge mode against the branch the PR targets), and only when the PR touches `backend/migrations/`; skipped when the PR carries the `migration-renumbering` label. |
 | `unit` | Backend build plus the **untagged** test suite (whole module, no Postgres), with coverage. Also gates the config-schema, Wire, and mock drift checks. |
 | `integration` | The `integration`-tagged tests only (`internal/repositories/postgres`, `internal/scheduler`, and `internal/services/projectmigration`, pinned in the Makefile) against a `pgvector` Postgres service container, with coverage. |
 | `security` | `govulncheck` + `gosec` (split out of the test job in #638). |
@@ -108,7 +109,7 @@ fanned out into parallel jobs (#638). Its jobs:
 | `openapi` | OpenAPI validation plus the embedded-bundle and strict-server drift checks. |
 | `frontend-static` | Frontend install, lint, dependency audit, and type-check. |
 | `frontend-test` | Frontend Vitest coverage run plus the production build. |
-| `sonar` | SonarCloud scan fed by the unit, integration, and frontend coverage artifacts. |
+| `sonar` | SonarCloud scan fed by the unit, integration, and frontend coverage artifacts. Skipped for fork PRs (see `sonar-fork.yml`) and for `release/**` pushes. |
 
 The Go test suite is **sharded** across `unit` (untagged) and `integration`
 (`-tags=integration`), and the two halves must stay exhaustive together;
@@ -118,7 +119,17 @@ cache on every Go job; the `unit` job is the sole saver (on pushes to `main`
 and on a total cache miss).
 
 The `go-version` in this workflow must stay in sync with `GO_VERSION`
-(`1.25.12`) in the `Makefile`.
+(`1.25.13`) in the `Makefile`.
+
+CI runs on every pull request, and on pushes to `main` and to `release/**`
+branches. A release line branch needs its own run because a patch release is tagged from
+its tip; PRs into a release branch already run through the unfiltered
+`pull_request` trigger. Two things are deliberately narrower than the trigger:
+Sonar is **skipped on release-branch pushes** (main is the coverage baseline,
+and a line branch is main-as-of-the-last-tag plus cherry-picks, so scanning it
+would publish a second permanently lagging baseline), and Go build-cache
+**saving** stays pinned to `refs/heads/main`, since a cache saved on any other
+branch is visible only to that branch.
 
 The **SonarCloud quality gate is blocking** (since #371/#397): a red gate fails
 CI. Coverage artifacts from both the backend and frontend test jobs feed the
@@ -132,6 +143,48 @@ fake-gcs + the backend serving the embedded SPA), which is too heavy to gate
 every PR. Run it manually via `workflow_dispatch` (Actions tab, or
 `gh workflow run ci-e2e.yml -f branch=<ref>`) against any branch. It delegates
 to `make e2e`, so a green run there means the same `make e2e` is green locally.
+
+### `sonar-fork.yml` (new in v0.11.0)
+
+A `pull_request` run originating in a **fork** receives no repository secrets,
+permanently and by design, so `SONAR_TOKEN` is empty there and the scanner
+cannot authenticate. With a blocking quality gate that meant no outside
+contribution could produce a green run. So `ci.yml`'s `sonar` job now **skips**
+fork PRs, and this `workflow_run` companion analyses them from the **base
+repository's** context, using the coverage artifacts the fork's own CI run
+uploaded.
+
+The two conditions are exact complements. The test on both sides is "the head
+repo is not this repo", not `head.repo.fork`; changing one without the other
+silently disables Sonar on every PR.
+
+:::danger[No step in `sonar-fork.yml` may execute anything from the repository]
+The job holds `SONAR_TOKEN` and a `statuses: write` token while checking out
+untrusted fork code. No `make`, no `npm install`, no `go build`, no
+`./scripts/…`, no local composite action. That invariant is the entire basis of
+the design's safety. Two supporting constraints: `sonar-project.properties` is
+restored from the **default branch**, never taken from the PR (a fork would
+otherwise control `sonar.sources`, `sonar.exclusions` and the coverage report
+paths), and artifacts are downloaded by the **triggering run's id**, not by name
+alone. If you need to run something from the tree, it belongs in `ci.yml`, which
+has no secrets.
+:::
+
+### `stale.yml`
+
+The daily stale sweep covers **issues and pull requests** on separate budgets
+(PRs were added in v0.11.0). PRs get the longer window on purpose: a quiet PR is
+more often waiting on maintainer review than abandoned.
+
+| Track | Idle before the `Stale` label | Reminder | Closed | Exempt labels |
+| --- | --- | --- | --- | --- |
+| Issues | 7 days | 7 days after the label | 14 days after the label | `pinned`, `epic`, `security` |
+| Pull requests | 14 days | 7 days after the label | 14 days after the label | `pinned`, `security` |
+
+Draft PRs are **not** exempt: they are the most common source of abandoned
+branches. Any genuine (non-bot) activity removes the label and resets the
+clock, and for a PR that includes pushes, reviews and review-thread comments,
+not just issue comments.
 
 ## Releases
 
