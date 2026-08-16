@@ -35,6 +35,8 @@ It is accepted on:
 | `GET /api/v1/{team_id}/blueprints` | blueprints |
 | `GET /api/v1/{team_id}/blueprints/{project_id}` | blueprints in one project |
 
+`metadata` composes with the other list filters on those endpoints (`project_id`, `status`, `search`, `type`, and `freshness=stale`). Every filter you pass must match.
+
 ### Keys are ANDed, values are ORed
 
 Within a key, any listed value matches. Across keys, every key must match.
@@ -126,9 +128,9 @@ The semantics are identical to the REST parameter, including the empty-array key
 
 This is what lets an agent build a filter from real keys instead of guessing at them.
 
-## Removed in this release
+## Removed query parameters
 
-Three earlier query parameters were **removed** and no longer filter anything. Requests carrying them still succeed, so an old client or a bookmarked URL degrades to an unfiltered list rather than an error. Nothing is silently mis-filtered, but nothing is filtered either.
+Three query parameters were **removed in an earlier release** and no longer filter anything. Requests carrying them still succeed, so an old client or a bookmarked URL degrades to an unfiltered list rather than an error. Nothing is silently mis-filtered, but nothing is filtered either.
 
 | Removed | Was used on | Replacement |
 | --- | --- | --- |

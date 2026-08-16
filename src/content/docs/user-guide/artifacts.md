@@ -43,7 +43,7 @@ Artifacts are substantial pieces of AI-generated content:
    - **Description**: Brief summary (optional)
    - **Type**: any of your team's artifact types (default: general)
    - **Content**: Your artifact content (supports Markdown)
-   - **Status**: active or expired
+   - **Status**: active, draft, or archived
 4. Click **Save**
 
 ### Automatic Creation via MCP
@@ -58,7 +58,7 @@ vibexp_io_create_artifact({
   slug: "api-documentation-v1",
   title: "REST API Documentation",
   content: "# API Endpoints\n\n## Users\n...",
-  type: "static-contexts",
+  type: "static_contexts",
   status: "active"
 })
 ```
@@ -82,21 +82,34 @@ Examples:
 
 ### Artifact Types
 
-Artifact types are **custom categories your team defines** under Settings →
-Customization → **Artifact Types**. Every team starts with the default
-`general` type; add types that match how your team works, for example:
+Artifact types are **custom categories your team defines** on the **Artifact
+Types** card in your team's **Settings**
+(`/teams/<team>/settings/customization`). Every team starts with the system
+defaults; add types that match how your team works:
 
-- **work-reports**: completed analyses, status reports, summaries
-- **static-contexts**: documentation, code snippets, reference material
+- **work_reports**: completed analyses, status reports, summaries
+- **static_contexts**: documentation, code snippets, reference material
 - **general**: meeting notes, brainstorming, miscellaneous content
+
+Note the system default slugs use underscores, not hyphens.
 
 When creating an artifact (in the UI or via MCP), the type value must match
 one of your team's configured types.
 
 ### Status Management
 
-- **active**: Currently relevant artifacts
-- **expired**: Archived or outdated content
+An artifact is in one of three states:
+
+| Status | In lists | In search | Use it for |
+|---|---|---|---|
+| **active** | Yes (default) | Yes | Current, relevant content |
+| **draft** | Yes | No | Work in progress you are still refining |
+| **archived** | Only when you filter on it | No | Retired or outdated content |
+
+`active` is the default. **draft** stays visible in lists so you can keep
+working on it, but is never returned by search, so connected AI tools do not
+pick it up as context. **archived** is hidden from the default list and from
+search, and stays reachable by filtering on the archived status.
 
 Change status anytime without deleting artifacts.
 
@@ -122,20 +135,24 @@ Finds all artifacts mentioning authentication and implementation.
 ### Advanced Filters
 
 Filter by:
-- **Project**: Show artifacts from specific projects
+- **Search**: a term matched across title, description, and content
 - **Type**: any of your team's artifact types
-- **Status**: active or expired
-- **Creation Date**: Date range filtering
+- **Status**: active, draft, or archived
+- **Freshness**: "Stale only" shows just the artifacts your team's freshness
+  rules currently flag. See [Resource Freshness](/user-guide/resource-freshness/)
 - **Metadata**: Match on any metadata key-value pairs. Pick a key, then one
   or more values (with typeahead from the values your team actually uses).
   Keys combine with AND, values within a key with OR
 
+Project scoping is not part of this filter bar: pick the project in the global
+header selector.
+
 ### Sort Options
 
-- **Newest First**: Recently created artifacts
-- **Oldest First**: Historical artifacts
-- **Alphabetical**: By title or slug
-- **Most Relevant**: Based on search query
+Sort by `created_at`, `updated_at`, or `title`, each ascending or descending:
+
+- **Newest / Oldest First**: by creation or last-update time
+- **Alphabetical**: by title
 
 ## Working with Artifacts
 
@@ -145,6 +162,10 @@ Filter by:
 - **Detail View**: Full content with formatting
 - **Markdown Rendering**: Beautiful syntax highlighting
 - **Code Blocks**: Language-specific formatting
+
+An artifact flagged by your team's freshness rules carries a quiet **Stale**
+badge next to its title in the list. See
+[Resource Freshness](/user-guide/resource-freshness/).
 
 ### Update and Version
 
@@ -183,19 +204,17 @@ Access metadata in search and filtering.
 
 **Filtering by metadata:** see [Metadata filtering](/user-guide/metadata-filtering/) for querying artifacts by the metadata they carry, in the UI, the API, and over MCP.
 
-## Bulk Operations
+## Working in bulk
 
-### Batch Delete
+There is no multi-select or bulk-action menu in the artifacts list today. Status
+changes and deletions are made one artifact at a time.
 
-1. Select multiple artifacts
-2. Click **Bulk Actions** → **Delete**
-3. Confirm deletion
+For programmatic batch work, loop over the REST API with an
+[API key](/user-guide/integrations/api-keys/):
 
-### Batch Status Update
-
-1. Select artifacts
-2. Click **Bulk Actions** → **Update Status**
-3. Choose new status (active/expired)
+```bash
+PUT /api/v1/{team_id}/artifacts/{project_id}/{slug}
+```
 
 ## MCP Integration
 
@@ -211,7 +230,7 @@ vibexp_io_create_artifact({
   slug: "error-handler",
   title: "Error Handler Implementation",
   content: "```typescript\n...\n```",
-  type: "static-contexts"
+  type: "static_contexts"
 })
 ```
 
@@ -267,7 +286,7 @@ Store reusable code snippets:
 
 ```
 Project: personal/code-snippets
-Type: static-contexts
+Type: static_contexts
 Examples:
 - "react-custom-hook-example"
 - "api-error-handler"
@@ -280,7 +299,7 @@ Maintain living documentation:
 
 ```
 Project: company/main-app
-Type: static-contexts
+Type: static_contexts
 Examples:
 - "architecture-overview"
 - "deployment-guide"
@@ -319,7 +338,7 @@ Examples:
 - Use Markdown for formatting
 - Include context in descriptions
 - Tag with relevant metadata
-- Regular cleanup of expired artifacts
+- Regular cleanup: archive artifacts you no longer rely on
 
 ### Search Optimization
 
@@ -338,7 +357,10 @@ All artifact routes are team-scoped and project-addressed:
 # List artifacts in a team
 GET /api/v1/{team_id}/artifacts
 
-# List artifacts in a project
+# List only artifacts currently flagged stale
+GET /api/v1/{team_id}/artifacts?freshness=stale
+
+# List artifacts in a project (same filters, including freshness)
 GET /api/v1/{team_id}/artifacts/{project_id}
 
 # Get a specific artifact
@@ -354,6 +376,11 @@ PUT /api/v1/{team_id}/artifacts/{project_id}/{slug}
 DELETE /api/v1/{team_id}/artifacts/{project_id}/{slug}
 ```
 
+Both list endpoints accept `freshness=stale`. That is the only accepted value;
+anything else returns a `400` rather than silently returning the unfiltered
+list. Artifact payloads also carry an optional `freshness` object, absent when
+the artifact is fresh. See [Resource Freshness](/user-guide/resource-freshness/).
+
 See [API Keys](/user-guide/integrations/api-keys) for authentication.
 
 ## Frequently Asked Questions
@@ -364,7 +391,11 @@ Unlimited. Store as many artifacts as needed to build your knowledge base.
 
 ### Can I export artifacts?
 
-Yes. Export individual artifacts or entire projects in JSON or Markdown format.
+There is no built-in export button. Use the REST API
+(`GET /api/v1/{team_id}/artifacts` to list, then
+`GET /api/v1/{team_id}/artifacts/{project_id}/{slug}` for each artifact's full
+content), or connected AI tools over MCP (`vibexp_io_list_resources` and
+`vibexp_io_get_resource` with `resource_type: "artifact"`).
 
 ### Do artifacts have size limits?
 
@@ -376,7 +407,7 @@ Artifacts are scoped to a **team**. Everyone in the team can access the team's a
 
 ### How long are artifacts stored?
 
-Artifacts are stored indefinitely until you delete them. Use status "expired" to archive without deleting.
+Artifacts are stored indefinitely until you delete them. Set the status to **archived** to retire an artifact without deleting it.
 
 ## Related Features
 

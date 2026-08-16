@@ -83,29 +83,61 @@ for endpoints, token TTLs, key rotation, and the consent flow in detail.
 
 ## Exposed tool groups
 
-The MCP server exposes tools across these resource groups:
+`MCPToolsManager.AddAllTools` (`internal/server/mcp_tools.go`) registers
+fourteen groups:
 
-- `prompts`
-- `memories`
-- `artifacts`
-- `blueprints`
-- `relations` (the `link_resources` write tool, `vibexp_io_link_resources`)
-- `metadata` (the `list_resource_metadata` key/value discovery tool; the
-  `metadata` filter parameter on `vibexp_io_list_resources`)
-- `feeds`
-- `search`
-- `attachments`
-- `projects`
-- `teams`
-- `user`
+| Group | Notes |
+| --- | --- |
+| `user` | User-scoped identity (`vibexp_io_get_user`). No `team_id`. |
+| `workspace` | The merged discovery tool `vibexp_io_list_teams_and_projects` (`mcp_workspace_tools.go`). User-scoped, so it is callable before any team is known; an optional `team_id` narrows the result to one team. |
+| `resources` | The generic reads `vibexp_io_get_resource` / `vibexp_io_list_resources` (`mcp_read_tools.go`). |
+| `prompts` | |
+| `memories` | |
+| `artifacts` | |
+| `blueprints` | |
+| `relations` | The `vibexp_io_link_resources` write tool. |
+| `metadata` | The `vibexp_io_list_resource_metadata` key/value discovery tool, plus the `metadata` filter parameter on `vibexp_io_list_resources`. |
+| `feeds` | |
+| `search` | |
+| `attachments` | |
+| `delete` | The generic `vibexp_io_delete_resource`. |
+| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`, kept for one release and removed in the next. Use the `workspace` tool instead. |
 
-A single generic **`delete_resource`** tool (`vibexp_io_delete_resource`)
-handles deletion across types — `resource_type` is one of `memory`,
-`artifact`, `blueprint`, or `prompt` — so the tool surface stays small instead
-of growing one delete tool per type.
+The generic **`vibexp_io_delete_resource`** handles deletion across types
+(`resource_type` is one of `memory`, `artifact`, `blueprint` or `prompt`), so
+the tool surface stays small instead of growing one delete tool per type.
 
 For the public-facing server, tools follow the `vibexp_io_*` naming convention
 (for example `vibexp_io_create_prompt`, `vibexp_io_search`).
+
+## Per-team scoping
+
+Every team-scoped handler calls `resolveTeam`
+(`internal/server/mcp_team_resolution.go`) as its **first** statement. It
+resolves an untrusted `team_id` (a UUID **or** a slug) to the canonical team
+UUID and validates membership in the same pass, by delegating to
+`TeamRepository.ResolveByIdentifier`, which enforces owner-OR-member access in
+the SQL. Because the query only ever considers the caller's own teams, a
+successful match implicitly proves membership: there is no separate
+`IsUserMemberOfTeam` call to forget.
+
+Two properties are load-bearing:
+
+- **One query regardless of team count.** This runs before every team-scoped
+  tool call, and the previous implementation paged through every team on each
+  one.
+- **Anti-enumeration.** "Team does not exist" and "you are not a member" return
+  the same generic access-denied text, so a caller cannot probe for teams they
+  are not in.
+
+## Server instructions
+
+The server sends a fixed instructions string (`mcpServerInstructions` in
+`mcp_tools.go`, wired into `mcp.ServerOptions`) to every client at `initialize`.
+It explains team scoping once, centrally, instead of repeating it in every
+tool's `team_id` description, and it is what steers clients to the merged
+discovery tool. Renaming or replacing a tool means updating that string in the
+same change, or clients keep being pointed at a name that no longer exists.
 
 :::note
 The MCP mount is intentionally **not** documented in `openapi.yaml` — it speaks

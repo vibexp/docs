@@ -19,14 +19,14 @@ The bundled `docker-compose.yml` tracks `latest`. Pin to `X.Y.Z` instead if you
 want upgrades to be a deliberate step:
 
 ```yaml
-image: ghcr.io/vibexp/vibexp:0.10.0
+image: ghcr.io/vibexp/vibexp:0.11.0
 ```
 
 **Patch releases are supported on the newest minor line only.** Now that
-`0.10.0` has shipped, fixes go to `0.10.x`, not `0.9.x`. To stay on a supported
+`0.11.0` has shipped, fixes go to `0.11.x`, not `0.10.x`. To stay on a supported
 version, follow the newest minor.
 
-A patch release (`0.10.0` to `0.10.1`) contains bug fixes and security fixes
+A patch release (`0.11.0` to `0.11.1`) contains bug fixes and security fixes
 only. It never adds a database migration and never changes the API, so it is
 always a straight image bump with no action on your side. Anything that needs a
 schema or API change ships as a minor release and appears below if it requires
@@ -38,6 +38,37 @@ several releases, work upwards from the version you are on and apply every one
 in between.
 
 ## Breaking changes
+
+### Migrations renumbered, only affects `main`-built images (v0.11.0)
+
+Upgrading from **v0.10.0 or any earlier published release needs no action**:
+the new `013_consolidated` migration applies automatically on boot, exactly
+like any other release.
+
+It squashes four migrations that were merged after v0.10.0 but never shipped in
+a release (`013_resource_freshness`,
+`014_memories_updated_at_ignores_last_accessed`,
+`015_seed_freshness_evaluate_schedules`, `016_team_project_search`) into one
+step numbered `013`. Because golang-migrate keys on the numeric prefix alone,
+renumbering is only safe for instances that never applied the old numbers, and
+no released image ever did.
+
+If you ran an image built from `main` between v0.10.0 and v0.11.0, your
+`schema_migrations` table holds rows from the **old** numbering, so
+`013_consolidated` will not re-run and your schema will not be reconciled by
+the upgrade. Either recreate the database (the simplest, supported option) or,
+after verifying the schema already matches, reconcile `schema_migrations` by
+hand.
+
+### Deprecated MCP tools `vibexp_io_list_teams` and `vibexp_io_list_projects` (v0.11.0)
+
+Both are superseded by **`vibexp_io_list_teams_and_projects`**, which returns a
+smaller payload and can find a project across all your teams without knowing
+which team holds it. The two old tools still work in v0.11.0 but are
+**removed in the next release**, so update any prompt, skill, or agent
+configuration that names them now, while both are still registered.
+
+→ [MCP Server](/user-guide/mcp-server/)
 
 ### Bundled Postgres upgraded from 16 to 17 (v0.10.0)
 

@@ -5,8 +5,8 @@ sidebar:
   order: 2
 ---
 
-Each team brings its own AI endpoints. Two provider types are configured under
-**Settings** → **Integration**:
+Each team brings its own AI endpoints. Two provider types have their own cards on
+your team's **Settings** hub:
 
 - **Embedding Providers** power semantic search across prompts, artifacts,
   blueprints, and memories.
@@ -37,7 +37,8 @@ OpenAI, Ollama, LocalAI, vLLM, HuggingFace TEI, and similar.
 
 ### Adding a provider
 
-1. Open **Settings** → **Integration** → **Embedding Providers**
+1. Open **Settings** → **Embedding Providers**
+   (URL `/teams/<team>/settings/embedding-providers`)
 2. Click to add a provider and fill in:
 
 | Field | Default | Purpose |
@@ -58,12 +59,36 @@ Once saved, embedding starts automatically for the team's existing content.
 
 ### Coverage, reprocess, and clear
 
-The Embedding Providers page shows **coverage cards**: how much of the team's
-content is embedded, pending, or failed. Two actions are available:
+The Embedding Providers page shows **coverage cards**: **Embedded**, **Pending**,
+**% embedded**, and a per-type breakdown underneath. There is no failed count:
+anything VibeXP could not embed simply stays **Pending**. Two actions are
+available:
 
 - **Reprocess pending**: re-enqueue anything not yet embedded.
 - **Clear all embeddings**: delete every stored vector for the team. Content
   is untouched; embeddings are rebuilt on the next processing pass.
+
+### When an item never gets embedded
+
+VibeXP treats two kinds of provider failure differently:
+
+| Failure | Examples | What happens |
+| --- | --- | --- |
+| **Temporary** | timeout, `408`, `429`, network error, any `5xx` | Retried with backoff |
+| **Permanent** | any other `4xx`, such as a rejected model name or a bad API key | Attempted once, **never retried** |
+
+A permanently rejected item stays **Pending**, and **Reprocess pending** retries
+it once per press. Because the UI has no failed counter, a permanently rejected
+item looks exactly like a slow one. The distinction lives in the server logs,
+which carry the provider's own error message.
+
+:::tip[Long memories and artifacts now embed]
+Embedding requests are sent in batches of 32 chunks instead of one large request,
+so a long memory or artifact no longer trips a provider's request-size limit
+(HuggingFace TEI rejected oversized batches with `422`). If content stayed
+unembedded on an earlier version, press **Reprocess pending** after upgrading and
+it is picked up.
+:::
 
 :::caution[Changing a provider re-embeds everything]
 Changing a provider's identity (endpoint or model) wipes that team's vectors
@@ -82,7 +107,8 @@ is unavailable.
 
 Model providers let a team bring its own OpenAI-compatible LLM endpoint.
 
-1. Open **Settings** → **Integration** → **Model Providers**
+1. Open **Settings** → **Model Providers**
+   (URL `/teams/<team>/settings/model-providers`)
 2. Add the endpoint URL, API key, and model details
 3. Save. The provider's connectivity is **validated on save**.
 
@@ -113,5 +139,8 @@ See [API Keys](/user-guide/integrations/api-keys) for authentication.
 
 - [Memory](/user-guide/memory) and [Artifacts](/user-guide/artifacts) explain
   how semantic search is used day to day.
+- [Resource Freshness](/user-guide/resource-freshness/) is a separate signal from
+  embedding coverage. It flags resources nobody has used lately, not resources
+  missing a vector.
 - Self-hosters: see
   [Self-Hosting → Search and embeddings](/user-guide/self-hosting/#search-and-embeddings).

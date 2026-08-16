@@ -55,34 +55,50 @@ curl -X GET \
 ```
 
 **Response:**
+
+The list is wrapped in the `{status, message, data}` envelope this endpoint has
+always used. The prompts themselves are under `data.prompts`:
+
 ```json
 {
-  "prompts": [
-    {
-      "id": "prompt-123",
-      "slug": "blog-post-template",
-      "title": "Blog Post Template",
-      "description": "Template for technical blog posts",
-      "status": "published",
-      "available_in_mcp": true,
-      "labels": ["blog", "content", "marketing"],
-      "created_at": "2025-01-01T10:00:00Z",
-      "updated_at": "2025-01-10T15:30:00Z"
-    }
-  ],
-  "total": 42,
-  "page": 1,
-  "per_page": 10
+  "status": "success",
+  "message": "Prompts retrieved successfully",
+  "data": {
+    "prompts": [
+      {
+        "id": "prompt-123",
+        "name": "Blog Post Template",
+        "slug": "blog-post-template",
+        "description": "Template for technical blog posts",
+        "body": "Write a blog post about {{topic}}...",
+        "user_id": "user-123",
+        "team_id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "123e4567-e89b-12d3-a456-426614174001",
+        "status": "published",
+        "mcp_expose": true,
+        "is_shared": false,
+        "labels": ["blog", "content", "marketing"],
+        "version": 3,
+        "created_at": "2025-01-01T10:00:00Z",
+        "updated_at": "2025-01-10T15:30:00Z"
+      }
+    ],
+    "total_count": 42,
+    "page": 1,
+    "per_page": 10,
+    "total_pages": 5
+  }
 }
 ```
 
 **Query parameters:**
 - `status` - Filter by status (`draft` or `published`)
 - `labels` - Comma-separated list of labels to filter by
-- `search` - Search in title, description, or content
+- `search` - Search term matching the prompt **name and description** only, not the body
 - `project_id` - Filter by project
 - `mcp_expose` - Filter by MCP exposure flag (`true`/`false`)
 - `shared` - Filter by share status (`true`/`false`)
+- `freshness` - `stale` returns only prompts the team's freshness rules currently flag. `stale` is the only accepted value, anything else is a `400`. See [Resource Freshness](/user-guide/resource-freshness/)
 - `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
 - `sort_order` - `asc` or `desc` (default `desc`)
 - `page` - Page number for pagination
@@ -90,11 +106,12 @@ curl -X GET \
 
 ### Get Specific Prompt
 
-Retrieve a single prompt by ID or slug.
+Retrieve a single prompt by its **slug**. This route takes a slug only. Passing a
+prompt's UUID returns `404`.
 
 **Endpoint:**
 ```
-GET /api/v1/{team_id}/prompts/{id_or_slug}
+GET /api/v1/{team_id}/prompts/{slug}
 ```
 
 **Example request:**
@@ -105,22 +122,39 @@ curl -X GET \
 ```
 
 **Response:**
+
+The detail endpoint returns the prompt object unwrapped:
+
 ```json
 {
   "id": "prompt-123",
+  "name": "Blog Post Template",
   "slug": "blog-post-template",
-  "title": "Blog Post Template",
   "description": "Template for technical blog posts",
-  "content": "Write a blog post about {{topic}}...",
+  "body": "Write a blog post about {{topic}}...",
+  "user_id": "user-123",
+  "team_id": "123e4567-e89b-12d3-a456-426614174000",
+  "project_id": "123e4567-e89b-12d3-a456-426614174001",
   "status": "published",
-  "available_in_mcp": true,
+  "mcp_expose": true,
+  "is_shared": false,
   "labels": ["blog", "content", "marketing"],
-  "variables": ["topic", "audience", "word_count"],
-  "references": ["@company-voice", "@blog-structure"],
+  "version": 3,
   "created_at": "2025-01-01T10:00:00Z",
   "updated_at": "2025-01-10T15:30:00Z"
 }
 ```
+
+A prompt's `{{placeholders}}` and its `@slug` references are **not** fields on the
+prompt. They have their own endpoints:
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/v1/{team_id}/prompts/{slug}/placeholders` | The placeholders the prompt expects |
+| `GET /api/v1/{team_id}/prompts/{slug}/dependencies` | The prompts it references |
+
+The detail response also carries `related`, `similar`, and (when the prompt is
+flagged) `freshness`. See [Resource Freshness](/user-guide/resource-freshness/).
 
 ### Create New Prompt
 
@@ -138,35 +172,52 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Product Description Template",
+    "name": "Product Description Template",
+    "slug": "product-description-template",
     "description": "Template for e-commerce product descriptions",
-    "content": "Write a product description for {{product_name}}...",
+    "body": "Write a product description for {{product_name}}...",
+    "project_id": "123e4567-e89b-12d3-a456-426614174001",
     "status": "draft",
-    "available_in_mcp": false,
+    "mcp_expose": false,
     "labels": ["e-commerce", "marketing", "product"]
   }'
 ```
 
 **Request body:**
-```json
-{
-  "title": "string (required)",
-  "description": "string (optional, max 200 chars)",
-  "content": "string (required)",
-  "status": "draft | published (optional, default: draft)",
-  "available_in_mcp": "boolean (optional, default: false)",
-  "labels": ["array of strings (optional, max 10)"],
-  "slug": "string (optional, auto-generated if not provided)"
-}
-```
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `name` | yes | 1 to 50 characters |
+| `slug` | yes | 1 to 255 characters. **Not auto-generated**, you must supply it |
+| `body` | yes | The prompt text |
+| `project_id` | yes | UUID of the project the prompt belongs to |
+| `description` | no | Max 200 characters |
+| `status` | no | `draft` or `published` |
+| `mcp_expose` | no | **Defaults to `true`** when omitted |
+| `labels` | no | Max 10 labels, each max 50 characters |
 
 **Response:**
+
+`201 Created` with the full prompt object, the same shape the detail endpoint
+returns:
+
 ```json
 {
   "id": "prompt-456",
+  "name": "Product Description Template",
   "slug": "product-description-template",
-  "title": "Product Description Template",
-  "message": "Prompt created successfully"
+  "description": "Template for e-commerce product descriptions",
+  "body": "Write a product description for {{product_name}}...",
+  "user_id": "user-123",
+  "team_id": "123e4567-e89b-12d3-a456-426614174000",
+  "project_id": "123e4567-e89b-12d3-a456-426614174001",
+  "status": "draft",
+  "mcp_expose": false,
+  "is_shared": false,
+  "labels": ["e-commerce", "marketing", "product"],
+  "version": 1,
+  "created_at": "2025-01-01T10:00:00Z",
+  "updated_at": "2025-01-01T10:00:00Z"
 }
 ```
 
@@ -176,7 +227,7 @@ Modify an existing prompt.
 
 **Endpoint:**
 ```
-PUT /api/v1/{team_id}/prompts/{id_or_slug}
+PUT /api/v1/{team_id}/prompts/{slug}
 ```
 
 **Example request:**
@@ -187,7 +238,7 @@ curl -X PUT \
   -H "Content-Type: application/json" \
   -d '{
     "status": "published",
-    "content": "Updated prompt content..."
+    "body": "Updated prompt content..."
   }'
 ```
 
@@ -195,23 +246,21 @@ curl -X PUT \
 All fields are optional. Only include fields you want to update:
 ```json
 {
-  "title": "string",
+  "name": "string",
+  "slug": "string",
   "description": "string",
-  "content": "string",
+  "body": "string",
+  "project_id": "uuid",
   "status": "draft | published",
-  "available_in_mcp": "boolean",
+  "mcp_expose": "boolean",
   "labels": ["array of strings"]
 }
 ```
 
 **Response:**
-```json
-{
-  "id": "prompt-123",
-  "slug": "blog-post-template",
-  "message": "Prompt updated successfully"
-}
-```
+
+`200 OK` with the full updated prompt object, the same shape the detail endpoint
+returns.
 
 ### Delete Prompt
 
@@ -219,7 +268,7 @@ Permanently delete a prompt.
 
 **Endpoint:**
 ```
-DELETE /api/v1/{team_id}/prompts/{id_or_slug}
+DELETE /api/v1/{team_id}/prompts/{slug}
 ```
 
 **Example request:**
@@ -229,63 +278,74 @@ curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-**Response:**
-```json
-{
-  "message": "Prompt deleted successfully"
-}
-```
+**Response:** `204 No Content` with an **empty body**. There is no success
+envelope to parse.
 
 **Warning:** Deletion is permanent and cannot be undone. If other prompts reference the deleted prompt, those references will break.
 
+## Other prompt endpoints
+
+This page covers the five CRUD operations. The prompt API has more, all
+team-scoped and all keyed by slug:
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /prompts/labels` | Every label used across the team's prompts |
+| `GET /prompts/{slug}/placeholders` | The `{{placeholders}}` the prompt expects |
+| `GET /prompts/{slug}/dependencies` | The prompts this one references with `@slug` |
+| `POST /prompts/{slug}/render` | Render the prompt with placeholder values filled in |
+| `POST /prompts/{slug}/share` | Create a share link |
+| `GET /prompts/{slug}/versions` | The prompt's version history |
+| `GET /prompts/{slug}/versions/{version_number}` | One past version |
+| `POST /prompts/{slug}/versions/{version_number}/restore` | Restore a past version |
+
+Each is prefixed with `/api/v1/{team_id}`.
+
 ## Error Responses
 
-The API uses standard HTTP status codes:
+Errors are **RFC 9457 Problem Details**, served with the
+`application/problem+json` content type. Every error shares one envelope:
+
+| Field | Meaning |
+| --- | --- |
+| `type` | URI identifying the problem type |
+| `title` | Short summary of the problem type |
+| `status` | HTTP status code |
+| `detail` | Explanation specific to this occurrence |
+| `code` | Application-specific error code |
+| `request_id` | Request identifier, quote it when reporting a problem |
+| `timestamp` | RFC 3339 time the error occurred |
+| `instance` | URI of the specific occurrence |
+| `validation_errors` | Field-level errors, present on validation failures |
 
 **400 Bad Request**
 ```json
 {
-  "error": "validation_error",
-  "message": "Invalid request data",
-  "details": {
-    "title": "Title is required",
-    "labels": "Maximum 10 labels allowed"
-  }
+  "type": "https://<your-api-host>/errors/VALIDATION_FAILED",
+  "title": "Validation Failed",
+  "status": 400,
+  "detail": "Request validation failed",
+  "code": "VALIDATION_FAILED",
+  "request_id": "abc123-def456",
+  "timestamp": "2025-11-08T10:15:30Z",
+  "instance": "/api/v1/<team-id>/prompts",
+  "validation_errors": [
+    { "field": "name", "message": "name is required" }
+  ]
 }
 ```
 
-**401 Unauthorized**
-```json
-{
-  "error": "unauthorized",
-  "message": "Invalid or missing API key"
-}
-```
+The other statuses use the same envelope, with `status`, `code` and `detail`
+describing the case:
 
-**404 Not Found**
-```json
-{
-  "error": "not_found",
-  "message": "Prompt not found"
-}
-```
-
-**429 Too Many Requests**
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Please try again later.",
-  "retry_after": 60
-}
-```
-
-**500 Internal Server Error**
-```json
-{
-  "error": "internal_error",
-  "message": "An unexpected error occurred"
-}
-```
+| Status | When |
+| --- | --- |
+| `400` | Malformed body, a failed field validation, or an unknown `freshness` / `sort_by` value |
+| `401` | Missing or invalid API key |
+| `403` | Authenticated, but not permitted in this team |
+| `404` | No prompt with that slug in this team |
+| `409` | A prompt with that slug already exists |
+| `500` | Unexpected server error |
 
 ## Rate Limits
 
@@ -311,9 +371,9 @@ BASE_URL = "https://<your-api-host>/api/v1"
 TEAM_ID = "your_team_id"
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
-# Get all prompts
+# Get all prompts (the list is under `data`)
 response = requests.get(f"{BASE_URL}/{TEAM_ID}/prompts", headers=headers)
-prompts = response.json()["prompts"]
+prompts = response.json()["data"]["prompts"]
 
 # Save to file
 import json
@@ -333,15 +393,21 @@ const BASE_URL = 'https://<your-api-host>/api/v1';
 const TEAM_ID = 'your_team_id';
 const headers = { 'Authorization': `Bearer ${API_KEY}` };
 
+const PROJECT_ID = 'your_project_id';
+
 const promptTemplates = [
   {
-    title: 'Email Template - Welcome',
-    content: 'Write a welcome email...',
+    name: 'Email Template - Welcome',
+    slug: 'email-template-welcome',
+    body: 'Write a welcome email...',
+    project_id: PROJECT_ID,
     labels: ['email', 'onboarding']
   },
   {
-    title: 'Email Template - Follow-up',
-    content: 'Write a follow-up email...',
+    name: 'Email Template - Follow-up',
+    slug: 'email-template-follow-up',
+    body: 'Write a follow-up email...',
+    project_id: PROJECT_ID,
     labels: ['email', 'sales']
   }
 ];
@@ -369,11 +435,11 @@ response = requests.get(
     headers=headers,
     params={"labels": "marketing"}
 )
-prompts = response.json()["prompts"]
+prompts = response.json()["data"]["prompts"]
 
 # Add new label to all marketing prompts
 for prompt in prompts:
-    labels = prompt["labels"] + ["content-creation"]
+    labels = (prompt["labels"] or []) + ["content-creation"]
     requests.put(
         f"{BASE_URL}/{TEAM_ID}/prompts/{prompt['slug']}",
         headers=headers,

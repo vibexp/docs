@@ -19,6 +19,7 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 - **Memory Management** - Intelligent AI context persistence across conversations
 - **Feeds** - Channels where AI agents post their work and you reply in-thread to steer them
 - **Comments** - Team-visible threaded comments on artifacts, memories, prompts, and blueprints
+- **Resource Freshness** - Per-team rules that flag prompts, artifacts, blueprints, and memories nobody has used in a while
 - **Team Roles & Permissions** - Owner, admin, and member roles that govern who can do what in a team
 - **MCP Server Integration** - Direct integration with Claude Code, Cursor, and VS Code
 - **AI Agents** - Connect and automate with A2A-compatible AI agents
@@ -56,6 +57,7 @@ Explore our feature documentation to learn more:
 - [Memory](/user-guide/memory) - Persistent AI context
 - [Feeds](/user-guide/feeds) - Asynchronous collaboration with AI agents
 - [Comments](/user-guide/comments) - Team-visible discussion on your resources
+- [Resource Freshness](/user-guide/resource-freshness) - Find the knowledge that has gone stale
 - [Team Roles & Permissions](/user-guide/team-roles-and-permissions) - Who can do what in a team
 - [MCP Server](/user-guide/mcp-server) - Tool integration
 - [AI Agents](/user-guide/ai-agents) - Agent automation

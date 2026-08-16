@@ -17,17 +17,37 @@ the Go output `gofmt -s` clean (CI enforces this). Generated files include
 
 The OpenAPI spec drives [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen),
 which generates the chi strict-server bindings and shared types from the bundled
-spec (`dist/openapi.bundled.yaml`). The generators are configured by
-`backend/oapi-codegen.yaml` (server) and `backend/oapi-codegen-types.yaml`
-(types).
+spec (`dist/openapi.bundled.yaml`).
+
+There is **one config file per spec-first domain**, fourteen of them, each
+generating into its own package under `internal/server/gen/`:
 
 ```bash
-make backend-generate-openapi-server
+ls backend/oapi-codegen*.yaml
 ```
 
-This target first bundles the spec, then generates the strict-server code and the
-types package. See [API & OpenAPI](/developer-guide/backend/api-and-openapi/) for
-the spec-first workflow.
+`backend/oapi-codegen.yaml` is the base file (notifications); the rest are
+`oapi-codegen-<domain>.yaml` for types, teamroles, comments, relations,
+teamsettings, freshness, metadata, admin, embedding-providers, memories,
+artifacts, blueprints and prompts. A package per domain means each domain's
+`StrictServerInterface` mounts independently of the others.
+
+A **partially converted** domain selects its operations with
+`include-operation-ids` instead of `include-tags`. `include-tags` is
+oapi-codegen's generation unit, so tagging in a whole domain would force every
+one of its operations to convert in a single change; selecting ids lets a
+conversion land one slice at a time (for example the prompts read path first,
+writes later).
+
+```bash
+make backend-generate-openapi-server   # bundle the spec, then regenerate every domain package
+make backend-openapi-server-check      # regenerate, then fail on drift
+```
+
+The check inspects `git status` rather than `git diff`, so a brand new
+generated package shows up as untracked instead of passing silently. See
+[API & OpenAPI](/developer-guide/backend/api-and-openapi/) for the spec-first
+workflow.
 
 :::note[External clients are generated elsewhere]
 This page covers the **in-repo** generators. The external typed clients
@@ -105,7 +125,7 @@ change as any spec edit.
 
 | Generator | Command | Output (committed) |
 | --- | --- | --- |
-| oapi-codegen | `make backend-generate-openapi-server` | strict-server handlers + `internal/server/gen/types` |
+| oapi-codegen | `make backend-generate-openapi-server` | one strict-server package per domain under `internal/server/gen/` (14 configs) |
 | Wire | `make backend-wire-gen` (`backend-wire-check` to verify) | `internal/container/wire_gen.go` |
 | mockery | `make backend-mock-generate` (`backend-mock-check` to verify) | `mock_*.go` files |
 | gen-config-schema | `make backend-generate-config-schema` (`backend-config-schema-check` to verify) | `backend/config.schema.json` |
@@ -116,4 +136,11 @@ After changing the spec, a provider signature, a service interface, or the
 `Config` struct, regenerate the relevant output and commit it in the same
 change. Then run
 `make backend-check` to confirm lint, vulncheck, and security all pass.
+
+Two extra rules apply to a **new API operation**: it must ship with a
+spec-validated response test (`specconformance.AssertConformsToSpec`), because
+the payload-coverage ledger is shrink only and you may not add an entry to it;
+and a new **required** array response field must be declared
+`models.JSONArray[T]` or `TestRequiredResponseArraysNeverNull` fails. See
+[API & OpenAPI](/developer-guide/backend/api-and-openapi/#response-conformance).
 :::

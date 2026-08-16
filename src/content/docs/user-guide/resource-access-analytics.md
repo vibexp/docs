@@ -31,7 +31,7 @@ On content pages (prompts, artifacts, blueprints, memories) it sits in the right
 The chart is a stacked bar chart with one bar per day. Each bar is split by **source** so you can see, at a glance, how a resource is being reached.
 
 - **Total accesses** — the headline number above the chart sums every access in the selected time range.
-- **Time range** — a selector lets you switch between **Last 7 days**, **Last 14 days**, **Last 30 days**, and **Last 3 months (90 days)**. It defaults to **Last 30 days**.
+- **Time range**: a selector offers six windows: **Last 7 days**, **Last 14 days**, **Last 30 days**, **Last 2 months**, **Last 3 months**, and **Last 6 months**. It defaults to **Last 30 days**. With the default 90-day retention, the 6-month range still shows at most three months of data.
 - **Hover a bar** — a tooltip breaks the day down by source and shows the day's total.
 - **No activity yet** — if a resource hasn't been read in the selected range, the chart shows an empty state instead of bars.
 
@@ -49,6 +49,14 @@ The following are **not** counted:
 - **Failed reads.** Only successful reads are recorded. A request that returns "not found" or "forbidden" does not create an access event.
 - **Edits, creates, and deletes.** The chart tracks reads, not writes.
 
+### Accesses also feed Resource Freshness
+
+The same reads drive [Resource Freshness](/user-guide/resource-freshness/):
+
+- VibeXP stores each resource's **last read time per source** (web, CLI, MCP, API), not just a single "last read" stamp, because a freshness rule can require a particular kind of use.
+- A read never counts as an edit: recording an access does not touch the resource's `updated_at`.
+- With reversal enabled for your team, opening or editing a stale resource clears its stale flag.
+
 ## Access sources
 
 Each access is tagged with the surface it came from. There are four sources:
@@ -62,6 +70,8 @@ Each access is tagged with the surface it came from. There are four sources:
 
 The source is determined automatically from how the request authenticated — you don't need to configure or send anything to control it. Browser (cookie) sessions are recorded as **Web**; API-key requests are classified as **MCP**, **CLI**, or **API** based on the request.
 
+Sources are tracked **independently per resource**, so a resource that only ever gets read over MCP is distinguishable from one nobody has opened at all. Freshness rules use the same distinction: an MCP read can clear a flag that a web read would not, and vice versa, depending on which mediums the rule watches.
+
 ## Team-wide data
 
 Access activity is aggregated **across your whole team**. The chart for a resource shows reads by *every* member of the team that owns it, not just your own. If three teammates each open the same prompt, that's three accesses on the chart.
@@ -70,7 +80,9 @@ This means the chart reflects how valuable a resource is to the team as a whole.
 
 ## Data retention
 
-Access events are retained for **90 days by default**. Older activity is automatically removed, so the "Last 3 months" range covers the full retained history on a default deployment. The window is operator-configurable (`retention.access_event_days`, 1 to 3650 days).
+Access **events** are retained for **90 days by default**. Older activity is automatically removed, so the "Last 3 months" range covers the full retained history on a default deployment. The window is operator-configurable (`retention.access_event_days`, 1 to 3650 days).
+
+Retention applies to the individual events behind the chart, not to the freshness signal. Each resource's **per-medium last-access timestamp** is stored on the resource itself and is never pruned, so freshness thresholds longer than the retention window still work correctly.
 
 ## Frequently asked questions
 

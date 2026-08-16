@@ -3,16 +3,15 @@ title: Contributing
 description: Set up a local VibeXP development environment and learn the conventions for contributing to the open-source project.
 ---
 
-Thanks for your interest in contributing! VibeXP is an open-source AI workspace (prompts, artifacts, memories, teams, MCP). This page covers how to get a local development environment running. For the full, always-current details, see the repository's [`CONTRIBUTING.md`](https://github.com/vibexp/vibexp/blob/main/CONTRIBUTING.md).
+Thanks for your interest in contributing! VibeXP is an open-source AI workspace (prompts, artifacts, memories, teams, MCP). This page covers how to get a local development environment running. For the contribution workflow itself (branch naming, PR rules, release branches), see [Contributing → Workflow](/developer-guide/contributing/workflow/).
 
 For deeper architecture, configuration, and code-generation details, see the [Developer Guide](/developer-guide/intro/).
 
 ## Prerequisites
 
-- **Node.js** >= 20 (for the frontend)
-- **Go** 1.25 (see `backend/go.mod` for the exact version) for the backend
+- **Node.js** >= 22.22.0 (for the frontend; CI uses Node 22)
+- **Go** 1.25.13 for the backend. The `Makefile` pins `GOTOOLCHAIN=go1.25.13`, so Go downloads the right toolchain on demand and your local builds match CI.
 - **Docker** + Docker Compose (for the database and the self-host stack)
-- Optionally **Bun** for the CLI
 
 ## Clone and install
 
@@ -39,7 +38,7 @@ make backend-run-dev    # Go API with live reload
 make frontend-run-dev   # React + Vite dev server
 ```
 
-Run `make help` (or open the `Makefile`) to see all available targets, including:
+Open the repository's `Makefile` to see all available targets, including:
 
 ```bash
 make backend-build              # compile the backend
@@ -112,8 +111,8 @@ VibeXP is open-core. When you add files, follow the license of the directory the
 
 ## Security
 
-Please do **not** report security vulnerabilities through public GitHub issues. See the repository's [`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md) for the private disclosure process.
+Please do **not** report security vulnerabilities through public GitHub issues. Use GitHub's private reporting on the [vibexp/vibexp repository](https://github.com/vibexp/vibexp) (Security tab, "Report a vulnerability"), or contact the maintainers privately.
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you are expected to uphold it — see the repository's [`CODE_OF_CONDUCT.md`](https://github.com/vibexp/vibexp/blob/main/CODE_OF_CONDUCT.md).
+This project adheres to the [Contributor Covenant](https://www.contributor-covenant.org/), and by participating you are expected to uphold it. Be respectful in issues, pull requests and reviews.

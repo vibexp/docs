@@ -330,7 +330,7 @@ Over MCP, connected AI agents can work with your prompt library in three ways:
 
 - **Create and update prompts** — the `vibexp_io_create_prompt` and `vibexp_io_update_prompt` tools let agents write to your prompt library.
 - **Find prompt content** — the generic `vibexp_io_search` tool searches your prompts (alongside artifacts, blueprints, and memories) by meaning; narrow it to prompts with the `types` filter.
-- **List and render exposed prompts** — published prompts with **Available in MCP** enabled are served as native MCP prompts, with placeholder resolution handled by VibeXP. The most recently updated of these are exposed as native prompt primitives (slash commands); agents can render any exposed prompt on demand — including ones beyond that set — with the `vibexp_io_render_prompt` tool by passing its `slug` and placeholder values.
+- **List and render exposed prompts**: only **published** prompts with **Available in MCP** enabled are eligible. Up to **50 per session** are exposed as native MCP prompt primitives (slash commands), most recently updated first, across all your teams at once; a slug that collides across two teams is disambiguated with the team slug. Placeholder resolution is handled by VibeXP. Prompts past that 50 are still renderable on demand with the `vibexp_io_render_prompt` tool, by passing the prompt's `slug` and its placeholder values.
 
 There are no dedicated prompt read tools — reading goes through search or the native MCP prompts.
 

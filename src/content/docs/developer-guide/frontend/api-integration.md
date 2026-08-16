@@ -77,6 +77,13 @@ whether a response is enveloped depends on the handler:
 Check the operation's `responses.200.content['application/json']` in the
 generated `schema.d.ts` to know which. Don't assume.
 
+Since v0.11.0 the read paths of prompts, blueprints, artifacts and memories
+generate their response types from the spec, so the generated type is now an
+accurate guide rather than a best guess. Prompts is the one domain whose
+**list** operation still answers with the legacy `PromptListEnvelope`
+`{status, message, data}` wrapper, which no other domain has; the rest of the
+converted reads return their payload raw.
+
 ## Recipes
 
 - **Multipart upload:** pass the typed body (the spec types the binary part as
