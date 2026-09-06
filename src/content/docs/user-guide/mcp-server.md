@@ -284,7 +284,7 @@ Tools that read or write team data require a `team_id` (UUID or slug) argument. 
 - **vibexp_io_list_projects** *(deprecated)*: List a team's projects. Superseded by `vibexp_io_list_teams_and_projects` with a `team_id`
 
 :::caution[Deprecated: vibexp_io_list_teams and vibexp_io_list_projects]
-Both tools still work in this release, but they are superseded by `vibexp_io_list_teams_and_projects` and **will be removed in the next release**.
+Both tools still work in v0.12.0, but they are superseded by `vibexp_io_list_teams_and_projects` and **will be removed in a future release**.
 
 - Replace `vibexp_io_list_teams` with a no-argument `vibexp_io_list_teams_and_projects` call.
 - Replace `vibexp_io_list_projects` with `vibexp_io_list_teams_and_projects` plus a `team_id`.

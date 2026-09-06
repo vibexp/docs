@@ -47,7 +47,7 @@ VibeXP is split across several repositories under [`github.com/vibexp`](https://
 ## Where to file issues
 
 - **Bugs and feature requests**: open an issue at [github.com/vibexp/vibexp/issues](https://github.com/vibexp/vibexp/issues).
-- **Security vulnerabilities**: do **not** use public issues. Follow the private disclosure process in the repository's [`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md).
+- **Security vulnerabilities**: do **not** use public issues. Follow the private disclosure process in the repository's [`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md). Security fixes ship for the latest minor line only (patches on the newest `X.Y`); older minors are not patched, so upgrade instead.
 - **Questions and contributions**: see the [Contributing](/user-guide/contributing/) guide.
 
 ## Branding

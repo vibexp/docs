@@ -114,6 +114,17 @@ Model providers let a team bring its own OpenAI-compatible LLM endpoint.
 
 API keys are stored encrypted and can be updated or removed anytime.
 
+## Copying a provider from another team
+
+Both provider settings pages have a **Copy from…** button that brings a
+provider over from another team you own or administer, stored credential
+included (the key travels as ciphertext and is never shown). The copy always
+lands as non-default, and you can override the name, model, endpoint, and
+tuning fields before confirming. Every copy is recorded in the destination
+team's settings audit log.
+
+→ [Copying settings between teams](/user-guide/copying-team-settings/)
+
 ## API access
 
 Both provider types have team-scoped REST endpoints:
@@ -122,6 +133,7 @@ Both provider types have team-scoped REST endpoints:
 # Embedding providers
 GET|POST   /api/v1/{team_id}/settings/embedding-providers
 GET|PUT|DELETE /api/v1/{team_id}/settings/embedding-providers/{id}
+POST       /api/v1/{team_id}/settings/embedding-providers/copy
 POST       /api/v1/{team_id}/settings/embedding-providers/validate
 GET        /api/v1/{team_id}/settings/embedding-providers/coverage
 POST       /api/v1/{team_id}/settings/embedding-providers/{id}/reprocess
@@ -130,7 +142,12 @@ DELETE     /api/v1/{team_id}/settings/embedding-providers/embeddings
 # Model providers
 GET|POST   /api/v1/{team_id}/settings/model-providers
 GET|PUT|DELETE /api/v1/{team_id}/settings/model-providers/{id}
+POST       /api/v1/{team_id}/settings/model-providers/copy
 POST       /api/v1/{team_id}/settings/model-providers/validate
+
+# Custom types and the settings audit log
+POST       /api/v1/{team_id}/settings/types/copy
+GET        /api/v1/{team_id}/settings/audit
 ```
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.

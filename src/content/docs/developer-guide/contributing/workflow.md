@@ -144,10 +144,17 @@ license of the directory they live in.
 ## Security disclosures
 
 Please do **not** report security vulnerabilities through public GitHub issues.
-Use GitHub's private reporting on the
+Use GitHub Security Advisories on the
 [vibexp/vibexp repository](https://github.com/vibexp/vibexp) (Security tab,
-"Report a vulnerability"), or contact the maintainers privately, rather than
-opening a public issue or pull request.
+"Report a vulnerability"). That is the only reporting channel; there is no
+security email address. If the button is not visible to you, open a normal
+issue saying only that you have a security report and would like a private
+channel, with no details, and a maintainer will open the advisory. See
+[`SECURITY.md`](https://github.com/vibexp/vibexp/blob/main/SECURITY.md) for
+scope and what to expect.
+
+Security fixes ship for the **latest minor line only**. Older minors are not
+patched: upgrade instead.
 
 ## Code of Conduct
 

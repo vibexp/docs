@@ -109,7 +109,10 @@ bus**. Worker goroutines drain the bus with bounded retries (see the
 `event_bus.*` settings on the
 [Configuration](/developer-guide/backend/configuration/#event-bus) page). The
 embedding pipeline is one of these workers: there is no external AI service and
-no message broker.
+no message broker. Since v0.12.0 the embedding path is nonetheless **durable**:
+the bus handler only enqueues into the `embedding_jobs` table (Postgres is the
+queue) and leased workers drain it, so a restart resumes the backlog rather
+than losing it.
 
 :::note
 The MCP server (`/mcp/v1/common`) and the embedded OAuth 2.1 Authorization

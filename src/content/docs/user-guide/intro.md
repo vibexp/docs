@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: VibeXP is your personal AI productivity platform for turning scattered AI outputs into organized, searchable knowledge with persistent context.
+description: VibeXP is one shared brain for your team's AI, turning scattered AI outputs into organized, searchable knowledge with persistent context.
 sidebar:
   order: 1
 ---
 
-VibeXP is your personal AI productivity platform that helps you efficiently use AI tools and maximize your productivity. Transform scattered AI outputs into organized, searchable knowledge bases while maintaining persistent context across all your conversations.
+VibeXP is one shared brain for your team's AI. Stop re-explaining everything: prompts, rules, memory, and past work live in one place every AI tool can read from and write back to, so scattered AI output becomes organized, searchable knowledge with persistent context. It works solo and compounds with a team.
 
 VibeXP is **open source** — you can [self-host](/user-guide/self-hosting/) your own instance on your own domain, with no paid tiers. See [Open Source](/user-guide/open-source/) for the license model and how to get involved.
 
@@ -23,7 +23,7 @@ VibeXP provides a comprehensive suite of tools designed to enhance your AI workf
 - **Team Roles & Permissions** - Owner, admin, and member roles that govern who can do what in a team
 - **MCP Server Integration** - Direct integration with Claude Code, Cursor, and VS Code
 - **AI Agents** - Connect and automate with A2A-compatible AI agents
-- **Projects** - Group your work and filter everything with the global project selector in the header
+- **Projects** - Group your work and filter everything with the global project selector (in the header on tablet and desktop, in the navigation drawer on a phone)
 - **Embedding & Model Providers** - Bring your own AI endpoints per team, powering semantic search and LLM access
 - **API Keys** - Secure access for your favorite development tools
 

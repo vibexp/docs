@@ -45,10 +45,10 @@ There is no generic environment override: an env var takes effect **only if the
 loaded `config.yaml` references it as `${VAR}`**. The baked Docker config wires
 the common knobs listed below; anything it does not reference requires mounting
 your own `config.yaml`. Still unwired: multi-provider `auth.providers` lists,
-the `auth.oauth_as.*` token TTLs, and most tuning fields. The `scheduler.*` and
-`a2a.*` sections **are** env-wired; the one exception inside an otherwise wired
-section is `storage.s3_path_style`, a boolean that string-only `${VAR}`
-interpolation cannot express, so MinIO deployments need a mounted file.
+the `auth.oauth_as.*` token TTLs, and most tuning fields. The `scheduler.*`,
+`a2a.*` and `embedding.queue.*` sections **are** env-wired, and since v0.12.0 so
+is `storage.s3_path_style` (`S3_PATH_STYLE`), so MinIO no longer needs a
+mounted file.
 :::
 
 ## Must-set production values
@@ -71,7 +71,7 @@ local evaluation only.
 | `INSTANCE_ADMIN_EMAILS` | `auth.instance_admins` | Comma-separated emails granted the `/api/v1/admin` portal. Empty leaves the feature dormant. |
 | `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` | `auth.access_allowlist.*` | Optional. Restrict sign-in by email domain and/or exact address (comma-separated). A user is allowed if either matches; both empty means open. |
 | `TRUSTED_PROXIES` | `server.trusted_proxies` | Set if you run behind a reverse proxy or load balancer. Comma-separated CIDRs allowed to assert a client IP via `X-Forwarded-For` / `X-Real-IP` (e.g. `10.0.0.0/8,172.16.0.0/12`; `192.168.1.5/32` for one host). Empty ignores those headers and uses the connecting peer, correct for a directly exposed instance. Left empty behind a proxy, per-IP rate limits collapse into one bucket and logs show the proxy address; the backend warns at startup. An invalid CIDR fails startup. |
-| `STORAGE_BACKEND` (+ `STORAGE_FS_ROOT_DIR`, or `GCS_RESOURCE_ATTACHMENTS_BUCKET` / `S3_REGION` / `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`) | `storage.*` | Optional. Selects the object store for file attachments: `filesystem`, `s3`, or `gcs`. Unset leaves attachments disabled (uploads return `503`) unless a GCS bucket is set. A selected backend missing its required knob fails startup. MinIO additionally needs a mounted `config.yaml` with `storage.s3_path_style: true`. |
+| `STORAGE_BACKEND` (+ `STORAGE_FS_ROOT_DIR`, or `GCS_RESOURCE_ATTACHMENTS_BUCKET` / `S3_REGION` / `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_PATH_STYLE`) | `storage.*` | Optional. Selects the object store for file attachments: `filesystem`, `s3`, or `gcs`. Unset leaves attachments disabled (uploads return `503`) unless a GCS bucket is set. A selected backend missing its required knob fails startup. MinIO needs path-style addressing (`S3_PATH_STYLE=true`), an env var since v0.12.0, so no mounted `config.yaml` is required. |
 | `SCHEDULER_ENABLED` | `scheduler.enabled` | Optional, `true` by default. Runs the in-process scheduler, which drives per-team resource-freshness evaluation. Set `false` only to stop all in-process recurring work. |
 | `OUTBOUND_ALLOWED_CIDRS` | `security.outbound_allowed_cidrs` | Comma-separated CIDRs the SSRF guard may dial even though they are loopback or private. Empty (the default) refuses every reserved range, which is what blocks a self-hosted embedding or model sidecar on a private Docker subnet. Declare only the network your own service runs on (e.g. `172.16.0.0/12`, or `127.0.0.1/32` for a same-host Ollama). Link-local (`169.254.0.0/16`, `fe80::/10`, i.e. cloud metadata) and multicast (`224.0.0.0/4`, `ff00::/8`) can never be allowlisted; a malformed CIDR or one overlapping those ranges fails startup. Local development is exempt: a localhost `FRONTEND_BASE_URL` already permits reserved ranges. |
 
@@ -126,9 +126,9 @@ live in `config.yaml`; `config.example.yaml` documents every one.
     for a single-host deployment; the directory is created at startup.
   - `s3` plus `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and optionally
     `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`. MinIO and other
-    self-hosted S3-compatible stores also need path-style addressing, which has
-    no env var, so they require a mounted `config.yaml` with
-    `storage.s3_path_style: true`.
+    self-hosted S3-compatible stores also need path-style addressing: set
+    `S3_PATH_STYLE=true`, an env var since v0.12.0, so no mounted `config.yaml`
+    is required.
   - `gcs` plus `GCS_RESOURCE_ATTACHMENTS_BUCKET`.
 
   Left unset, attachments stay disabled (uploads return `503`) unless a GCS
@@ -143,6 +143,13 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   evaluation instance-wide. The `/internal/jobs/*` endpoints (retention,
   digests) are unaffected and still need an external scheduler. See
   [Backend Configuration](/developer-guide/backend/configuration/#scheduler).
+- **Embedding queue**: since v0.12.0 embedding work is held in a durable,
+  leased `embedding_jobs` table rather than in memory, so a restart resumes the
+  backlog instead of dropping it. Nothing to enable. Drain behavior is tunable
+  with `EMBEDDING_QUEUE_LEASE_DURATION` / `EMBEDDING_QUEUE_MAX_ATTEMPTS` /
+  `EMBEDDING_QUEUE_BATCH_SIZE` / `EMBEDDING_QUEUE_POLL_INTERVAL` /
+  `EMBEDDING_QUEUE_RETRY_BACKOFF`; the defaults suit most instances. See
+  [Backend Configuration](/developer-guide/backend/configuration/#embedding-job-queue-embeddingqueue).
 
 Every running instance serves its own API spec at `/openapi.yaml` and
 `/openapi.json`.

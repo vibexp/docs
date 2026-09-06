@@ -88,8 +88,18 @@ A team with no saved settings inherits the deployment defaults and shows a
 **Using instance defaults** badge. **Reset to defaults** drops your override so
 the team inherits again.
 
+Saving a rule or a settings change re-arms the schedule, but a run never happens
+sooner than one full interval after the last one. Shorten the interval right
+after a run and the next run still waits out the remainder of the old interval:
+a schedule change cannot make a resource retroactively overdue. A schedule that
+has never run fires on the next tick.
+
 The schedule exists while the team has at least one rule. Delete the last rule and
-the schedule goes away with it.
+the schedule goes away with it. If a team ever ends up with rules but no schedule
+(a failed write when the very first rule was created), the backend repairs it by
+itself: the scheduler sweeps for missing freshness schedules at startup and
+hourly, so an affected team starts evaluating within the hour with no action from
+you. Teams that already have a schedule are never touched by the sweep.
 
 ## What clears a stale flag
 
@@ -223,6 +233,10 @@ endpoints accept it too.
 - **Disabling every rule is not the same as deleting them.** Disabled rules are
   skipped, so the next run clears everything that was stale. Deleting the last
   rule removes the team's schedule entirely.
+- **Deleting a resource clears its stale state.** The stale row goes with the
+  resource, so it stops counting in the analytics totals. No audit entry is
+  written for that clear, since the audit log is the history of a resource and
+  the resource is gone; earlier entries for it remain as plain text.
 - **Access-event retention does not limit thresholds.** VibeXP stores each
   resource's last-access time per medium as a field on the resource, so a 180-day
   threshold works even though the detailed access events are pruned after 90 days.

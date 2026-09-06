@@ -13,8 +13,9 @@ are the better starting point.
 
 ## What VibeXP is
 
-VibeXP is an open-source, self-hostable AI command center: one shared knowledge
-base for prompts, blueprints, memory, artifacts, feeds, and MCP integrations
+VibeXP is an open-source, self-hostable shared brain for your team's AI work:
+one knowledge base for prompts, blueprints, memory, artifacts, feeds, and MCP
+integrations
 that every AI tool (Claude Code, Cursor, VS Code, and anything that speaks MCP)
 can read from and write back to.
 

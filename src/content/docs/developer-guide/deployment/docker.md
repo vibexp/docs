@@ -50,10 +50,11 @@ operator knobs include `DB_SSLMODE` (`require` for managed Postgres TLS),
 `AUTH_ALLOWED_DOMAINS` / `AUTH_ALLOWED_EMAILS` (restrict sign-in), the
 attachment-store selector `STORAGE_BACKEND` with its per-backend knobs
 (`STORAGE_FS_ROOT_DIR`, or `GCS_RESOURCE_ATTACHMENTS_BUCKET` / `S3_ENDPOINT` /
-`S3_REGION` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`; see
-[Optional: file attachments](#optional-file-attachments)), and
+`S3_REGION` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_PATH_STYLE`; see
+[Optional: file attachments](#optional-file-attachments)),
 `SCHEDULER_ENABLED` (on by default; drives per-team resource-freshness
-evaluation). Its
+evaluation), and the `EMBEDDING_QUEUE_*` knobs that tune the durable embedding
+queue. Its
 healthcheck hits `http://localhost:8080/ping`. See
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)
 for which of these you must change for production.
@@ -98,7 +99,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=https://vibexp.example.com \
-  ghcr.io/vibexp/vibexp:0.11.0
+  ghcr.io/vibexp/vibexp:0.12.0
 ```
 
 The baked `FRONTEND_BASE_URL` defaults to **empty** (fail-closed: the dev-login
@@ -109,14 +110,14 @@ bypass stays off). To evaluate locally with the dev-login shortcut via a bare
 ## Image tags
 
 Each GitHub Release with a `vX.Y.Z` tag publishes
-`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.11.0`). Since v0.4.0
+`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.12.0`). Since v0.4.0
 the image is **multi-arch**: one manifest covers `linux/amd64` and
 `linux/arm64`.
 
 `:latest`, which `docker-compose.yml` tracks, points at the **highest published
 version**, not the most recent build. A prerelease never moves it, and neither
-does a backport patch on an older line: publishing `0.10.1` after `0.11.0` is out
-leaves `:latest` on `0.11.0` rather than downgrading everyone who tracks it.
+does a backport patch on an older line: publishing `0.11.1` after `0.12.0` is out
+leaves `:latest` on `0.12.0` rather than downgrading everyone who tracks it.
 
 :::note[Migrating from pre-v0.3.0]
 Releases before v0.3.0 published separate backend and frontend images. Those are
@@ -185,14 +186,14 @@ S3_ENDPOINT: "http://minio:9000"
 S3_REGION: "us-east-1"
 S3_ACCESS_KEY: "minioadmin"
 S3_SECRET_KEY: "minioadmin"
+S3_PATH_STYLE: "true"
 ```
 
-:::caution[MinIO also needs a mounted `config.yaml`]
-MinIO requires path-style addressing, and `storage.s3_path_style` is a boolean
-that string-only `${VAR}` interpolation cannot express, so the baked config
-carries a literal `false` and there is no env var for it. Mount your own
-`config.yaml` (see above) with `storage.s3_path_style: true`, or use option (a)
-instead.
+:::note[`S3_PATH_STYLE` since v0.12.0]
+MinIO requires path-style addressing. That knob used to have no environment
+variable and forced a mounted `config.yaml`; `S3_PATH_STYLE=true` now covers
+it, and the compose file ships the line commented out alongside the rest of the
+MinIO block. A non-boolean value fails startup naming `storage.s3_path_style`.
 :::
 
 ### (c) Google Cloud Storage

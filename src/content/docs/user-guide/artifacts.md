@@ -17,7 +17,7 @@ Artifacts Management automatically preserves substantial AI-generated content fr
 - **Instant Search**: Full-text search across all artifacts
 - **Smart Organization**: Categorize by project, type, and status
 - **MCP Integration**: AI tools create and access artifacts automatically
-- **Beautiful Previews**: Markdown rendering with syntax highlighting
+- **Beautiful Previews**: Markdown rendering with syntax highlighting, and `mermaid` code fences rendered as diagrams (the same applies to blueprints, memories, prompts, feed items, and comments)
 
 ## What Are Artifacts?
 
@@ -95,6 +95,11 @@ Note the system default slugs use underscores, not hyphens.
 
 When creating an artifact (in the UI or via MCP), the type value must match
 one of your team's configured types.
+
+Setting up a second team? **Copy from another team…** on the same card brings
+another team's custom types across in one action, skipping any slug that
+already exists. See
+[Copying settings between teams](/user-guide/copying-team-settings/).
 
 ### Status Management
 

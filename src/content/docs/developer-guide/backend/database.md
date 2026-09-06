@@ -50,7 +50,9 @@ hook ingestion, billing/subscriptions, and Firebase web push), `012`
 post-v0.10.0 increments: the resource-freshness schema (four tables plus
 per-medium `last_accessed_*` columns on the four resource tables), the
 narrowed `update_memories_updated_at` trigger, and the teams/projects
-keyword-search indexes). A pre-existing
+keyword-search indexes), `014_embedding_jobs` (the durable embedding job
+queue, v0.12.0) and `015_team_settings_audit` (the append-only settings-copy
+audit log, v0.12.0). A pre-existing
 pre-v0.3.0 database must be stamped to the matching version so the
 consolidated files are never re-run against a populated schema.
 :::
@@ -80,6 +82,8 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 011_consolidated.up.sql
 012_schedules.up.sql
 013_consolidated.up.sql
+014_embedding_jobs.up.sql
+015_team_settings_audit.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -172,6 +176,42 @@ Three design points worth knowing before you extend this schema:
   for `status`, `action`, `reason`, `resource_types` and `mediums` are owned by
   the service layer, so extending one never needs a migration.
 
+## Embedding job queue (v0.12.0)
+
+`014_embedding_jobs` creates `embedding_jobs`, the system of record for
+outstanding embedding work. The dispatcher inserts a row the moment an
+embeddable event arrives, before any I/O that could be lost; workers **lease**
+rows out of it, and a terminal outcome acks the row.
+
+| Column group | Holds |
+| --- | --- |
+| `entity_type` / `entity_id` / `user_id` | Which entity the job embeds. `entity_id` is polymorphic across five entity tables, so it carries **no foreign key** (the same constraint `resource_freshness` lives with). |
+| `payload` (jsonb) | The normalized title/description/body from the originating event: a domain event cannot be rebuilt from an entity id alone. |
+| `state` (`pending`/`claimed`/`done`/`failed`), `attempts` | `attempts` is incremented at **claim** time, not at failure, so a worker that dies mid-flight still converges on `embedding.queue.max_attempts`. |
+| `available_at`, `claimed_by`, `claimed_at`, `lease_expires_at`, `last_error` | Lease bookkeeping. An expired lease, which is what a dead process leaves behind, simply becomes claimable again, so restart recovery needs no boot-time sweep: the ordinary claim query **is** the recovery path. |
+
+Two indexes carry the design:
+
+| Index | Kind | Purpose |
+| --- | --- | --- |
+| `idx_embedding_jobs_outstanding_entity` | Partial UNIQUE on `(entity_type, entity_id)` where `state IN ('pending','claimed')` | One outstanding job per entity: a re-enqueue coalesces onto the existing row, refreshing the payload so the newest content wins. Terminal rows are excluded so an entity can be embedded again later. |
+| `idx_embedding_jobs_claimable` | Partial B-tree on `(created_at, id)` where `state IN ('pending','claimed')` | Keyed on the claim query's `ORDER BY`, so the query walks the index and stops at its `LIMIT` instead of sorting the claimable set on every poll. |
+
+There is deliberately **no `team_id` column**: the team is resolved per job from
+the entity and is not known at enqueue time. Drain behavior is tuned by
+[`embedding.queue.*`](/developer-guide/backend/configuration/#embedding-job-queue-embeddingqueue).
+
+## Team settings audit (v0.12.0)
+
+`015_team_settings_audit` creates `team_settings_audit`, an **append-only** log
+of cross-team settings copies (see
+[Copying settings between teams](/user-guide/copying-team-settings/)). `team_id`
+is the **destination** team, the one whose owners the log is written for, and
+cascades with it; `actor_user_id` is `ON DELETE SET NULL` so an entry outlives
+the account. `source_team_id` deliberately carries no foreign key, so an entry
+survives the source team being deleted. The repository exposes no update and no
+delete, and nothing expires rows.
+
 ## Validating migrations
 
 The CI and pre-commit hooks check that migrations are well-formed. Run the same
@@ -194,12 +234,13 @@ renumberings such as post-release consolidations.
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `013_consolidated` as the newest shipped migration, the next one is `014`).
+   `015_team_settings_audit` as the newest shipped migration, the next one is
+   `016`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/014_add_widgets_table.up.sql
-   touch backend/migrations/014_add_widgets_table.down.sql
+   touch backend/migrations/016_add_widgets_table.up.sql
+   touch backend/migrations/016_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

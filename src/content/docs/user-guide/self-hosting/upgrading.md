@@ -19,14 +19,14 @@ The bundled `docker-compose.yml` tracks `latest`. Pin to `X.Y.Z` instead if you
 want upgrades to be a deliberate step:
 
 ```yaml
-image: ghcr.io/vibexp/vibexp:0.11.0
+image: ghcr.io/vibexp/vibexp:0.12.0
 ```
 
 **Patch releases are supported on the newest minor line only.** Now that
-`0.11.0` has shipped, fixes go to `0.11.x`, not `0.10.x`. To stay on a supported
+`0.12.0` has shipped, fixes go to `0.12.x`, not `0.11.x`. To stay on a supported
 version, follow the newest minor.
 
-A patch release (`0.11.0` to `0.11.1`) contains bug fixes and security fixes
+A patch release (`0.12.0` to `0.12.1`) contains bug fixes and security fixes
 only. It never adds a database migration and never changes the API, so it is
 always a straight image bump with no action on your side. Anything that needs a
 schema or API change ships as a minor release and appears below if it requires
@@ -36,6 +36,15 @@ action.
 will start or immediately after. Entries are newest first: if you are skipping
 several releases, work upwards from the version you are on and apply every one
 in between.
+
+:::note[v0.12.0 needs no action]
+v0.12.0 adds two migrations, `014_embedding_jobs` (the durable embedding job
+queue) and `015_team_settings_audit` (the settings-copy audit log). Both apply
+**automatically on boot** like any other release: pull the image and restart.
+Its new knobs are optional and default sensibly, `EMBEDDING_QUEUE_*` for queue
+drain tuning and `S3_PATH_STYLE`, which finally lets MinIO deployments drop
+their mounted `config.yaml`.
+:::
 
 ## Breaking changes
 
@@ -64,8 +73,8 @@ hand.
 
 Both are superseded by **`vibexp_io_list_teams_and_projects`**, which returns a
 smaller payload and can find a project across all your teams without knowing
-which team holds it. The two old tools still work in v0.11.0 but are
-**removed in the next release**, so update any prompt, skill, or agent
+which team holds it. The two old tools still work in v0.12.0 but are
+**removed in a future release**, so update any prompt, skill, or agent
 configuration that names them now, while both are still registered.
 
 → [MCP Server](/user-guide/mcp-server/)

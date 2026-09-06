@@ -111,7 +111,7 @@ VibeXP is open-core. When you add files, follow the license of the directory the
 
 ## Security
 
-Please do **not** report security vulnerabilities through public GitHub issues. Use GitHub's private reporting on the [vibexp/vibexp repository](https://github.com/vibexp/vibexp) (Security tab, "Report a vulnerability"), or contact the maintainers privately.
+Please do **not** report security vulnerabilities through public GitHub issues. Use GitHub Security Advisories on the [vibexp/vibexp repository](https://github.com/vibexp/vibexp) (Security tab, "Report a vulnerability"). That is the only reporting channel; there is no security email address. If the button is not visible to you, open a normal issue saying only that you have a security report and would like a private channel, with no details, and a maintainer will open the advisory.
 
 ## Code of Conduct
 

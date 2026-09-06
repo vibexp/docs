@@ -43,7 +43,10 @@ The API client is generated from the backend spec. The change flow is: update
 ```text
 frontend/src/
 ├── pages/        Route-level views (one per screen)
-├── components/   Reusable presentational components (layout/ holds the app header and its global project selector)
+├── components/   Reusable presentational components
+│   ├── layout/           The app shell: header, sidebar, mobile drawer, ShellContext
+│   ├── patterns/         Cross-page patterns (reading-page/: the shared article + details layout)
+│   └── resource-detail/  ResourceReadingPage, the layout every resource detail page renders through
 ├── features/     Feature modules (domain-grouped UI + logic)
 ├── hooks/        Custom React hooks
 ├── contexts/     React context providers (auth, theme, …)
@@ -85,6 +88,15 @@ frontend/src/
   `components/FreshnessBadge.tsx`, `components/FreshnessFilterSelect.tsx`,
   `pages/teams/settings/freshness/`, `services/freshnessService.ts`. See
   [Resource Freshness](/user-guide/resource-freshness/).
+- **App shell** (new in v0.12.0): `components/layout/` holds a `ShellContext`
+  owning two collapsible rails, navigation and the reading-page details column.
+  Each is independent and remembered per browser (`vx_nav_collapsed`,
+  `vx_details_collapsed`). Desktop (`lg`+) gets both rails, tablet (`md`) a
+  details side sheet with the switchers in the header, phone a bottom sheet plus
+  a nav drawer hosting the team/project switchers, search and the theme toggle.
+  Every resource detail page (artifact, blueprint, memory, prompt, prompt
+  gallery) renders through one `ReadingPage` / `ResourceReadingPage`, so add
+  detail sections there rather than per page.
 - **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
   popover with value typeahead, on the Blueprint, Artifact, and Memory list
   pages.
@@ -163,6 +175,14 @@ make frontend-type-check  # tsc
 make frontend-test        # tests
 make frontend-build       # production build
 ```
+
+The react-hooks ESLint config is `recommended` minus four React-Compiler
+strictness rules. Two you are most likely to hit are enforced as errors:
+`react-hooks/refs` (no reading or writing `ref.current` during render) and
+`react-hooks/purity` (no `Date.now()` or `Math.random()`-style impure calls
+during render). `exhaustive-deps` is a warning and does not fail the build.
+`eslint-disable` is blocked by a pre-commit hook, so fix the pattern rather
+than suppressing it.
 
 ## Next
 

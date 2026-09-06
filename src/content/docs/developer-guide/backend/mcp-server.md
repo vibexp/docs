@@ -25,7 +25,7 @@ Two config keys point the resource server at the AS (see
 
 | Key | Purpose |
 | --- | --- |
-| `mcp.oauth_issuer` | The trusted issuer. Signing keys are fetched from `<issuer>/oauth2/jwks.json` — the `jwks_uri` the embedded AS publishes in its RFC 8414 metadata. Empty (with the AS disabled) disables the endpoint: every token is rejected with 401. |
+| `mcp.oauth_issuer` | The trusted issuer. With the embedded AS enabled, the resource server verifies tokens against the AS's **in-process** signing keys (both run in one process), so no HTTP JWKS round-trip is made. With an external IdP issuer, keys are fetched from `<issuer>/oauth2/jwks.json`, the `jwks_uri` in its RFC 8414 metadata. Empty (with the AS disabled) disables the endpoint: every token is rejected with 401. |
 | `mcp.resource_uri` | Canonical MCP resource identifier and required token audience. |
 
 In **local development both are auto-derived**: the AS auto-enables at
@@ -34,6 +34,17 @@ and `mcp.resource_uri` to `<issuer>/mcp/v1/common` — a fresh checkout boots a
 connectable MCP endpoint with zero auth configuration. In production set them
 explicitly; if `mcp.oauth_issuer` is set it must equal
 `auth.oauth_as.issuer_url`.
+
+:::note[No self-fetch of your own public URL, since v0.12.0]
+The resource server no longer fetches its own JWKS over HTTP. When the embedded
+AS is enabled, the verifier is handed the AS's in-process public keys
+(`internal/server/mcp_oauth.go`), so a container that publishes a different port
+than it listens on, or that cannot reach its own public hostname (split-horizon
+DNS, egress restrictions), still validates MCP tokens. The same wiring covers
+the `/api/v1` bearer path, so `vibexp auth login` works under the same
+conditions. With an **external** IdP issuer the AS is nil and the JWKS-over-HTTP
+path is kept.
+:::
 
 ## Audience binding (RFC 8707)
 
@@ -101,7 +112,7 @@ fourteen groups:
 | `search` | |
 | `attachments` | |
 | `delete` | The generic `vibexp_io_delete_resource`. |
-| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`, kept for one release and removed in the next. Use the `workspace` tool instead. |
+| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. Still registered as of v0.12.0 and scheduled for removal; use the `workspace` tool instead. |
 
 The generic **`vibexp_io_delete_resource`** handles deletion across types
 (`resource_type` is one of `memory`, `artifact`, `blueprint` or `prompt`), so

@@ -135,6 +135,7 @@ export default defineConfig({
             { slug: 'user-guide/resource-freshness' },
             { slug: 'user-guide/search' },
             { slug: 'user-guide/team-roles-and-permissions' },
+            { slug: 'user-guide/copying-team-settings' },
             {
               label: 'Integrations',
               collapsed: false,

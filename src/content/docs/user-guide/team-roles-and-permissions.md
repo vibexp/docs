@@ -28,6 +28,9 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | **Team** | | | |
 | Change team name, slug, description | ✅ | ✅ | — |
 | Change team settings (search ranking, resource freshness rules, embedding and model providers, email provider, GitHub App) | ✅ | ✅ | — |
+| Copy artifact types in from another team | ✅ | ✅ | ✅ |
+| Copy a model or embedding provider in from another team | ✅ | ✅ | — |
+| Read the settings audit log (what was copied in, and by whom) | ✅ | ✅ | — |
 | Delete the team | ✅ | — | — |
 | Transfer ownership | ✅ | — | — |
 | **Members** | | | |
@@ -48,7 +51,9 @@ Roles are **per team**. You can be the Owner of one team and a Member of another
 | Delete their own post | ✅ | ✅ | ✅ |
 | Delete *someone else's* post (moderation) | ✅ | ✅ | — |
 
-Everyone in a team can **view** the team, its members, its projects and all of its resources. Roles only govern what you can *change*. That extends to team settings: reading the [Resource Freshness](/user-guide/resource-freshness/) rules, its analytics and its audit log is open to every member, and only the writes need the permission.
+Everyone in a team can **view** the team, its members, its projects and all of its resources. Roles only govern what you can *change*. That extends to most team settings: reading the [Resource Freshness](/user-guide/resource-freshness/) rules, its analytics and its audit log is open to every member, and only the writes need the permission. The **settings audit log** is the exception, since it can reveal another team's name: only Owners and Admins can read it.
+
+Copying settings in from another team needs the same permission on *both* teams, so it can never move configuration you would not have been allowed to read. Copying artifact types needs only membership; copying a provider needs Owner or Admin. See [Copying settings between teams](/user-guide/copying-team-settings/).
 
 Two entries surprise people, so they're worth stating plainly:
 
@@ -132,7 +137,7 @@ The complete set of permission strings:
 | `team.update` | Change team name, slug or description |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
-| `team.settings.update` | Change team-level settings: search ranking, resource freshness rules and settings, embedding and model providers, the email provider, the GitHub App |
+| `team.settings.update` | Change team-level settings: search ranking, resource freshness rules and settings, embedding and model providers, the email provider, the GitHub App. Also gates reading the settings audit log |
 | `member.invite` | Invite new members |
 | `member.remove` | Remove members from the team |
 | `member.role.update` | Change a member's role |

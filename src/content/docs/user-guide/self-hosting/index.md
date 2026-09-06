@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.11.0
+  ghcr.io/vibexp/vibexp:0.12.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -69,7 +69,8 @@ ingestion, and web-push tables automatically, and moves GitHub App
 configuration from `config.yaml` to per-team setup (re-register the App on
 each team after upgrading). Upgrading to v0.11.0 from v0.10.0 or any earlier
 published release needs no action: its consolidated `013_consolidated`
-migration applies automatically on boot.
+migration applies automatically on boot, and so do v0.12.0's
+`014_embedding_jobs` and `015_team_settings_audit`.
 :::
 
 There is no embedding env var: embedding and model providers are configured
@@ -97,7 +98,7 @@ For **local evaluation without a provider**, point `FRONTEND_BASE_URL` at localh
 
 ## Search and embeddings
 
-Embeddings are generated **in-process** — an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`.
+Embeddings are generated **in-process**: an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`. Since v0.12.0 pending work is held in a durable `embedding_jobs` table rather than in memory, so restarting the container no longer drops queued embeddings.
 
 The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
 
@@ -131,7 +132,7 @@ Configured via env vars or a mounted `config.yaml` (see `backend/config.example.
 
 | Integration | Enable via | Behavior when off |
 | --- | --- | --- |
-| **Object storage** (attachments) | `STORAGE_BACKEND` picks the store: `filesystem` (+ `STORAGE_FS_ROOT_DIR`, mount a volume there), `s3` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and for MinIO `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`), or `gcs` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`; leaving `STORAGE_BACKEND` unset auto-detects this from the bucket). MinIO also needs a mounted `config.yaml` with `storage.s3_path_style: true`, since that boolean has no env var | Uploads return `503` |
+| **Object storage** (attachments) | `STORAGE_BACKEND` picks the store: `filesystem` (+ `STORAGE_FS_ROOT_DIR`, mount a volume there), `s3` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and for MinIO `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`), or `gcs` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`; leaving `STORAGE_BACKEND` unset auto-detects this from the bucket). MinIO also needs path-style addressing, `S3_PATH_STYLE=true`, which since v0.12.0 is an env var, so no mounted `config.yaml` is required | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
 | **Analytics** | `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4). Setting `VITE_GTM_ID` **is** the opt-in; there is no separate enable flag, and VibeXP ships no cookie-consent gate of its own | No analytics |
 | **Private-network outbound calls** | `OUTBOUND_ALLOWED_CIDRS` (comma-separated, e.g. `172.16.0.0/12`) so the SSRF guard may reach a self-hosted embedding or model sidecar | Loopback and private destinations are refused |

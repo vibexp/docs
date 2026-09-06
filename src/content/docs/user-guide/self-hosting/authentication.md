@@ -167,3 +167,4 @@ Empty (the default) leaves the feature dormant.
 - No WorkOS (or any external Authorization Server) account.
 - No JWT key files — keys live in the database and rotate automatically.
 - No CORS or reverse-proxy routing config for MCP — the AS and the SPA are same-origin in the single combined image.
+- No self-reachable public URL for token validation. Since v0.12.0 the MCP endpoint and the `/api/v1` bearer path verify VibeXP-issued tokens against the Authorization Server's in-process signing keys, so the backend never fetches its own `/oauth2/jwks.json` over HTTP. Split-horizon DNS, a container port that differs from the published one, or egress restrictions no longer break MCP or `vibexp auth login`.

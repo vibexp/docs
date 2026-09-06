@@ -26,8 +26,10 @@ automatically if `config.yaml` is missing).
    service fails closed on a bad config rather than running misconfigured.
    Sections removed in past releases fail loudly: a leftover top-level
    `github:` block aborts startup with guidance to re-register the App per
-   team (removed in v0.9.0), while a leftover `embedding:` block is silently
-   ignored.
+   team (removed in v0.9.0). Unknown keys elsewhere are ignored silently, so a
+   pre-v0.4.0 `embedding:` block does not abort. Note that since v0.12.0
+   `embedding:` is a live section again: it holds the durable queue's
+   `embedding.queue.*` knobs.
 
 The published Docker image bakes a production-neutral default config
 (`config.docker.yaml`) at `/app/config.yaml` and sets `VIBEXP_CONFIG_FILE`
@@ -232,7 +234,7 @@ embedded Authorization Server. See
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `mcp.oauth_issuer` | _(empty; defaults to `auth.oauth_as.issuer_url` when the AS is enabled)_ | Issuer the MCP endpoint trusts; JWKS is fetched from `<issuer>/oauth2/jwks.json`. If set explicitly it must equal the AS issuer. Empty with no AS disables the endpoint (rejects all tokens with 401). |
+| `mcp.oauth_issuer` | _(empty; defaults to `auth.oauth_as.issuer_url` when the AS is enabled)_ | Issuer the MCP endpoint trusts. With the embedded AS enabled, tokens are verified against the AS's **in-process** signing keys, so no HTTP JWKS fetch happens and the public issuer URL need not be reachable from inside the container. With an external IdP issuer, keys are fetched from `<issuer>/oauth2/jwks.json`. If set explicitly it must equal the AS issuer. Empty with no AS disables the endpoint (rejects all tokens with 401). |
 | `mcp.resource_uri` | _(empty; auto-derived locally as `<issuer>/mcp/v1/common`)_ | Canonical MCP resource identifier and required token audience (RFC 8707). Required when the AS is enabled. |
 
 In local development both fields are auto-derived — leave them empty. In
@@ -288,11 +290,13 @@ Embeddings are generated in-process by an async event-bus worker: text is
 chunked in Go, embedded via the active provider, and stored in pgvector. There
 is **no** external AI service and **no** message broker.
 
-:::caution[Not in config.yaml since v0.4.0]
-There is **no `embedding` block** in `config.yaml`. All embedding settings are
-**per-team embedding providers**, managed in the app (Settings) or via
-`/api/v1/{team_id}/settings/embedding-providers`. A leftover `embedding:` block
-in an old config file is silently ignored.
+:::caution[Providers are per team, not in config.yaml]
+Embedding **providers** (endpoint, model, chunking, concurrency, prefixes) are
+not in `config.yaml`: they are **per-team settings**, managed in the app
+(Settings) or via `/api/v1/{team_id}/settings/embedding-providers`. The
+`embedding` block in `config.yaml` holds only the queue knobs below
+(`embedding.queue.*`, added in v0.12.0); a pre-v0.4.0 `embedding:` block with
+provider fields is ignored key by key.
 :::
 
 Each per-team embedding provider stores:
@@ -319,6 +323,24 @@ Provider behavior:
 Per-team **model providers** (bring-your-own OpenAI-compatible LLM endpoints)
 are also managed in-app, under `/api/v1/{team_id}/settings/model-providers`,
 not in `config.yaml`.
+
+### Embedding job queue (`embedding.queue`)
+
+Since v0.12.0 embedding work is held in a **durable, leased job queue** in the
+`embedding_jobs` table: every accepted event is written to the table before it
+is acknowledged, so a restart resumes its backlog instead of discarding it.
+Durability is not a knob. These keys only tune how the queue is drained.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `embedding.queue.lease_duration` | `30m` | `EMBEDDING_QUEUE_LEASE_DURATION` | How long a claimed job is held before another worker may reclaim it. Must be greater than 0. A lease expiring under a running job costs a duplicate embed, not wrong data. |
+| `embedding.queue.max_attempts` | `5` | `EMBEDDING_QUEUE_MAX_ATTEMPTS` | How many times one job may be **claimed** before it is retired as a poison pill. Claims are counted, not failures, so a job that kills its worker still converges on the bound. Must be at least 1. |
+| `embedding.queue.batch_size` | `20` | `EMBEDDING_QUEUE_BATCH_SIZE` | Caps how many jobs one claim leases. Must be at least 1. |
+| `embedding.queue.poll_interval` | `30s` | `EMBEDDING_QUEUE_POLL_INTERVAL` | How often the queue is swept for work no enqueue announced: jobs orphaned by a dead process, and jobs backing off after a retryable failure. An enqueue wakes the poller directly, so this is not common-path latency. Must be greater than 0. |
+| `embedding.queue.retry_backoff` | `2m` | `EMBEDDING_QUEUE_RETRY_BACKOFF` | Holds a job back after a retryable failure so it does not consume a claim slot on every poll. Must not be negative. |
+
+All five are validated at startup: an out-of-range value fails the boot rather
+than falling back to the default.
 
 ## Email
 
@@ -395,7 +417,7 @@ upload/download/delete return 503.
 | `storage.s3_region` | _(empty)_ | `S3_REGION` | S3 region. Required by the SDK even for MinIO, which ignores the value. |
 | `storage.s3_access_key` | _(empty)_ | `S3_ACCESS_KEY` | Static S3 access key (secret). |
 | `storage.s3_secret_key` | _(empty)_ | `S3_SECRET_KEY` | Static S3 secret key (secret). Both empty falls back to the AWS SDK default credential chain (env vars, shared config, IAM). |
-| `storage.s3_path_style` | `false` | _(none, literal `false`)_ | Force path-style addressing (`endpoint/bucket/key`), required by MinIO and most self-hosted S3-compatible stores. |
+| `storage.s3_path_style` | `false` | `S3_PATH_STYLE` | Force path-style addressing (`endpoint/bucket/key`), required by MinIO and most self-hosted S3-compatible stores. AWS S3 works on the default. A non-boolean value fails startup naming `storage.s3_path_style`. |
 | `storage.fs_root_dir` | _(empty)_ | `STORAGE_FS_ROOT_DIR` | Root directory for the `filesystem` backend. Created at startup if missing, so mount a volume at this path or attachments vanish with the container. |
 
 Validation fails startup (fail closed, so a typo surfaces at boot rather than
@@ -412,13 +434,12 @@ unreachable endpoint) logs a warning and disables attachments rather than
 crashing the server, so uploads return 503 and the rest of the instance keeps
 running.
 
-:::caution[MinIO needs a mounted config.yaml]
-`storage.s3_path_style` is the one storage knob with **no environment
-variable**: `${VAR}` interpolation is string-only, so a boolean cannot be
-wired through it and the baked image config carries a literal `false`. MinIO
-and most self-hosted S3-compatible stores require path-style addressing, so
-those deployments must mount their own `config.yaml` with
-`storage.s3_path_style: true`. AWS S3 works on the default.
+:::note[MinIO is env-only since v0.12.0]
+`storage.s3_path_style` used to be the one storage knob with no environment
+variable. It is now wired as `${S3_PATH_STYLE:-false}` in the baked image
+config, so `S3_PATH_STYLE=true` is all MinIO needs and no mounted `config.yaml`
+is required. A value that is not a boolean fails startup naming
+`storage.s3_path_style` rather than silently defaulting.
 :::
 
 `STORAGE_EMULATOR_HOST` is not a VibeXP config key: it is read directly by the
