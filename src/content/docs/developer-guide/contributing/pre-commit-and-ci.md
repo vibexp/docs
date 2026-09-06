@@ -56,7 +56,7 @@ relevant files (backend hooks on `backend/`, frontend hooks on `frontend/`).
   **check-case-conflict**.
 - **no-commit-to-branch** — blocks direct commits to `main`.
 - **GitHub Actions workflow lint**: `make lint-workflows` (actionlint), on any
-  change under `.github/workflows/`. An invalid workflow is a *startup* failure:
+  `.yml`/`.yaml` file under `.github/workflows/`. An invalid workflow is a *startup* failure:
   no logs, and scheduled runs silently stop being created.
 - **Block `nolint` comments** (backend) and **block `eslint-disable`**
   (frontend) — suppressions are not allowed outside the documented exceptions.
@@ -106,7 +106,7 @@ fanned out into parallel jobs (#638). Its jobs:
 | --- | --- |
 | `changes` | Path filter (`dorny/paths-filter`) that decides which downstream jobs run. On a **fork** PR it also uploads a `pr-number` artifact, which `sonar-fork.yml` consumes. |
 | `migrations` | PR-only duplicate-migration gate (merge mode against the branch the PR targets), and only when the PR touches `backend/migrations/`; skipped when the PR carries the `migration-renumbering` label. |
-| `workflows` | `make lint-workflows` (actionlint) over `.github/workflows/`. Runs when a PR touches a workflow file, and on every push. Same Make target and same pinned actionlint as the pre-commit hook, so the two cannot disagree. |
+| `workflows` | `make lint-workflows` (actionlint) over `.github/workflows/`. Runs when a PR touches a workflow file **or the `Makefile`**, and on every push. Same Make target and same pinned actionlint as the pre-commit hook, so the two cannot disagree. |
 | `unit` | Backend build plus the **untagged** test suite (whole module, no Postgres), with coverage. Also gates the config-schema, Wire, and mock drift checks. |
 | `integration` | The `integration`-tagged tests only (`internal/repositories/postgres`, `internal/scheduler`, and `internal/services/projectmigration`, pinned in the Makefile) against a `pgvector` Postgres service container, with coverage. |
 | `security` | `govulncheck` + `gosec` (split out of the test job in #638). |

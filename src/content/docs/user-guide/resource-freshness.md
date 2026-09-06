@@ -89,10 +89,11 @@ A team with no saved settings inherits the deployment defaults and shows a
 the team inherits again.
 
 Saving a rule or a settings change re-arms the schedule, but a run never happens
-sooner than one full interval after the last one. Shorten the interval right
-after a run and the next run still waits out the remainder of the old interval:
-a schedule change cannot make a resource retroactively overdue. A schedule that
-has never run fires on the next tick.
+sooner than one full interval after the last one. That floor is measured against
+the interval you have set *now*: shorten it and the team becomes due once one
+interval of the new length has passed since the last run — sooner than the old
+interval would have allowed, but still never twice inside one interval. A
+schedule that has never run fires on the next tick.
 
 The schedule exists while the team has at least one rule. Delete the last rule and
 the schedule goes away with it. If a team ever ends up with rules but no schedule

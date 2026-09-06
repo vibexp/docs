@@ -12,7 +12,7 @@ destination team's audit log.
 
 | Surface | Where | Who can copy |
 | --- | --- | --- |
-| Custom artifact types | Settings → **Customization** | any member of both teams |
+| Custom artifact types | Settings → **Artifact Types** | any member of both teams |
 | Model providers | Settings → **Model Providers** | owner or admin of **both** teams |
 | Embedding providers | Settings → **Embedding Providers** | owner or admin of **both** teams |
 
@@ -55,10 +55,12 @@ One provider per copy.
 :::caution[A copied embedding provider can become the active one]
 A team's active embedding provider is the one flagged default, or failing that
 the most recently updated one. So if the destination team has **no default
-set**, the copy becomes its active provider immediately. Resources embedded
-with the previous model stop matching new queries until they are re-embedded.
-VibeXP tells you when this is about to happen, how many resources are affected,
-and offers to re-process them. See
+set**, the copy becomes its active provider immediately. If the copy's model
+differs from the one it displaced, resources embedded with the previous model
+stop matching new queries until they are re-embedded. VibeXP reports this after
+the copy — which provider took over and how many resources are affected — and
+offers **Re-embed now**. You can also tick **Re-process embeddings after
+copying** in the copy dialog beforehand. See
 [AI Providers](/user-guide/integrations/ai-providers/).
 :::
 
