@@ -112,7 +112,7 @@ fourteen groups:
 | `search` | |
 | `attachments` | |
 | `delete` | The generic `vibexp_io_delete_resource`. |
-| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. Still registered as of v0.12.0 and scheduled for removal; use the `workspace` tool instead. |
+| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. The v0.11.0 code comment introducing the deprecation said "kept for one release"; still registered two releases later, as of v0.13.0, with no removal date set. Use the `workspace` tool instead. |
 
 The generic **`vibexp_io_delete_resource`** handles deletion across types
 (`resource_type` is one of `memory`, `artifact`, `blueprint` or `prompt`), so
@@ -120,6 +120,16 @@ the tool surface stays small instead of growing one delete tool per type.
 
 For the public-facing server, tools follow the `vibexp_io_*` naming convention
 (for example `vibexp_io_create_prompt`, `vibexp_io_search`).
+
+Across those fourteen groups the server registers **27 individual tools**
+(including the two deprecated aliases above). Since v0.13.0,
+`internal/server/mcp_catalog_parity_test.go`
+(`TestMCPCatalogMatchesRegisteredTools`) builds the real server and diffs its
+tool names against the frontend's curated catalog
+(`frontend/src/pages/mcp/mcp-tools*.ts`), which the user-facing [MCP
+Server](/user-guide/mcp-server/) page in the app renders directly. The two can
+no longer drift the way they had (the test's own comment notes it once
+documented 18 of the 27 tools, #939).
 
 ## Per-team scoping
 

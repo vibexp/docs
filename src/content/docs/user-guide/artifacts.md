@@ -118,6 +118,21 @@ search, and stays reachable by filtering on the archived status.
 
 Change status anytime without deleting artifacts.
 
+### Labels
+
+Since v0.13.0, artifacts carry the same **labels** taxonomy as prompts,
+blueprints, and memories: up to 10 short tags per artifact, 50 characters
+each. Add them in the **Labels** card on the create/edit form (type a label
+and press Enter or a comma to add it); they show as chips in the taxonomy
+section on an artifact's detail page.
+
+:::note[No labels filter or column yet]
+Labels are filterable over the API (`GET /api/v1/{team_id}/artifacts?labels=…`,
+below) and over MCP, but the artifacts list page has no labels column or
+labels filter control yet, unlike prompts. Use the API or ask a connected AI
+tool if you need to find artifacts by label today.
+:::
+
 ### Linking to other resources
 
 Beyond projects and status, artifacts can be linked to the resources they came
@@ -385,6 +400,26 @@ Both list endpoints accept `freshness=stale`. That is the only accepted value;
 anything else returns a `400` rather than silently returning the unfiltered
 list. Artifact payloads also carry an optional `freshness` object, absent when
 the artifact is fresh. See [Resource Freshness](/user-guide/resource-freshness/).
+
+Both list endpoints also accept `labels` (since v0.13.0):
+
+```bash
+GET /api/v1/{team_id}/artifacts?labels=blog,marketing
+```
+
+An artifact matches if it carries **any** of the listed labels (comma
+separated, OR semantics, not all of them). At most 25 labels, each at most
+50 characters; over either limit the request is rejected with `400` rather
+than silently narrowed. Empty entries (`a,,b` or a trailing comma) are
+dropped rather than treated as "match nothing", and a blank `labels`
+parameter means no filtering at all.
+
+The single-resource detail GET (`GET
+/api/v1/{team_id}/artifacts/{project_id}/{slug}`) also carries a `project`
+summary (`id`, `name`, `slug`) since v0.13.0, so a detail page never needs a
+separate project fetch. It is `null` in list responses and wherever the
+server has not resolved it; `project_id` remains the field to rely on when
+`project` is null.
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.
 

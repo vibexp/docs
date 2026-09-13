@@ -97,6 +97,36 @@ frontend/src/
   Every resource detail page (artifact, blueprint, memory, prompt, prompt
   gallery) renders through one `ReadingPage` / `ResourceReadingPage`, so add
   detail sections there rather than per page.
+- **Reading shell, descriptor-driven** (new in v0.13.0):
+  `components/patterns/reading-page/` builds on the app shell with a shared
+  body renderer (`ResourceBody` / `useBodyViewMode`) offering a
+  **Rendered / Raw** toggle, persisted per browser, and a
+  `presentation="editing"` mode that renders a resource's edit form inside the
+  identical shell instead of a separate page. What each resource type looks
+  like (fields, list filters/columns/sorting, form layout) is data, not
+  per-page code: `components/patterns/resource/types.ts` defines
+  `ResourceDescriptor`, and `components/patterns/resource/registry.ts` lists
+  the six kinds (`prompt`, `artifact`, `blueprint`, `memory`, `gallery-prompt`,
+  `agent`). Feed items and AI agents render through the same
+  `ResourceReadingPage` as the four core resource types and the prompt
+  gallery.
+- **Unified taxonomy section** (new in v0.13.0):
+  `components/patterns/resource/ResourceTaxonomySection.tsx` (read view) and
+  `form/TaxonomyInput.tsx` (chip editor) replace what used to be three
+  separate ad hoc renderings (a prompt "Labels" card, a memory "Tags" card, a
+  metadata "Additional data" card at three call sites). Every resource
+  descriptor with a `labels` field (artifact, blueprint, memory, prompt) now
+  renders one "Labels & metadata" panel the same way. Memory is the one
+  exception still carrying a legacy `tags` extension slot bound to
+  `metadata.tags`, which the backend folds into the real `labels` column on
+  write.
+- **Prompt Gallery, its own pages** (new in v0.13.0): `/prompt-gallery`
+  (category cards), `/prompt-gallery/:category` (a filterable list on the
+  shared list pattern), and `/prompt-gallery/:category/:id` (a full
+  `ResourceReadingPage` detail view with Copy and "Use this prompt" actions),
+  under `pages/prompt-gallery/`. The retired `/prompt-gallery/prompt/:id` path
+  self-corrects to the categorized URL client-side once the payload's real
+  category is known, since the old URL cannot carry it.
 - **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
   popover with value typeahead, on the Blueprint, Artifact, and Memory list
   pages.

@@ -305,6 +305,10 @@ One generic pair of read tools covers memories, artifacts, and blueprints (keyed
 `vibexp_io_get_resource` (and the four resource detail reads) also return a `related` array (the resource's typed relation neighborhood, up to 20 edges) and a `similar` array (up to 5 semantically similar resources computed from embeddings). Both arrays are optional. See [Relations](/user-guide/relations/).
 :::
 
+:::note[Reads carry a project summary, since v0.13.0]
+`vibexp_io_get_resource` also returns a `project` object (`id`, `name`, `slug`) on the four resource detail reads, so an assistant does not need a separate call to name the project a resource belongs to. It is absent wherever the server has not resolved it; `project_id` remains the field to rely on either way.
+:::
+
 :::note[Reads carry freshness, and are recorded]
 For memories, artifacts, and blueprints, `vibexp_io_get_resource` also returns a `freshness` object when the resource is **currently flagged stale** by your team's freshness rules. The field is absent when the resource is fresh, so an assistant can warn you before treating a stale document as current. See [Resource Freshness](/user-guide/resource-freshness/).
 
@@ -327,22 +331,22 @@ To *read* prompts, use `vibexp_io_render_prompt`, the generic `vibexp_io_search`
 
 ### Artifact Management
 
-- **vibexp_io_create_artifact**: Create a new artifact
-- **vibexp_io_update_artifact**: Update an existing artifact
+- **vibexp_io_create_artifact**: Create a new artifact, with an optional `labels` array (since v0.13.0, up to 10, 50 characters each)
+- **vibexp_io_update_artifact**: Update an existing artifact, including its `labels`
 
 Read artifacts with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: artifact`).
 
 ### Blueprint Management
 
-- **vibexp_io_create_blueprint**: Create a new blueprint
-- **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug
+- **vibexp_io_create_blueprint**: Create a new blueprint, with an optional `labels` array (since v0.13.0, up to 10, 50 characters each)
+- **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug, including its `labels`
 
 Read blueprints with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: blueprint`).
 
 ### Memory Operations
 
-- **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`)
-- **vibexp_io_update_memory**: Update a memory's text, status, or metadata
+- **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`); plus an optional `title` (up to 255 characters) and `labels` (up to 10, 50 characters each), both since v0.13.0
+- **vibexp_io_update_memory**: Update a memory's text, status, title, labels, or metadata
 
 Read memories with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: memory`).
 

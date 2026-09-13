@@ -19,14 +19,14 @@ The bundled `docker-compose.yml` tracks `latest`. Pin to `X.Y.Z` instead if you
 want upgrades to be a deliberate step:
 
 ```yaml
-image: ghcr.io/vibexp/vibexp:0.12.0
+image: ghcr.io/vibexp/vibexp:0.13.0
 ```
 
 **Patch releases are supported on the newest minor line only.** Now that
-`0.12.0` has shipped, fixes go to `0.12.x`, not `0.11.x`. To stay on a supported
+`0.13.0` has shipped, fixes go to `0.13.x`, not `0.12.x`. To stay on a supported
 version, follow the newest minor.
 
-A patch release (`0.12.0` to `0.12.1`) contains bug fixes and security fixes
+A patch release (`0.13.0` to `0.13.1`) contains bug fixes and security fixes
 only. It never adds a database migration and never changes the API, so it is
 always a straight image bump with no action on your side. Anything that needs a
 schema or API change ships as a minor release and appears below if it requires
@@ -37,16 +37,54 @@ will start or immediately after. Entries are newest first: if you are skipping
 several releases, work upwards from the version you are on and apply every one
 in between.
 
-:::note[v0.12.0 needs no action]
-v0.12.0 adds two migrations, `014_embedding_jobs` (the durable embedding job
-queue) and `015_team_settings_audit` (the settings-copy audit log). Both apply
+:::note[v0.13.0 and v0.12.0 need no action]
+v0.13.0 adds one migration, `016_consolidated` (a `labels` array on artifacts,
+blueprints, and memories, plus an optional `title` on memories). v0.12.0 added
+two, `014_embedding_jobs` (the durable embedding job queue) and
+`015_team_settings_audit` (the settings-copy audit log). All three apply
 **automatically on boot** like any other release: pull the image and restart.
-Its new knobs are optional and default sensibly, `EMBEDDING_QUEUE_*` for queue
-drain tuning and `S3_PATH_STYLE`, which finally lets MinIO deployments drop
-their mounted `config.yaml`.
+v0.12.0's new knobs are optional and default sensibly, `EMBEDDING_QUEUE_*` for
+queue drain tuning and `S3_PATH_STYLE`, which finally lets MinIO deployments
+drop their mounted `config.yaml`. Upgrading from any published release,
+including straight from v0.10.0, needs no manual `schema_migrations` step:
+golang-migrate walks the whole chain of files on boot regardless of how many
+releases you skip. Manual reconciliation is only ever a concern for an
+instance that tracked an unreleased `main` build between releases (see the
+migration-renumbering entries below).
 :::
 
 ## Breaking changes
+
+### Prompt label filter now matches ANY label, not ALL (v0.13.0)
+
+`GET /api/v1/{team_id}/prompts?labels=a,b` used to match only prompts
+carrying **every** listed label. It now matches a prompt carrying **any** of
+them (OR), the same semantics artifacts, blueprints, and memories already
+used for their own `labels` filter. Prompts were the one resource where the
+same parameter name meant something different. Two related changes ship in
+the same release: a request naming more than 25 labels, or a label longer
+than 50 characters, now gets `400` instead of reaching Postgres; and
+`?labels=a,,b` or a trailing comma now filters on the non-empty entries
+instead of matching nothing.
+
+If an integration relied on the old AND behavior, filter client-side by
+intersecting results across single-label requests instead.
+
+→ [Prompts API Integration](/user-guide/prompts/api-integration/)
+
+### Migrations renumbered again, only affects `main`-built images (v0.13.0)
+
+Upgrading from **v0.12.0 or any earlier published release needs no action**:
+the new `016_consolidated` migration applies automatically on boot, exactly
+like any other release.
+
+It squashes two migrations that were merged after v0.12.0 but never shipped
+in a release (`016_resource_labels`, `017_memory_title`) into one step
+numbered `016`. As with the earlier `013_consolidated` squash below, no
+released image ever applied the old numbers, so renumbering is safe for
+everyone upgrading between releases. Only an instance that tracked a `main`
+build between v0.12.0 and v0.13.0 needs to recreate its database or reconcile
+`schema_migrations` by hand.
 
 ### Migrations renumbered, only affects `main`-built images (v0.11.0)
 
@@ -73,8 +111,9 @@ hand.
 
 Both are superseded by **`vibexp_io_list_teams_and_projects`**, which returns a
 smaller payload and can find a project across all your teams without knowing
-which team holds it. The two old tools still work in v0.12.0 but are
-**removed in a future release**, so update any prompt, skill, or agent
+which team holds it. The two old tools still work in v0.13.0 (the code
+originally planned to remove them "in one release," but that has slipped
+twice with no new date set). Update any prompt, skill, or agent
 configuration that names them now, while both are still registered.
 
 → [MCP Server](/user-guide/mcp-server/)

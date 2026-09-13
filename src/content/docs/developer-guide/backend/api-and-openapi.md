@@ -88,6 +88,29 @@ team-scoped: eight path items, twelve operations, covering rule CRUD
 the audit log (`/{team_id}/freshness/audit`). See
 [Resource Freshness](/user-guide/resource-freshness/) for what the rules mean.
 
+### Shared labels and status vocabularies
+
+Since v0.13.0, `schemas/common.yaml` defines `ResourceStatus`, the full status
+vocabulary (`active`, `draft`, `archived`, `published`, `expired`) that
+prompts, artifacts, blueprints, and memories all draw from. Each resource
+type's own status schema (`PromptStatus`, `ArtifactStatus`, `BlueprintStatus`,
+`MemoryStatus`) carries `x-subset-of: ResourceStatus` and enumerates only the
+values that type actually accepts, so the values themselves have not changed.
+This formalizes what was already true and adds two build-time tests
+(`TestSpecEnumsMatchServiceAllowlists`,
+`TestResourceStatusSubsetsAreDrawnFromVocabulary`) that fail the build if a
+per-type enum drifts from the Go service-layer allowlist or contains a value
+`ResourceStatus` itself does not.
+
+The same release adds a `labels` array to artifacts, blueprints, and
+memories, joining prompts on one shared taxonomy: up to 10 labels per
+resource, 50 characters each, defined once and referenced from all four
+resource schemas. See
+[Metadata filtering](/user-guide/metadata-filtering/)
+and the database page's
+[Resource labels and memory title](/developer-guide/backend/database/#resource-labels-and-memory-title-v0130)
+section for the write-path and migration details.
+
 ## Bundling
 
 The multi-file source is bundled into a single artifact with

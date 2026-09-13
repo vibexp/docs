@@ -51,8 +51,11 @@ post-v0.10.0 increments: the resource-freshness schema (four tables plus
 per-medium `last_accessed_*` columns on the four resource tables), the
 narrowed `update_memories_updated_at` trigger, and the teams/projects
 keyword-search indexes), `014_embedding_jobs` (the durable embedding job
-queue, v0.12.0) and `015_team_settings_audit` (the append-only settings-copy
-audit log, v0.12.0). A pre-existing
+queue, v0.12.0), `015_team_settings_audit` (the append-only settings-copy
+audit log, v0.12.0), and `016_consolidated` (v0.13.0, squashing the two
+migrations that accumulated after v0.12.0 but never shipped in a release: a
+`labels text[]` column plus a GIN index on `artifacts`, `blueprints`, and
+`memories`, and an optional `title` column on `memories`). A pre-existing
 pre-v0.3.0 database must be stamped to the matching version so the
 consolidated files are never re-run against a populated schema.
 :::
@@ -84,6 +87,7 @@ The current set (`.up.sql` shown; each has a matching `.down.sql`):
 013_consolidated.up.sql
 014_embedding_jobs.up.sql
 015_team_settings_audit.up.sql
+016_consolidated.up.sql
 ```
 
 `NNN` is a zero-padded, strictly increasing sequence number. Every `.up.sql` must
@@ -212,6 +216,43 @@ the account. `source_team_id` deliberately carries no foreign key, so an entry
 survives the source team being deleted. The repository exposes no update and no
 delete, and nothing expires rows.
 
+## Resource labels and memory title (v0.13.0)
+
+`016_consolidated` adds a `labels text[] NOT NULL DEFAULT '{}'` column plus a
+GIN index (`idx_artifacts_labels` and equivalents) to `artifacts`,
+`blueprints`, and `memories`. Prompts already had `labels`, nullable rather
+than `NOT NULL`. The same migration adds a nullable `title varchar(255)`
+column to `memories`, with no default and no backfill: every memory that
+predates v0.13.0 keeps `title: null`.
+
+The up-migration also backfills: any existing `metadata->'tags'` JSON array on
+a memory is folded into the new `labels` column (trimmed, deduped, capped at
+10 entries/50 characters, matching the service-layer normalization every
+write goes through) and the `tags` key is removed from `metadata`, guarded by
+`jsonb_typeof(metadata->'tags') = 'array'` so a non-array value at that key is
+left untouched. The down-migration reverses this, and (fixing issue #940)
+writes `metadata.tags` back from `labels` only when the `tags` key is absent
+or already an array on the row being reversed, never clobbering a
+non-array value a client may have written after the up-migration ran.
+
+Label limits (10 per resource, 50 characters each) are enforced in
+`internal/services/labels.go` for artifacts, blueprints, and memories, funnelling
+both the REST handlers and the MCP tools through one `validateLabels` call.
+**Prompts are the exception**: nothing calls the equivalent validator on the
+prompt write path, so the same limits are documented and UI-enforced but not
+server-enforced for prompts as of v0.13.0.
+
+The `labels` **filter** query parameter (`GET .../artifacts?labels=a,b`, and
+the equivalent on blueprints, memories, and prompts) is a separate limit,
+`MaxLabelsFilterValues = 25` in `internal/server/handlers_memories.go`,
+deliberately higher than the 10-per-resource write cap since a filter unions
+labels across many resources. See
+[Metadata filtering](/user-guide/metadata-filtering/) for the parallel
+`metadata` filter, and the Labels sections on
+[Artifacts](/user-guide/artifacts/#labels),
+[Blueprints](/user-guide/blueprints/#labels), and
+[Memory](/user-guide/memory/#labels) for the user-facing behavior.
+
 ## Validating migrations
 
 The CI and pre-commit hooks check that migrations are well-formed. Run the same
@@ -234,13 +275,13 @@ renumberings such as post-release consolidations.
 ## Adding a migration
 
 1. Pick the next sequence number (one higher than the current maximum; with
-   `015_team_settings_audit` as the newest shipped migration, the next one is
-   `016`).
+   `016_consolidated` as the newest shipped migration, the next one is
+   `017`).
 2. Create both files:
 
    ```bash
-   touch backend/migrations/016_add_widgets_table.up.sql
-   touch backend/migrations/016_add_widgets_table.down.sql
+   touch backend/migrations/017_add_widgets_table.up.sql
+   touch backend/migrations/017_add_widgets_table.down.sql
    ```
 
 3. Write the forward schema change in `.up.sql` and the exact rollback in

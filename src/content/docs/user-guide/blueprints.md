@@ -15,6 +15,7 @@ A blueprint is a piece of structured guidance: coding standards, architectural r
 - **Content**: the body of the blueprint (supports Markdown).
 - **Description**: an optional short summary.
 - **Status**: `active` or `expired` (archive without deleting).
+- **Labels**: up to 10 short tags, 50 characters each, since v0.13.0. Shared with prompts, artifacts, and memories. Shown as chips in the taxonomy section on the detail page and editable on the create/edit form.
 - **Metadata**: optional custom key/value fields.
 - **Path**: the canonical repo-relative path the blueprint maps to (for example `.claude/skills/deploy/SKILL.md` or `CLAUDE.md`). Derived server-side from the blueprint's type and subtype for VibeXP-authored blueprints, or the verbatim source path for imported ones. Display-only. See [Blueprint paths](#blueprint-paths).
 - **Type and subtype**: which AI tool and category the blueprint targets (Claude Code, Cursor, Codex, and the Agent Skills category).
@@ -62,6 +63,28 @@ Blueprints are organized by **project**, and a blueprint is addressed by its pro
 - **Metadata**: match on any metadata key-value pairs (pick a key, then values, with typeahead from the values your team actually uses; keys combine with AND, values within a key with OR).
 
 A flagged blueprint also carries a quiet **Stale** badge next to its title in the list. Both blueprint list endpoints accept `freshness=stale` for the same filter over the API.
+
+### Labels
+
+Since v0.13.0, blueprints carry the same **labels** taxonomy as prompts,
+artifacts, and memories: up to 10 short tags, 50 characters each, shown as
+chips in the taxonomy section on the detail page and editable on the
+create/edit form.
+
+:::note[Labels are filterable over the API, not yet in the list UI]
+Both blueprint list endpoints also accept `labels` (`GET
+/api/v1/{team_id}/blueprints?labels=review,security`): a blueprint matches if
+it carries **any** of the listed labels (OR, not all of them). At most 25
+labels, each at most 50 characters, or the request is rejected with `400`.
+The Blueprints list page itself has no labels filter or column yet, unlike
+prompts; use the API or ask a connected AI tool to find blueprints by label
+today.
+:::
+
+A blueprint's detail response also carries a `project` summary (`id`, `name`,
+`slug`) since v0.13.0, so a detail page never needs a separate project fetch.
+It is `null` in list responses; `project_id` remains the field to rely on
+when `project` is null.
 
 ## Blueprint paths
 
@@ -141,7 +164,7 @@ Re-importing an existing blueprint reconciles by outcome, and **your local VibeX
 
 When your AI assistant is connected to VibeXP through the [MCP server](/user-guide/mcp-server/), it can create and update blueprints directly, and discover them through semantic search.
 
-- `vibexp_io_create_blueprint`: create a new blueprint. Required: `team_id` (UUID or slug) and `project_id` (UUID). Plus `slug`, `title`, `content`, and optional `description`, `type` (defaults to `general`), `subtype` (when it is `sub-agents`, `metadata.model` is required), `status` (`active` or `expired`), and `metadata`. There is **no** `path` parameter: VibeXP always derives the canonical path from the type, subtype, and slug.
+- `vibexp_io_create_blueprint`: create a new blueprint. Required: `team_id` (UUID or slug) and `project_id` (UUID). Plus `slug`, `title`, `content`, and optional `description`, `type` (defaults to `general`), `subtype` (when it is `sub-agents`, `metadata.model` is required), `status` (`active` or `expired`), `labels` (since v0.13.0, up to 10, 50 characters each), and `metadata`. There is **no** `path` parameter: VibeXP always derives the canonical path from the type, subtype, and slug.
 - `vibexp_io_update_blueprint`: update an existing blueprint, located by its project and slug.
 - `vibexp_io_get_resource` / `vibexp_io_list_resources`: read blueprints by passing `resource_type: "blueprint"`: fetch one by `project_id` and `slug` (with full content), or list a project's blueprints as slim, filterable, paginated items. A blueprint fetched with `vibexp_io_get_resource` also carries its typed `related` neighborhood, its computed `similar` neighborhood, and a `freshness` object when it is currently flagged stale.
 - `vibexp_io_search`: find blueprints (and prompts, artifacts, and memories) by meaning; narrow to blueprints with the `types` filter.

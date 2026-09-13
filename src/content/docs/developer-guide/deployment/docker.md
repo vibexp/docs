@@ -99,7 +99,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=https://vibexp.example.com \
-  ghcr.io/vibexp/vibexp:0.12.0
+  ghcr.io/vibexp/vibexp:0.13.0
 ```
 
 The baked `FRONTEND_BASE_URL` defaults to **empty** (fail-closed: the dev-login
@@ -110,14 +110,14 @@ bypass stays off). To evaluate locally with the dev-login shortcut via a bare
 ## Image tags
 
 Each GitHub Release with a `vX.Y.Z` tag publishes
-`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.12.0`). Since v0.4.0
+`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.13.0`). Since v0.4.0
 the image is **multi-arch**: one manifest covers `linux/amd64` and
 `linux/arm64`.
 
 `:latest`, which `docker-compose.yml` tracks, points at the **highest published
 version**, not the most recent build. A prerelease never moves it, and neither
-does a backport patch on an older line: publishing `0.11.1` after `0.12.0` is out
-leaves `:latest` on `0.12.0` rather than downgrading everyone who tracks it.
+does a backport patch on an older line: publishing `0.12.1` after `0.13.0` is out
+leaves `:latest` on `0.13.0` rather than downgrading everyone who tracks it.
 
 :::note[Migrating from pre-v0.3.0]
 Releases before v0.3.0 published separate backend and frontend images. Those are

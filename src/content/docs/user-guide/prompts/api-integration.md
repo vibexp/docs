@@ -93,7 +93,7 @@ always used. The prompts themselves are under `data.prompts`:
 
 **Query parameters:**
 - `status` - Filter by status (`draft` or `published`)
-- `labels` - Comma-separated list of labels to filter by
+- `labels` - Comma-separated list of labels to filter by. A prompt matches if it carries **any** of the listed labels (OR), not all of them. At most 25 labels, each at most 50 characters, or the request is rejected with `400`. Empty entries (`a,,b`, a trailing comma) are dropped rather than matching nothing, and a blank parameter means no filtering at all.
 - `search` - Search term matching the prompt **name and description** only, not the body
 - `project_id` - Filter by project
 - `mcp_expose` - Filter by MCP exposure flag (`true`/`false`)
@@ -102,6 +102,16 @@ always used. The prompts themselves are under `data.prompts`:
 - `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
 - `sort_order` - `asc` or `desc` (default `desc`)
 - `page` - Page number for pagination
+
+:::caution[Breaking change in v0.13.0: `labels` now matches ANY, not ALL]
+Before v0.13.0, `?labels=a,b` on prompts matched only prompts carrying **every**
+listed label. It now matches a prompt carrying **any** of them, the same
+OR semantics artifacts, blueprints, and memories already used. There was no
+good reason for prompts to be the one resource where the same parameter name
+meant something different. If you relied on the old AND behavior, filter
+client-side by intersecting results, or issue one request per label and
+intersect the ids yourself.
+:::
 - `limit` - Results per page (default 10, max 100)
 
 ### Get Specific Prompt
@@ -155,6 +165,10 @@ prompt. They have their own endpoints:
 
 The detail response also carries `related`, `similar`, and (when the prompt is
 flagged) `freshness`. See [Resource Freshness](/user-guide/resource-freshness/).
+
+Since v0.13.0 it also carries a `project` summary (`id`, `name`, `slug`),
+`null` in list responses. `project_id` remains the field to rely on when
+`project` is null.
 
 ### Create New Prompt
 
