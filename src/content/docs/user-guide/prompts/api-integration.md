@@ -102,6 +102,7 @@ always used. The prompts themselves are under `data.prompts`:
 - `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
 - `sort_order` - `asc` or `desc` (default `desc`)
 - `page` - Page number for pagination
+- `limit` - Results per page (default 10, max 100)
 
 :::caution[Breaking change in v0.13.0: `labels` now matches ANY, not ALL]
 Before v0.13.0, `?labels=a,b` on prompts matched only prompts carrying **every**
@@ -112,7 +113,6 @@ meant something different. If you relied on the old AND behavior, filter
 client-side by intersecting results, or issue one request per label and
 intersect the ids yourself.
 :::
-- `limit` - Results per page (default 10, max 100)
 
 ### Get Specific Prompt
 
