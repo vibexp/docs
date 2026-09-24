@@ -78,7 +78,7 @@ Each variable must be a standalone placeholder. A value you supply is inserted a
 
 ### Can I delete a prompt that other prompts reference?
 
-No. VibeXP refuses to delete a prompt that another prompt in the same team references with the `@` syntax, including a teammate's prompt, and lists the prompts that use it. To remove it:
+No. VibeXP refuses to delete a prompt that another prompt in the same team references with the `@` syntax, including a teammate's prompt. To remove it:
 1. Update or remove those references
 2. Or keep the prompt as a Draft instead of deleting
 

@@ -168,9 +168,9 @@ When your AI assistant is connected to VibeXP through the [MCP server](/user-gui
 - `vibexp_io_update_blueprint`: update an existing blueprint, located by its project and slug.
 - `vibexp_io_get_resource` / `vibexp_io_list_resources`: read blueprints by passing `resource_type: "blueprint"`: fetch one by `project_id` and `slug` (with full content), or list a project's blueprints as slim, filterable, paginated items. A blueprint fetched with `vibexp_io_get_resource` also carries its typed `related` neighborhood, its computed `similar` neighborhood, and a `freshness` object when it is currently flagged stale.
 - `vibexp_io_search`: find blueprints (and prompts, artifacts, and memories) by meaning; narrow to blueprints with the `types` filter.
+- `vibexp_io_delete_resource`: delete a blueprint by passing `resource_type: "blueprint"` with its `project_id` and `slug`. The blueprint's search embeddings are removed alongside it.
 
 Since v0.14.0 a blueprint read through `vibexp_io_get_resource` is scoped to the resolved `team_id`: any member of that team can read a teammate's blueprint, and a blueprint in another team is not found.
-- `vibexp_io_delete_resource`: delete a blueprint by passing `resource_type: "blueprint"` with its `project_id` and `slug`. The blueprint's search embeddings are removed alongside it.
 
 ```text
 // AI tool creates a blueprint over MCP

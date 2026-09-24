@@ -91,7 +91,7 @@ To permanently remove a prompt:
 2. Click the **Delete** button (trash icon) in the Actions column
 3. Confirm deletion in the dialog that appears
 
-**Warning:** Deleted prompts cannot be recovered. You cannot delete a prompt that another prompt in your team references with `@`: VibeXP blocks the delete and names the prompts that use it.
+**Warning:** Deleted prompts cannot be recovered. You cannot delete a prompt that another prompt in your team references with `@`: VibeXP blocks the delete with a `409` until those references are removed.
 
 ### Before Deleting
 

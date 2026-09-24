@@ -109,8 +109,8 @@ A `page` or `limit` outside its range used to fall back silently to the default,
 so `limit=200` quietly returned a 10-item page. It is now rejected with `400`
 and a message naming the allowed range. This covers `page`/`limit` on the
 prompt, artifact, blueprint, memory, agent, feed, feed item, and feed reply list
-endpoints, `per_page` on REST search, and `limit` on the MCP `vibexp_io_search`
-tool. The ranges are `limit` 1 to 100 and `page` 1 to 10000, and a non-numeric
+endpoints, `page`/`per_page` on REST search, and `page`/`limit` on the MCP
+`vibexp_io_search` tool. The ranges are `limit` 1 to 100 and `page` 1 to 10000, and a non-numeric
 value is rejected too. Omitting a parameter still gives the default (`page` 1;
 `limit` 10, or 20 on the feed endpoints). Check any script or integration that
 asks for more than 100 items per page. The other MCP list tools keep capping

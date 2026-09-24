@@ -135,10 +135,10 @@ The complete set of permission strings:
 
 | Permission | Meaning |
 | --- | --- |
-| `team.update` | Change team name, slug or description. Also gates managing embedding and model providers (create, edit, delete, validate, list a provider's models) |
+| `team.update` | Change team name, slug or description. Also gates managing the email provider and embedding and model providers (create, edit, delete, validate, list a provider's models) |
 | `team.delete` | Delete the team |
 | `team.transfer` | Transfer ownership to another member |
-| `team.settings.update` | Change team-level settings: search ranking, AI Summary settings, resource freshness rules and settings, the email provider, the GitHub App. Also gates reading the settings audit log |
+| `team.settings.update` | Change team-level settings: search ranking, AI Summary settings, resource freshness rules and settings, the GitHub App. Also gates reading the settings audit log |
 | `member.invite` | Invite new members |
 | `member.remove` | Remove members from the team |
 | `member.role.update` | Change a member's role |

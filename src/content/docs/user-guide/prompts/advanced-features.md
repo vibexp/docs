@@ -212,7 +212,7 @@ Each base prompt should cover one aspect. Combine multiple references rather tha
 In the prompt description, note which prompts it references. This helps prevent broken references.
 
 **Deleting a referenced prompt is blocked**
-VibeXP refuses to delete a prompt that another prompt in the team references, and names the prompts that use it. Remove those references first.
+VibeXP refuses to delete a prompt that another prompt in the team references. Remove those references first.
 
 ## Markdown Formatting
 
