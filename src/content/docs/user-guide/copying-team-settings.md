@@ -73,6 +73,12 @@ Each entry records when, who, which surface, the name of what was copied, the
 source team, and whether the copy carried an API key. For artifact types it
 lists the slugs that were added. Credentials are never recorded.
 
+The log records copies only: editing or resetting a team's search ranking or
+AI Summary settings is not recorded there. AI Summary settings cannot be
+copied, and a copied model provider always lands non-default, so it does not
+become the team's summary provider until you mark it default or pick it on the
+AI Summary card.
+
 The log is append-only: nothing edits or deletes an entry, and there is no
 retention window. Entries survive the source team being deleted and the actor's
 account being deleted, so a copy stays traceable either way.

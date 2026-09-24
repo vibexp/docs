@@ -111,6 +111,30 @@ and the database page's
 [Resource labels and memory title](/developer-guide/backend/database/#resource-labels-and-memory-title-v0130)
 section for the write-path and migration details.
 
+### AI Summary and model listing (v0.14.0)
+
+`POST /{team_id}/search/summary` (`summarizeSearchResults`, Search tag) is the
+first strict-server operation in the Search domain. It has its own generated
+package, `internal/server/gen/searchsummary` (`oapi-codegen-search-summary.yaml`),
+and is mounted beside the hand-written `/search` handler, which stays as it was.
+The per-team settings live in the `team-settings` domain at
+`/{team_id}/settings/ai-summary` (`getTeamAISummarySettings`,
+`updateTeamAISummarySettings`, `resetTeamAISummarySettings`). Model listing is
+`POST /{team_id}/settings/model-providers/models` (`listProviderModelsSettings`)
+with a bare twin `/{team_id}/model-providers/models` (`listProviderModels`).
+The REST search response gains an optional `ai_summary` availability object.
+See [Search → AI Summary](/user-guide/search/#ai-summary).
+
+### Pagination bounds
+
+Since v0.14.0 the shared bounds live in `internal/server/handlers_helpers.go`
+(`paginationMaxPage` 10000, `paginationDefaultLimit` 10, `paginationMaxLimit`
+100). `validatePaginationParams` returns `400` for a provided value that is
+out of range or not a number, naming the allowed range; an omitted value takes
+the default. The strict-server binder does not enforce the spec's `minimum` /
+`maximum`, so a handler must call it. The feed list endpoints substitute their
+own default `limit` of 20 (`feedDefaultLimit`).
+
 ## Bundling
 
 The multi-file source is bundled into a single artifact with
@@ -201,6 +225,9 @@ As of v0.11.0 these domains are served by spec-generated strict-server types:
 notifications, types, team roles, comments, relations, team settings,
 freshness, metadata, admin and embedding providers are fully converted, and the
 **READ** endpoints of prompts, blueprints, artifacts and memories joined them.
+Model providers are fully converted too, and v0.14.0 adds the search summary
+as its own strict package (`searchsummary`); the rest of the Search domain is
+still a hand-written chi handler.
 
 Each read slice is its own generated package under
 `internal/server/gen/<domain>/`, and its operations are selected by explicit

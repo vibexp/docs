@@ -100,7 +100,10 @@ converted reads return their payload raw.
   than editing every importer.
 - **Cancellation + timeout:** `generatedClient` combines the caller's
   `AbortSignal` with a 30s timeout via `AbortSignal.any`, so passing
-  `{ signal }` still cancels in-flight requests.
+  `{ signal }` still cancels in-flight requests. For the few operations the
+  backend lets run longer (the AI Summary call), use `longRunningClient`, the
+  same client with a 90s timeout (`LONG_RUNNING_REQUEST_TIMEOUT_MS`). Both are
+  built by `createTimeoutFetch` in `src/lib/apiClientGenerated.ts`.
 
 ## What is NOT generated (intentional exceptions)
 

@@ -42,8 +42,9 @@ own file over that path to take full control.
   service refuses to start otherwise. Generate one with `openssl rand -hex 16`
   (32 hex chars = 32 bytes).
 - Rate limits must be ≥ 1, retention windows must be in `1..3650` days,
-  search-ranking weights must be valid, and the OAuth-AS token lifespans must
-  be positive and ordered. All are validated at startup.
+  search-ranking weights must be valid, the `ai_summary` budgets and caps must
+  be in range, and the OAuth-AS token lifespans must be positive and ordered.
+  All are validated at startup.
 :::
 
 ## Interpolation grammar
@@ -254,7 +255,7 @@ built-in defaults.
 | `frontend.site_name` / `frontend.site_legal_name` / `frontend.site_url` | _(empty)_ | Branding shown by the SPA. |
 | `frontend.terms_url` / `frontend.privacy_url` / `frontend.support_email` | _(empty)_ | Legal/support links. |
 | `frontend.brand_logo_url` | _(empty)_ | Logo URL. |
-| `frontend.mcp_endpoint` | _(empty)_ | MCP endpoint URL shown in the connect UI. |
+| `frontend.mcp_endpoint` | _(empty)_ | MCP endpoint URL shown in the connect UI. Empty uses the backend's own origin plus `/mcp/v1/common`, so a self-hosted instance shows its own URL without configuration. |
 | `frontend.error_type_base_uri` | _(empty)_ | RFC 9457 base URI the SPA links error codes to. |
 | `frontend.gtm_id` / `frontend.ga4_measurement_id` | _(empty)_ | Optional analytics. Setting `gtm_id` **is** the opt-in: the SPA loads Google Tag Manager only when it is non-empty. There is no separate enable flag, and VibeXP ships no cookie-consent gate of its own, so configure consent inside your own tag container. |
 
@@ -283,6 +284,44 @@ is instance-only and never team-overridable.
 | `search.rank_weight_updated` | `0.2` | Weight of update recency. |
 | `search.rank_half_life_days` | `90.0` | Freshness decay half-life (max 36500). |
 | `search.rank_candidate_cap` | `200` | Re-rank candidate pool size (max 5000). |
+
+## AI Summary
+
+The `ai_summary` block (v0.14.0) configures [AI Summary](/user-guide/search/#ai-summary),
+the cited answer generated from a team's top search results by that team's own
+model provider. It holds two kinds of value:
+
+- **Team defaults**: `enabled`, `top_n`, `style`, and `max_output_tokens`.
+  A team inherits them until it saves its own profile (Settings → Model
+  Providers → AI Summary, or `/api/v1/{team_id}/settings/ai-summary`).
+- **Instance-only limits**: `max_top_n`, `max_output_tokens_ceiling`, the two
+  context budgets, and `request_timeout`. No team can change them.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `ai_summary.enabled` | `true` | `AI_SUMMARY_ENABLED` | Default on/off for teams that have not saved their own AI Summary settings. |
+| `ai_summary.top_n` | `5` | `AI_SUMMARY_TOP_N` | Default number of top results given to the model. Must be `1..max_top_n`. |
+| `ai_summary.max_top_n` | `10` | _(literal)_ | Ceiling on `top_n`, for teams too. Must be `1..10` (the database `CHECK`). |
+| `ai_summary.per_document_chars` | `8000` | _(literal)_ | Each document is truncated to this many characters. |
+| `ai_summary.total_context_chars` | `32000` | _(literal)_ | Budget across all documents. Must be at least `per_document_chars`. |
+| `ai_summary.max_output_tokens` | `800` | _(literal)_ | Default answer length in tokens. Must not exceed the ceiling. |
+| `ai_summary.max_output_tokens_ceiling` | `4096` | _(literal)_ | Ceiling on `max_output_tokens`, for teams too. Must be `1..32768`. |
+| `ai_summary.request_timeout` | `60s` | `AI_SUMMARY_REQUEST_TIMEOUT` | Time limit for one call to the model. Must be above 0. |
+| `ai_summary.style` | `balanced` | `AI_SUMMARY_STYLE` | Default style: `concise`, `balanced`, or `detailed`. |
+
+Everything is validated at startup and an invalid block stops the boot: a
+`top_n` above `max_top_n` is rejected, not clamped, and so is a non-integer
+`AI_SUMMARY_TOP_N`. A team's saved `top_n` and `max_output_tokens` are checked
+against the caps when saved; if you lower a cap later, values saved earlier are
+clamped at request time. The published image wires only the four env vars above;
+the literal keys need a mounted `config.yaml`.
+
+:::caution[`enabled` is a default, not a kill switch]
+`ai_summary.enabled: false` (or `AI_SUMMARY_ENABLED=false`) turns AI Summary off
+for every team **that has not saved its own AI Summary settings**. A team whose
+owner or admin saved a profile with **Enable AI Summary** on keeps it on. A team
+also needs at least one model provider before any summary can run.
+:::
 
 ## Embeddings
 
@@ -322,7 +361,9 @@ Provider behavior:
 
 Per-team **model providers** (bring-your-own OpenAI-compatible LLM endpoints)
 are also managed in-app, under `/api/v1/{team_id}/settings/model-providers`,
-not in `config.yaml`.
+not in `config.yaml`. Since v0.14.0 they also power [AI Summary](#ai-summary).
+`POST /api/v1/{team_id}/settings/model-providers/models` lists the models an
+OpenAI-compatible provider offers.
 
 ### Embedding job queue (`embedding.queue`)
 

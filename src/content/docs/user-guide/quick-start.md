@@ -63,6 +63,11 @@ The MCP integration in Step 4 authenticates with **OAuth 2.1**, not API keys —
 
 Connect an MCP-OAuth-capable client (such as Claude Code) to access your VibeXP data directly. The MCP endpoint uses **OAuth 2.1** — you paste only the URL, and your client runs a one-time browser login. **No API key is passed to the MCP endpoint** (the API key from Step 3 is for the CLI and REST API, not MCP).
 
+Open **Integrations → MCP Server** in the sidebar and copy the endpoint shown
+there: it is your instance's real URL, the `<your-mcp-host>` in the examples
+below. The page also has ready-made setup for Claude Code, Cursor, VS Code, and
+Gemini CLI.
+
 ### For Claude Code CLI
 
 Add the server with just the URL — Claude Code runs the OAuth login on first use:

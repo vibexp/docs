@@ -35,7 +35,7 @@ hardcode a backend origin into the build. See
 
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_API_BASE_URL` | `/api/v1` (image build) | Backend API base, including version prefix. Leave empty/relative for same-origin requests (the combined image). The local-dev `.env.example` points it at `http://localhost:8080/api/v1`, targeting `make backend-run-dev`. |
+| `VITE_API_BASE_URL` | `/api/v1` (image build) | Backend API base, including version prefix. Leave empty/relative for same-origin requests (the combined image). The local-dev `.env.example` points it at `http://localhost:8080/api/v1`, targeting `make backend-run-dev`. Its origin is also the default origin for the advertised MCP endpoint and the OpenAPI links on the REST APIs page. |
 
 ## Release stamps
 
@@ -66,7 +66,7 @@ All optional, with neutral defaults. In production these come from the backend's
 
 | Variable | Notes |
 |---|---|
-| `VITE_MCP_ENDPOINT` | The MCP endpoint advertised in client-setup snippets, e.g. `https://<your-mcp-host>/mcp/v1/common`. Runtime-injectable via `frontend.mcp_endpoint`. |
+| `VITE_MCP_ENDPOINT` | The MCP endpoint advertised on the MCP Server page and in client-setup snippets, e.g. `https://<your-mcp-host>/mcp/v1/common`. Optional since v0.14.0: when empty, the SPA uses the backend origin plus `/mcp/v1/common`, where the backend origin is `VITE_API_BASE_URL` resolved against the browsing origin (`getBackendOrigin()` in `src/utils/environment.ts`). In the combined image that is the origin you browse, so a self-hosted instance shows its own URL with no configuration; in local dev it is `http://localhost:8080`. Set it only when your public MCP origin differs. Runtime-injectable via `frontend.mcp_endpoint`. |
 
 ## Error reporting / problem details
 

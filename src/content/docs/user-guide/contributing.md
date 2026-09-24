@@ -10,7 +10,7 @@ For deeper architecture, configuration, and code-generation details, see the [De
 ## Prerequisites
 
 - **Node.js** >= 22.22.0 (for the frontend; CI uses Node 22)
-- **Go** 1.25.13 for the backend. The `Makefile` pins `GOTOOLCHAIN=go1.25.13`, so Go downloads the right toolchain on demand and your local builds match CI.
+- **Go** 1.26.8 for the backend. The `Makefile` pins `GOTOOLCHAIN=go1.26.8`, so Go downloads the right toolchain on demand and your local builds match CI.
 - **Docker** + Docker Compose (for the database and the self-host stack)
 
 ## Clone and install

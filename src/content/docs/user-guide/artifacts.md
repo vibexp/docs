@@ -414,6 +414,10 @@ than silently narrowed. Empty entries (`a,,b` or a trailing comma) are
 dropped rather than treated as "match nothing", and a blank `labels`
 parameter means no filtering at all.
 
+Both list endpoints take `page` (1 to 10000, default 1) and `limit` (1 to 100,
+default 10). Since v0.14.0 a value outside either range returns `400` naming the
+allowed range instead of silently falling back to the default.
+
 The single-resource detail GET (`GET
 /api/v1/{team_id}/artifacts/{project_id}/{slug}`) also carries a `project`
 summary (`id`, `name`, `slug`) since v0.13.0, so a detail page never needs a

@@ -11,13 +11,14 @@ your team's **Settings** hub:
 - **Embedding Providers** power semantic search across prompts, artifacts,
   blueprints, and memories.
 - **Model Providers** register OpenAI-compatible LLM endpoints for the team.
+  They power [AI Summary](/user-guide/search/#ai-summary) on search.
 
 Both are team-scoped, managed entirely in the app, and store API keys
 encrypted. Nothing is configured through server environment variables.
 
 :::caution[Owner or Admin, and a publicly routable URL]
 Adding or editing a provider needs the **Owner** or **Admin** role (the
-`team.settings.update` permission; see [Team roles and permissions](/user-guide/team-roles-and-permissions/)).
+`team.update` permission; see [Team roles and permissions](/user-guide/team-roles-and-permissions/)).
 The base URL must be publicly routable: VibeXP rejects loopback, private, and
 link-local addresses (including cloud metadata endpoints like `169.254.169.254`)
 with `destination_not_allowed`, and the check applies to the stored provider,
@@ -109,10 +110,34 @@ Model providers let a team bring its own OpenAI-compatible LLM endpoint.
 
 1. Open **Settings** → **Model Providers**
    (URL `/teams/<team>/settings/model-providers`)
-2. Add the endpoint URL, API key, and model details
+2. Add the endpoint URL and API key, then pick the model. Click **Load models**
+   to fetch the endpoint's model list and choose from it (**Search models…**).
+   If the endpoint does not list models, or the list cannot be loaded, type the
+   model id instead; a failed list never blocks saving.
 3. Save. The provider's connectivity is **validated on save**.
 
-API keys are stored encrypted and can be updated or removed anytime.
+API keys are stored encrypted and can be updated or removed anytime. Tick
+**Use as default** to make a provider the team's default; AI Summary uses the
+default provider unless its settings name another one.
+
+### Listing a provider's models
+
+**Load models** calls the provider's own `GET {base_url}/models` and shows
+every model it reports, sorted by id and unfiltered. Nothing is saved, so it
+works before the provider exists; when editing a saved provider with the key
+field left blank, the stored key is reused. Many gateways expose only
+`/chat/completions`, and then the dialog falls back to typing the model id.
+Failures are reported as a fixed category (`connection_failed`,
+`unauthorized`, `misconfigured_provider`, `destination_not_allowed`), never as
+the provider's raw response.
+
+### AI Summary settings
+
+Below the provider list, the **AI Summary** card controls how this team's
+search summaries are generated: **Enable AI Summary**, **Provider** (or **Team
+default**), **Style**, **Results to read**, and **Response length (tokens)**.
+See [Search → AI Summary](/user-guide/search/#ai-summary) for what each one does
+and who can change them.
 
 ## Copying a provider from another team
 
@@ -144,6 +169,10 @@ GET|POST   /api/v1/{team_id}/settings/model-providers
 GET|PUT|DELETE /api/v1/{team_id}/settings/model-providers/{id}
 POST       /api/v1/{team_id}/settings/model-providers/copy
 POST       /api/v1/{team_id}/settings/model-providers/validate
+POST       /api/v1/{team_id}/settings/model-providers/models
+
+# AI Summary settings
+GET|PUT|DELETE /api/v1/{team_id}/settings/ai-summary
 
 # Custom types and the settings audit log
 POST       /api/v1/{team_id}/settings/types/copy

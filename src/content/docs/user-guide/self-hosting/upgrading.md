@@ -19,14 +19,14 @@ The bundled `docker-compose.yml` tracks `latest`. Pin to `X.Y.Z` instead if you
 want upgrades to be a deliberate step:
 
 ```yaml
-image: ghcr.io/vibexp/vibexp:0.13.0
+image: ghcr.io/vibexp/vibexp:0.14.0
 ```
 
 **Patch releases are supported on the newest minor line only.** Now that
-`0.13.0` has shipped, fixes go to `0.13.x`, not `0.12.x`. To stay on a supported
+`0.14.0` has shipped, fixes go to `0.14.x`, not `0.13.x`. To stay on a supported
 version, follow the newest minor.
 
-A patch release (`0.13.0` to `0.13.1`) contains bug fixes and security fixes
+A patch release (`0.14.0` to `0.14.1`) contains bug fixes and security fixes
 only. It never adds a database migration and never changes the API, so it is
 always a straight image bump with no action on your side. Anything that needs a
 schema or API change ships as a minor release and appears below if it requires
@@ -36,6 +36,25 @@ action.
 will start or immediately after. Entries are newest first: if you are skipping
 several releases, work upwards from the version you are on and apply every one
 in between.
+
+:::note[v0.14.0: migrations apply on boot, AI Summary is on by default]
+v0.14.0 adds two migrations, `017_team_ai_summary_settings` (the per-team AI
+Summary settings table) and `018_prompt_references_team_scope` (a data-only,
+idempotent rebuild of the stored prompt reference graph). Both apply
+**automatically on boot**. The new `ai_summary` config block defaults to
+**enabled**, but a summary only runs for a team that has configured a
+[model provider](/user-guide/integrations/ai-providers/#model-providers), and
+each summary is one completion request billed to that provider.
+`AI_SUMMARY_ENABLED=false` switches it off for every team that has not saved
+its own AI Summary settings, which on upgrade is every team; a team admin can
+still turn it back on for their team. The other env knobs are
+`AI_SUMMARY_TOP_N`, `AI_SUMMARY_REQUEST_TIMEOUT`, and `AI_SUMMARY_STYLE`, all
+validated at startup: an `AI_SUMMARY_TOP_N` above 10 or an unknown
+`AI_SUMMARY_STYLE` stops the boot. The context budgets, `max_top_n`, and
+`max_output_tokens_ceiling` (default 4096, the most output a team may ask for)
+are file-only: mount your own `config.yaml` to change them. See
+[Search → AI Summary](/user-guide/search/#ai-summary).
+:::
 
 :::note[v0.13.0 and v0.12.0 need no action]
 v0.13.0 adds one migration, `016_consolidated` (a `labels` array on artifacts,
@@ -54,6 +73,48 @@ migration-renumbering entries below).
 :::
 
 ## Breaking changes
+
+### Prompt `@references` resolve only within the prompt's team (v0.14.0)
+
+A prompt's `@slug` references used to be looked up among the **reader's**
+prompts in any team. The same prompt could therefore render differently for
+different teammates, and could inline content from a team the prompt does not
+belong to. References now resolve among the prompts of the team that owns the
+prompt, on every path: the REST render endpoint, the MCP
+`vibexp_io_render_prompt` tool, shared prompts, and the stored reference graph.
+
+A prompt that relied on a same-slug prompt in **another** team now shows
+`Reference not found` where that content used to be. That is intended: the old
+behavior was a cross-team leak. Copy the referenced prompt into the prompt's
+own team if you still need it. Migration `018_prompt_references_team_scope`
+corrects the stored reference graph on boot, which also restores delete
+protection for a prompt a teammate's prompt references.
+
+→ [Advanced prompt features](/user-guide/prompts/advanced-features/)
+
+### Prompt variable values are inserted as literal text (v0.14.0)
+
+A value supplied for a `{{variable}}` at render time is now inserted exactly as
+given. It is no longer scanned for `@references` or substituted a second time,
+so a value such as `git@github.com` or `@some-slug` comes through unchanged. A
+reference assembled from a variable, such as `@{{which}}`, no longer resolves.
+If a prompt picked its reference through a variable, reference the prompts
+directly instead.
+
+→ [Advanced prompt features](/user-guide/prompts/advanced-features/)
+
+### Out-of-range pagination returns `400` (v0.14.0)
+
+A `page` or `limit` outside its range used to fall back silently to the default,
+so `limit=200` quietly returned a 10-item page. It is now rejected with `400`
+and a message naming the allowed range. This covers `page`/`limit` on the
+prompt, artifact, blueprint, memory, agent, feed, feed item, and feed reply list
+endpoints, `per_page` on REST search, and `limit` on the MCP `vibexp_io_search`
+tool. The ranges are `limit` 1 to 100 and `page` 1 to 10000, and a non-numeric
+value is rejected too. Omitting a parameter still gives the default (`page` 1;
+`limit` 10, or 20 on the feed endpoints). Check any script or integration that
+asks for more than 100 items per page. The other MCP list tools keep capping
+`limit` without an error.
 
 ### Prompt label filter now matches ANY label, not ALL (v0.13.0)
 
@@ -111,9 +172,9 @@ hand.
 
 Both are superseded by **`vibexp_io_list_teams_and_projects`**, which returns a
 smaller payload and can find a project across all your teams without knowing
-which team holds it. The two old tools still work in v0.13.0 (the code
+which team holds it. The two old tools still work in v0.14.0 (the code
 originally planned to remove them "in one release," but that has slipped
-twice with no new date set). Update any prompt, skill, or agent
+three times with no new date set). Update any prompt, skill, or agent
 configuration that names them now, while both are still registered.
 
 → [MCP Server](/user-guide/mcp-server/)

@@ -101,8 +101,12 @@ always used. The prompts themselves are under `data.prompts`:
 - `freshness` - `stale` returns only prompts the team's freshness rules currently flag. `stale` is the only accepted value, anything else is a `400`. See [Resource Freshness](/user-guide/resource-freshness/)
 - `sort_by` - Sort field (`name`, `status`, `updated_at`, `created_at`)
 - `sort_order` - `asc` or `desc` (default `desc`)
-- `page` - Page number for pagination
-- `limit` - Results per page (default 10, max 100)
+- `page` - Page number, 1 to 10000 (default 1)
+- `limit` - Results per page, 1 to 100 (default 10)
+
+Since v0.14.0 a `page` or `limit` outside its range, or not a number, is
+rejected with `400` and a message naming the allowed range. It used to fall
+back silently to the default.
 
 :::caution[Breaking change in v0.13.0: `labels` now matches ANY, not ALL]
 Before v0.13.0, `?labels=a,b` on prompts matched only prompts carrying **every**
@@ -295,7 +299,7 @@ curl -X DELETE \
 **Response:** `204 No Content` with an **empty body**. There is no success
 envelope to parse.
 
-**Warning:** Deletion is permanent and cannot be undone. If other prompts reference the deleted prompt, those references will break.
+**Warning:** Deletion is permanent and cannot be undone. A prompt that another prompt in the team references with `@slug` cannot be deleted: the request fails with `409` until those references are removed.
 
 ## Other prompt endpoints
 
@@ -312,6 +316,23 @@ team-scoped and all keyed by slug:
 | `GET /prompts/{slug}/versions` | The prompt's version history |
 | `GET /prompts/{slug}/versions/{version_number}` | One past version |
 | `POST /prompts/{slug}/versions/{version_number}/restore` | Restore a past version |
+
+### Rendering
+
+`POST /prompts/{slug}/render` takes `{"placeholders": {"key": "value"}}` and
+returns `rendered_body`, plus `placeholders_missing`, `references_used`, and
+`warnings` when they are non-empty. Since v0.14.0:
+
+- `@references` resolve among the prompts of the team that owns the prompt,
+  never among the caller's prompts in other teams. An unresolved reference stays
+  in the body as written and adds `Reference not found: @slug` to `warnings`.
+- References are expanded first, then placeholders are filled in one pass, and
+  every value is inserted as literal text. A value is never scanned for
+  references or substituted again, so `@{{which}}` does not resolve.
+- `placeholders_missing` lists the keys you did not supply, including keys from
+  referenced prompts. A key supplied as an empty string counts as filled.
+
+A circular reference fails the render with `400` (`render_error`).
 
 Each is prefixed with `/api/v1/{team_id}`.
 
@@ -354,11 +375,11 @@ describing the case:
 
 | Status | When |
 | --- | --- |
-| `400` | Malformed body, a failed field validation, or an unknown `freshness` / `sort_by` value |
+| `400` | Malformed body, a failed field validation, an unknown `freshness` / `sort_by` value, `page` or `limit` out of range, or a circular reference on render |
 | `401` | Missing or invalid API key |
 | `403` | Authenticated, but not permitted in this team |
 | `404` | No prompt with that slug in this team |
-| `409` | A prompt with that slug already exists |
+| `409` | A prompt with that slug already exists, or (on delete) another prompt still references it |
 | `500` | Unexpected server error |
 
 ## Rate Limits

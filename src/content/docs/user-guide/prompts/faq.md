@@ -74,18 +74,19 @@ No. Variables cannot contain other variables. This syntax is not supported:
 {{var_{{other_var}}}}
 ```
 
-Each variable must be a standalone placeholder.
+Each variable must be a standalone placeholder. A value you supply is inserted as literal text: if it contains `{{other}}` or `@slug`, that text appears unchanged in the output.
 
-### What happens if I reference a deleted prompt?
+### Can I delete a prompt that other prompts reference?
 
-If you delete a prompt that's referenced by others using the `@` syntax, those references will fail to resolve. Before deleting a prompt:
-1. Search your library for `@prompt-slug` to find all references
-2. Update or remove those references
-3. Or keep the prompt as a Draft instead of deleting
+No. VibeXP refuses to delete a prompt that another prompt in the same team references with the `@` syntax, including a teammate's prompt, and lists the prompts that use it. To remove it:
+1. Update or remove those references
+2. Or keep the prompt as a Draft instead of deleting
+
+A reference whose target never existed, or was renamed, stays in the rendered text as written and produces the warning `Reference not found: @slug`.
 
 ### Can I reference prompts from other users?
 
-Prompt references work with any prompt in your team's library, including prompts created by your teammates.
+Yes, within the same team. References resolve among all prompts in the team that owns the prompt, including prompts created by your teammates, so everyone who renders it gets the same result. They never resolve to a prompt in another team, even one you belong to (since v0.14.0).
 
 ### How many prompts can I reference in a single prompt?
 

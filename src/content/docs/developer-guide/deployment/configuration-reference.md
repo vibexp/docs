@@ -46,9 +46,12 @@ loaded `config.yaml` references it as `${VAR}`**. The baked Docker config wires
 the common knobs listed below; anything it does not reference requires mounting
 your own `config.yaml`. Still unwired: multi-provider `auth.providers` lists,
 the `auth.oauth_as.*` token TTLs, and most tuning fields. The `scheduler.*`,
-`a2a.*` and `embedding.queue.*` sections **are** env-wired, and since v0.12.0 so
+`a2a.*` and `embedding.queue.*` sections **are** env-wired, since v0.12.0 so
 is `storage.s3_path_style` (`S3_PATH_STYLE`), so MinIO no longer needs a
-mounted file.
+mounted file, and since v0.14.0 so are `ai_summary.enabled`, `top_n`,
+`request_timeout`, and `style` (`AI_SUMMARY_ENABLED`, `AI_SUMMARY_TOP_N`,
+`AI_SUMMARY_REQUEST_TIMEOUT`, `AI_SUMMARY_STYLE`). The AI Summary context
+budgets and ceilings stay literal in the baked file.
 :::
 
 ## Must-set production values
@@ -108,7 +111,7 @@ release stamps.
 ## Backend fields
 
 The backend has many more fields than the production-critical subset above
-(rate limits, retention, search ranking, email, telemetry, …). They
+(rate limits, retention, search ranking, AI Summary, email, telemetry, …). They
 live in `config.yaml`; `config.example.yaml` documents every one.
 
 → Full list: [Backend Configuration](/developer-guide/backend/configuration/).
@@ -121,6 +124,14 @@ live in `config.yaml`; `config.example.yaml` documents every one.
   environment.
 - **Model providers**: per-team OpenAI-compatible LLM endpoints, also managed
   in the app with encrypted API keys.
+- **AI Summary**: a cited answer on search, generated from the top results by
+  the team's own model provider. On by default for every team with a model
+  provider. `AI_SUMMARY_ENABLED` sets the default for teams without their own
+  AI Summary settings; a team that saved its own settings keeps its own value.
+  `AI_SUMMARY_TOP_N` (1 to 10, default 5), `AI_SUMMARY_STYLE` (`concise`,
+  `balanced`, `detailed`), and `AI_SUMMARY_REQUEST_TIMEOUT` (default `60s`) tune
+  the defaults, and an invalid value fails startup. See
+  [Backend Configuration](/developer-guide/backend/configuration/#ai-summary).
 - **File attachments**: pick a store with `STORAGE_BACKEND`:
   - `filesystem` plus `STORAGE_FS_ROOT_DIR` (a mounted volume path). Simplest
     for a single-host deployment; the directory is created at startup.

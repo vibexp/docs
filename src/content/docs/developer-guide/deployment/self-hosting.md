@@ -60,7 +60,7 @@ instead, mount your own `config.yaml` over the baked path (there is a commented
 `volumes:` entry on the `app` service) — start from `backend/config.example.yaml`.
 
 Compose is optional: with a reachable pgvector-enabled PostgreSQL, a single
-`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.13.0` works
+`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.14.0` works
 anywhere. The image is multi-arch (`linux/amd64` + `linux/arm64`). See
 [Docker & Compose](/developer-guide/deployment/docker/) and the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/).
@@ -126,6 +126,11 @@ internet.
   scheduler, which drives per-team
   [resource freshness](/user-guide/resource-freshness/) evaluation. Set it
   `false` only if you deliberately want no in-process recurring work.
+- **AI Summary (optional)**: on by default for any team with a model provider,
+  and it sends search-result content to that provider.
+  `AI_SUMMARY_ENABLED=false` changes the default only for teams that have not
+  saved their own AI Summary settings. See
+  [Backend Configuration](/developer-guide/backend/configuration/#ai-summary).
 
 For the full setting list, see the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)

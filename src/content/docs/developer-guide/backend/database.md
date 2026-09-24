@@ -55,7 +55,10 @@ queue, v0.12.0), `015_team_settings_audit` (the append-only settings-copy
 audit log, v0.12.0), and `016_consolidated` (v0.13.0, squashing the two
 migrations that accumulated after v0.12.0 but never shipped in a release: a
 `labels text[]` column plus a GIN index on `artifacts`, `blueprints`, and
-`memories`, and an optional `title` column on `memories`). A pre-existing
+`memories`, and an optional `title` column on `memories`),
+`017_team_ai_summary_settings` (per-team AI Summary settings, v0.14.0), and
+`018_prompt_references_team_scope` (a data-only correction of the prompt
+reference graph, v0.14.0). A pre-existing
 pre-v0.3.0 database must be stamped to the matching version so the
 consolidated files are never re-run against a populated schema.
 :::
@@ -240,7 +243,7 @@ Label limits (10 per resource, 50 characters each) are enforced in
 both the REST handlers and the MCP tools through one `validateLabels` call.
 **Prompts are the exception**: nothing calls the equivalent validator on the
 prompt write path, so the same limits are documented and UI-enforced but not
-server-enforced for prompts as of v0.13.0.
+server-enforced for prompts as of v0.14.0.
 
 The `labels` **filter** query parameter (`GET .../artifacts?labels=a,b`, and
 the equivalent on blueprints, memories, and prompts) is a separate limit,
@@ -252,6 +255,32 @@ labels across many resources. See
 [Artifacts](/user-guide/artifacts/#labels),
 [Blueprints](/user-guide/blueprints/#labels), and
 [Memory](/user-guide/memory/#labels) for the user-facing behavior.
+
+## AI Summary settings and prompt reference scope (v0.14.0)
+
+`017_team_ai_summary_settings` creates `team_ai_summary_settings`, one row per
+team (`team_id` is the primary key and cascades with the team). It stores a
+team's override of the instance `ai_summary:` defaults as a **whole row**, the
+same contract as `team_search_settings`: no row means the team inherits every
+default, a row means the team owns every value. The columns are `enabled`,
+`model_provider_id`, `top_n` (`CHECK 1..10`), `style` (`CHECK` in `concise`,
+`balanced`, `detailed`), and `max_output_tokens` (`CHECK > 0`), plus the usual
+timestamps and `version`. `model_provider_id` is the only nullable column:
+`NULL` means "use the team's default provider", and the foreign key is
+`ON DELETE SET NULL`, so deleting a provider falls the team back to its default
+instead of deleting the profile. The context budgets, the request timeout, and
+the `max_top_n` / `max_output_tokens_ceiling` caps are deliberately absent:
+they stay instance-only config (see
+[Backend configuration](/developer-guide/backend/configuration/)).
+
+`018_prompt_references_team_scope` changes no schema. It rebuilds
+`prompt_references` to match the v0.14.0 rule that a prompt's `@slug`
+references resolve within the prompt's own team. It deletes edges that cross
+teams and self-edges, then re-derives every edge from the prompt bodies
+(`@@` is an escaped literal `@`, never a reference), which restores the
+missing edges to a teammate's prompt and with them the delete protection for
+referenced prompts. It is idempotent: a second run deletes nothing and the
+insert is `ON CONFLICT DO NOTHING`.
 
 ## Validating migrations
 

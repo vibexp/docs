@@ -19,7 +19,7 @@ The OpenAPI spec drives [oapi-codegen](https://github.com/oapi-codegen/oapi-code
 which generates the chi strict-server bindings and shared types from the bundled
 spec (`dist/openapi.bundled.yaml`).
 
-There is **one config file per spec-first domain**, fourteen of them, each
+There is **one config file per spec-first domain**, sixteen of them, each
 generating into its own package under `internal/server/gen/`:
 
 ```bash
@@ -28,8 +28,9 @@ ls backend/oapi-codegen*.yaml
 
 `backend/oapi-codegen.yaml` is the base file (notifications); the rest are
 `oapi-codegen-<domain>.yaml` for types, teamroles, comments, relations,
-teamsettings, freshness, metadata, admin, embedding-providers, memories,
-artifacts, blueprints and prompts. A package per domain means each domain's
+teamsettings, freshness, metadata, admin, embedding-providers,
+model-providers, memories, artifacts, blueprints, prompts and search-summary
+(new in v0.14.0). A package per domain means each domain's
 `StrictServerInterface` mounts independently of the others.
 
 A **partially converted** domain selects its operations with
@@ -125,7 +126,7 @@ change as any spec edit.
 
 | Generator | Command | Output (committed) |
 | --- | --- | --- |
-| oapi-codegen | `make backend-generate-openapi-server` | one strict-server package per domain under `internal/server/gen/` (14 configs) |
+| oapi-codegen | `make backend-generate-openapi-server` | one strict-server package per domain under `internal/server/gen/` (16 configs) |
 | Wire | `make backend-wire-gen` (`backend-wire-check` to verify) | `internal/container/wire_gen.go` |
 | mockery | `make backend-mock-generate` (`backend-mock-check` to verify) | `mock_*.go` files |
 | gen-config-schema | `make backend-generate-config-schema` (`backend-config-schema-check` to verify) | `backend/config.schema.json` |

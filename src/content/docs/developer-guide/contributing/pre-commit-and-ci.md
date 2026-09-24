@@ -83,7 +83,7 @@ the exact versions:
 
 | Tool | Pinned version |
 | --- | --- |
-| Go toolchain | `go1.25.13` (`GOTOOLCHAIN` in the Makefile) |
+| Go toolchain | `go1.26.8` (`GOTOOLCHAIN` in the Makefile) |
 | Node | `22` in CI; `>=22.22.0` in `frontend/package.json` `engines` |
 | golangci-lint | `v2.12.2` |
 | gosec | `v2.28.0` |
@@ -124,7 +124,7 @@ cache on every Go job; the `unit` job is the sole saver (on pushes to `main`
 and on a total cache miss).
 
 The `go-version` in this workflow must stay in sync with `GO_VERSION`
-(`1.25.13`) in the `Makefile`.
+(`1.26.8`) in the `Makefile`.
 
 CI runs on every pull request, and on pushes to `main` and to `release/**`
 branches. A release line branch needs its own run because a patch release is tagged from

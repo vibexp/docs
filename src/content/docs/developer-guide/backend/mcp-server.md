@@ -101,18 +101,18 @@ fourteen groups:
 | --- | --- |
 | `user` | User-scoped identity (`vibexp_io_get_user`). No `team_id`. |
 | `workspace` | The merged discovery tool `vibexp_io_list_teams_and_projects` (`mcp_workspace_tools.go`). User-scoped, so it is callable before any team is known; an optional `team_id` narrows the result to one team. |
-| `resources` | The generic reads `vibexp_io_get_resource` / `vibexp_io_list_resources` (`mcp_read_tools.go`). |
-| `prompts` | |
+| `resources` | The generic reads `vibexp_io_get_resource` / `vibexp_io_list_resources` (`mcp_read_tools.go`). Since v0.14.0 a blueprint read goes through the team-enforcing `GetBlueprintByProjectIDAndSlugInTeam`, so it is scoped to the resolved team. |
+| `prompts` | `vibexp_io_render_prompt` renders through `PromptService.RenderPrompt`: `@references` resolve within the prompt's owning team (`GetBySlugInTeam`), and values are substituted literally after expansion (v0.14.0). |
 | `memories` | |
 | `artifacts` | |
 | `blueprints` | |
 | `relations` | The `vibexp_io_link_resources` write tool. |
 | `metadata` | The `vibexp_io_list_resource_metadata` key/value discovery tool, plus the `metadata` filter parameter on `vibexp_io_list_resources`. |
 | `feeds` | |
-| `search` | |
+| `search` | `vibexp_io_search` validates `page`/`limit` with the same bounds as REST (page 1 to 10000, limit 1 to 100) and returns a tool error when out of range (v0.14.0). The list tools (`list_resources`, the feed lists, workspace) still cap `limit` silently. |
 | `attachments` | |
 | `delete` | The generic `vibexp_io_delete_resource`. |
-| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. The v0.11.0 code comment introducing the deprecation said "kept for one release"; still registered two releases later, as of v0.13.0, with no removal date set. Use the `workspace` tool instead. |
+| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. The v0.11.0 code comment introducing the deprecation said "kept for one release"; still registered three releases later, as of v0.14.0, with no removal date set. Use the `workspace` tool instead. |
 
 The generic **`vibexp_io_delete_resource`** handles deletion across types
 (`resource_type` is one of `memory`, `artifact`, `blueprint` or `prompt`), so

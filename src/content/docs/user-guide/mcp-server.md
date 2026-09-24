@@ -51,6 +51,14 @@ VibeXP exposes a single, team-agnostic MCP endpoint:
 https://<your-mcp-host>/mcp/v1/common
 ```
 
+In the app, open **Integrations → MCP Server** in the sidebar. The **Endpoint**
+section shows your instance's own URL with a **Copy endpoint** button, so you do
+not have to work out `<your-mcp-host>` yourself: unless an operator overrides
+it, the URL is the VibeXP backend's own origin plus `/mcp/v1/common`. Below it,
+**Connect your client** has ready-to-copy setup for **Claude Code CLI**,
+**Cursor IDE** (`~/.cursor/mcp.json`), **VSCode** (`.vscode/mcp.json`), and
+**Gemini CLI** (`~/.gemini/settings.json`), already filled in with that URL.
+
 To connect, you **paste only this URL** into your MCP client. There is no API key, no `client_id`, and no `client_secret` to enter — the client discovers the authorization server and runs the login flow automatically (see [How OAuth Connect Works](#how-oauth-connect-works)).
 
 Team context is **not** part of the URL — instead, team-scoped tools accept a `team_id` parameter on each call (see [Working With Teams](#working-with-teams) below).
@@ -69,6 +77,9 @@ Add the VibeXP MCP server (no auth flag — Claude Code runs the OAuth login on 
 claude mcp add --transport http vibexp_io_common \
   https://<your-mcp-host>/mcp/v1/common
 ```
+
+The server name (`vibexp_io_common` here) is only a local label in your client;
+the app's snippets suggest `vibexp_io_<team name>`.
 
 The first time the server is used, Claude Code opens VibeXP's consent page in your browser. If you are not already signed in to VibeXP, you are taken to the VibeXP login page first (pick one of your instance's configured sign-in providers) and returned to the consent screen automatically. Approve it once and Claude Code stores the resulting token; subsequent sessions reconnect automatically.
 
@@ -170,10 +181,7 @@ You only need a team identifier once per conversation. After the AI discovers yo
 
 ### Finding your team identifier
 
-There are two ways to get a team's UUID or slug:
-
-1. **From the app** — Open the **MCP Connect** page in VibeXP. Each of your teams is listed with its UUID and slug, ready to copy.
-2. **From the MCP tool**: Ask your AI assistant to call **`vibexp_io_list_teams_and_projects`**. It returns every team you belong to with its `uuid`, `name`, `slug` and `project_count`, so the assistant can pick the right identifier without you leaving your editor.
+Ask your AI assistant to call **`vibexp_io_list_teams_and_projects`**. It returns every team you belong to with its `uuid`, `name`, `slug` and `project_count`, so the assistant can pick the right identifier without you leaving your editor. (The MCP Server page in the app no longer lists team identifiers, since v0.14.0.)
 
 ### Discovering teams and projects with `vibexp_io_list_teams_and_projects`
 
@@ -294,8 +302,8 @@ Update any prompt, skill, or agent configuration that names the old tools now, s
 
 ### Search and resource reads
 
-- **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
-- **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type` — a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`
+- **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories: find knowledge by meaning, optionally narrowed by type or project. Paginate with `page` (1 to 10000, default 1) and `limit` (1 to 100, default 10); since v0.14.0 an out-of-range value returns a tool error naming the allowed range instead of falling back to the default
+- **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type`: a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`. Reads are scoped to the resolved `team_id`: any member can read a teammate's blueprint, and a blueprint in another team is not found
 - **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items, filterable (status, type, text search, metadata) and paginated; call `vibexp_io_get_resource` for a single item's full content. The `metadata` parameter takes a JSON object of key to array of string values: keys are combined with AND, values within a key with OR, and an empty array means "the key exists"
 - **vibexp_io_list_resource_metadata**: Discover the metadata keys and values a team actually uses, so a metadata filter can be built from real data instead of guesses. Omit `key` to list the distinct metadata keys for a `resource_type` (`memory`, `artifact`, or `blueprint`); supply `key` to list that key's distinct values. Every value returned works directly in the `metadata` filter of `vibexp_io_list_resources`
 
@@ -325,7 +333,7 @@ Edges an AI creates are recorded as **suggested** for `governed-by` and `superse
 
 - **vibexp_io_create_prompt**: Create a new prompt
 - **vibexp_io_update_prompt**: Update an existing prompt
-- **vibexp_io_render_prompt**: Render a published, MCP-exposed prompt by slug, substituting values for its `{{placeholders}}` — returns the rendered body
+- **vibexp_io_render_prompt**: Render a published, MCP-exposed prompt by `team_id` and `slug`, substituting the values in `arguments` for its `{{placeholders}}`. Returns the rendered body, plus `placeholders_missing`, `references_used`, and `warnings` as structured content. `@references` resolve within the prompt's own team, and values are inserted as literal text
 
 To *read* prompts, use `vibexp_io_render_prompt`, the generic `vibexp_io_search` tool, or the native MCP prompts your client lists (see the note below).
 

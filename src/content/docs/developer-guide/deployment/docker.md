@@ -53,8 +53,10 @@ attachment-store selector `STORAGE_BACKEND` with its per-backend knobs
 `S3_REGION` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_PATH_STYLE`; see
 [Optional: file attachments](#optional-file-attachments)),
 `SCHEDULER_ENABLED` (on by default; drives per-team resource-freshness
-evaluation), and the `EMBEDDING_QUEUE_*` knobs that tune the durable embedding
-queue. Its
+evaluation), the `EMBEDDING_QUEUE_*` knobs that tune the durable embedding
+queue, and, since v0.14.0, the `AI_SUMMARY_*` knobs (`AI_SUMMARY_ENABLED`,
+`AI_SUMMARY_TOP_N`, `AI_SUMMARY_REQUEST_TIMEOUT`, `AI_SUMMARY_STYLE`) that set
+the AI Summary defaults. Its
 healthcheck hits `http://localhost:8080/ping`. See
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)
 for which of these you must change for production.
@@ -73,7 +75,8 @@ baked default.
 There is no generic environment override: an env var only has an effect if the
 loaded `config.yaml` references it as `${VAR}`. Settings the baked file does not
 reference (multi-provider `auth.providers` lists, `auth.oauth_as.*` token TTLs,
-…) require mounting your own file (see below).
+the `ai_summary` context budgets and ceilings, …) require mounting your own file
+(see below).
 :::
 
 ### Taking full control: mount your own `config.yaml`
@@ -99,7 +102,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=https://vibexp.example.com \
-  ghcr.io/vibexp/vibexp:0.13.0
+  ghcr.io/vibexp/vibexp:0.14.0
 ```
 
 The baked `FRONTEND_BASE_URL` defaults to **empty** (fail-closed: the dev-login
@@ -110,7 +113,7 @@ bypass stays off). To evaluate locally with the dev-login shortcut via a bare
 ## Image tags
 
 Each GitHub Release with a `vX.Y.Z` tag publishes
-`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.13.0`). Since v0.4.0
+`ghcr.io/vibexp/vibexp:X.Y.Z` (e.g. `ghcr.io/vibexp/vibexp:0.14.0`). Since v0.4.0
 the image is **multi-arch**: one manifest covers `linux/amd64` and
 `linux/arm64`.
 

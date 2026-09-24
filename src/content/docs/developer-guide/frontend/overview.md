@@ -127,6 +127,24 @@ frontend/src/
   under `pages/prompt-gallery/`. The retired `/prompt-gallery/prompt/:id` path
   self-corrects to the categorized URL client-side once the payload's real
   category is known, since the old URL cannot carry it.
+- **Integrations section** (new in v0.14.0): the sidebar group
+  **Integrations** (`components/layout/nav-items.ts`) holds **MCP Server**
+  (`/mcp-servers/vibexp-mcp`, `pages/mcp/`), **CLI** (`/integrations/cli`),
+  **REST APIs** (`/integrations/rest-apis`, linking the instance's
+  `/openapi.yaml` and `/openapi.json`), and **API Client**
+  (`/integrations/api-client`, the Go and TypeScript clients), the last three
+  under `pages/integrations/`. **System** now holds only Teams and Settings.
+  The MCP Server page shows one endpoint, per-client setup tabs, and the tools
+  reference; it no longer lists team identifiers. URLs that must reach the
+  backend rather than the SPA (the MCP endpoint default, the OpenAPI links) use
+  `getBackendOrigin()` (`src/utils/environment.ts`).
+- **AI Summary** (new in v0.14.0): the collapsible section on the search page
+  (`pages/search/AiSummary.tsx`, its open state kept in localStorage under
+  `vx_search_ai_summary_expanded`), a compact row in the header search dialog
+  (`components/layout/SearchModalAiSummary.tsx`) sharing one summary cache, and
+  the settings card on the Model Providers page
+  (`pages/teams/settings/model-providers/AiSummarySettings.tsx`). The Model
+  Provider dialog gains a **Load models** combobox (`ModelCombobox.tsx`).
 - **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
   popover with value typeahead, on the Blueprint, Artifact, and Memory list
   pages.
