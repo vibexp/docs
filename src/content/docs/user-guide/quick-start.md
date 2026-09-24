@@ -16,9 +16,10 @@ Get started with VibeXP in 5 minutes. This guide will walk you through signing i
 There is no separate signup form, no password to set, and no email verification step — your identity provider handles authentication.
 
 :::tip[Project scoping]
-The app header has a global **project selector** (defaulting to "All
-projects"). It scopes what you see across prompts, artifacts, and memories, so
-if a list looks empty, check which project is selected.
+The app has a global **project selector** (defaulting to "All projects"), in
+the header on tablet and desktop and inside the navigation drawer on a phone.
+It scopes what you see across prompts, artifacts, and memories, so if a list
+looks empty, check which project is selected.
 :::
 
 ## Step 2: Create Your First Prompt
@@ -62,6 +63,11 @@ The MCP integration in Step 4 authenticates with **OAuth 2.1**, not API keys —
 
 Connect an MCP-OAuth-capable client (such as Claude Code) to access your VibeXP data directly. The MCP endpoint uses **OAuth 2.1** — you paste only the URL, and your client runs a one-time browser login. **No API key is passed to the MCP endpoint** (the API key from Step 3 is for the CLI and REST API, not MCP).
 
+Open **Integrations → MCP Server** in the sidebar and copy the endpoint shown
+there: it is your instance's real URL, the `<your-mcp-host>` in the examples
+below. The page also has ready-made setup for Claude Code, Cursor, VS Code, and
+Gemini CLI.
+
 ### For Claude Code CLI
 
 Add the server with just the URL — Claude Code runs the OAuth login on first use:
@@ -84,7 +90,7 @@ https://<your-mcp-host>/mcp/v1/common
 If your client supports the **MCP OAuth 2.1** flow, it will send you to VibeXP's login and consent screen and then connect. If it does not support MCP OAuth, it cannot currently connect — the endpoint rejects API-key authentication with `401`. See [MCP Server Integration](/user-guide/mcp-server/#how-oauth-connect-works) for how the connect flow works.
 
 :::tip[Working across teams]
-You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call — just ask your AI assistant to call `vibexp_io_list_teams` to discover yours. See [MCP Server Integration](/user-guide/mcp-server/#working-with-teams) for details.
+You connect once with the team-agnostic URL above. Team-scoped tools (prompts, artifacts, memories) take a `team_id` (a team UUID or slug) on each call: just ask your AI assistant to call `vibexp_io_list_teams_and_projects` to discover yours. The same call finds a project across all your teams when you only know its name. See [MCP Server Integration](/user-guide/mcp-server/#working-with-teams) for details.
 :::
 
 :::note[Upgrading from an older config?]

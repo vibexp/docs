@@ -32,6 +32,11 @@ Explore pre-built prompt templates organized by category:
 - Marketing
 - Product Management
 
+Since v0.13.0 the gallery is its own set of pages rather than a panel inside
+Prompts: **Prompt Gallery** in the sidebar opens `/prompt-gallery`, a page of
+category cards; clicking one opens that category's list; clicking a template
+opens its own detail page, with **Copy** and **Use this prompt** actions.
+
 Use these templates as starting points or inspiration for your own prompts.
 
 ### Dynamic Variables

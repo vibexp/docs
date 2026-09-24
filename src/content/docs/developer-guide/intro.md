@@ -13,8 +13,9 @@ are the better starting point.
 
 ## What VibeXP is
 
-VibeXP is an open-source, self-hostable AI command center: one shared knowledge
-base for prompts, blueprints, memory, artifacts, feeds, and MCP integrations
+VibeXP is an open-source, self-hostable shared brain for your team's AI work:
+one knowledge base for prompts, blueprints, memory, artifacts, feeds, and MCP
+integrations
 that every AI tool (Claude Code, Cursor, VS Code, and anything that speaks MCP)
 can read from and write back to.
 
@@ -35,7 +36,8 @@ GitHub Release publishes a single `ghcr.io/vibexp/vibexp` image.
 ```text
 backend/   Go REST API (module github.com/vibexp/vibexp)
            cmd/         cobra commands
-           internal/    server, services, repositories, auth, container (Wire DI)
+           internal/    server, services, repositories, auth, container (Wire DI),
+                        scheduler, specconformance
            migrations/  SQL migrations
            openapi.yaml + paths/ + schemas/   API source of truth
            Dockerfile   builds the COMBINED image (embeds the SPA, embedfrontend tag)
@@ -45,7 +47,8 @@ frontend/  Vite + React + TypeScript SPA
 
 Makefile             all dev/CI tasks (backend-*, frontend-*)
 docker-compose.yml   runs the PUBLISHED ghcr.io/vibexp/vibexp image + Postgres (self-host, NOT for dev)
-.github/workflows/   ci, ci-e2e, publish-api-client, release
+.github/workflows/   ci, ci-e2e, sonar-fork, publish-api-client, release,
+                     stale, pr-linked-issue, project-board
 ```
 
 :::note
@@ -59,7 +62,7 @@ repos under the [`vibexp` organization](https://github.com/vibexp).
 ### Backend (`backend/`)
 
 - **Go** REST API, module `github.com/vibexp/vibexp`. The toolchain is pinned to
-  **Go 1.25.12** (`GOTOOLCHAIN=go1.25.12` in the `Makefile`) so local builds
+  **Go 1.26.8** (`GOTOOLCHAIN=go1.26.8` in the `Makefile`) so local builds
   match CI exactly.
 - **Spec-first OpenAPI.** `backend/openapi.yaml` — bundled from `paths/` and
   `schemas/` — is the single source of truth. The strict server bindings, Wire

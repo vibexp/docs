@@ -60,7 +60,7 @@ instead, mount your own `config.yaml` over the baked path (there is a commented
 `volumes:` entry on the `app` service) — start from `backend/config.example.yaml`.
 
 Compose is optional: with a reachable pgvector-enabled PostgreSQL, a single
-`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.10.0` works
+`docker run -p 8080:8080 -e DB_HOST=... ghcr.io/vibexp/vibexp:0.14.0` works
 anywhere. The image is multi-arch (`linux/amd64` + `linux/arm64`). See
 [Docker & Compose](/developer-guide/deployment/docker/) and the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/).
@@ -119,6 +119,18 @@ internet.
 - **Sign-in allow-list (optional)**: set `AUTH_ALLOWED_DOMAINS` and/or
   `AUTH_ALLOWED_EMAILS` to restrict who may sign in (a user is allowed if either
   matches). While active it also requires a provider-verified email.
+- **File attachments (optional)**: set `STORAGE_BACKEND` (`filesystem`, `s3`,
+  or `gcs`) plus that backend's knobs, or uploads return `503`. See
+  [Optional: file attachments](#optional-file-attachments) below.
+- **`SCHEDULER_ENABLED` (optional)**: `true` by default. It runs the in-process
+  scheduler, which drives per-team
+  [resource freshness](/user-guide/resource-freshness/) evaluation. Set it
+  `false` only if you deliberately want no in-process recurring work.
+- **AI Summary (optional)**: on by default for any team with a model provider,
+  and it sends search-result content to that provider.
+  `AI_SUMMARY_ENABLED=false` changes the default only for teams that have not
+  saved their own AI Summary settings. See
+  [Backend Configuration](/developer-guide/backend/configuration/#ai-summary).
 
 For the full setting list, see the
 [Configuration Reference](/developer-guide/deployment/configuration-reference/)
@@ -126,11 +138,19 @@ and [Backend Configuration](/developer-guide/backend/configuration/).
 
 ## Optional: file attachments
 
-File uploads need GCS-compatible object storage. The compose file ships a
-commented-out **GCS emulator** (`fsouza/fake-gcs-server`). To enable uploads,
-uncomment the `gcs` service and the `STORAGE_EMULATOR_HOST` /
-`GCS_RESOURCE_ATTACHMENTS_BUCKET` variables on the `app` service. See
-[Docker & Compose](/developer-guide/deployment/docker/).
+File uploads need an object store, selected with `STORAGE_BACKEND`. Without
+one, uploads return **503**. The compose file ships three commented-out
+options on the `app` service:
+
+| Option | Set | Notes |
+|---|---|---|
+| Local filesystem | `STORAGE_BACKEND: filesystem` + `STORAGE_FS_ROOT_DIR: /data/attachments` | Simplest. Also uncomment the `attachmentdata` volume mount and the named volume, or attachments vanish when the container is recreated. The directory is created at startup. |
+| MinIO / S3 | `STORAGE_BACKEND: s3` + `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and for MinIO `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_PATH_STYLE: "true"` | Uncomment the `minio` and one-shot `createbucket` services. MinIO needs path-style addressing; `S3_PATH_STYLE` covers it as of v0.12.0, so no mounted `config.yaml` is required. |
+| Google Cloud Storage | `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `STORAGE_BACKEND` left unset | The empty selector still auto-detects GCS from the bucket. |
+
+A selected backend missing its required knob fails startup; a backend whose
+client cannot initialize logs a warning and degrades to 503 instead of
+crashing. See [Docker & Compose](/developer-guide/deployment/docker/).
 
 ## Optional: semantic search
 
@@ -143,6 +163,12 @@ query/document prefixes), not via environment variables. Changing a provider's
 identity wipes and re-embeds that team's data. Without a configured provider,
 embedding is skipped and entities still save; only semantic search is
 unavailable (keyword search still works).
+
+Since v0.12.0 pending embedding work is **durable**: each job is written to the
+`embedding_jobs` table before it is acknowledged, workers lease rows out of it,
+and an expired lease (what a killed container leaves behind) becomes claimable
+again. A restart resumes the backlog instead of dropping it. Nothing to set up;
+the `EMBEDDING_QUEUE_*` env vars tune only how fast the queue drains.
 
 ## Related
 

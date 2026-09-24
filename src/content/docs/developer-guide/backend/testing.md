@@ -110,10 +110,31 @@ The generated `mock_*.go` files are committed and must not be hand-edited.
 
 ## Spec conformance
 
-The `internal/specconformance` package contains tests asserting that the running
-server matches the OpenAPI spec. These run as part of `make backend-test` and
-help catch drift between the implementation and
-[the spec](/developer-guide/backend/api-and-openapi/).
+`internal/specconformance` is a **helper library, not a test suite**. A handler
+test calls `specconformance.AssertConformsToSpec` on a recorded response, which
+validates the payload against `openapi.yaml` using
+[pb33f/libopenapi-validator](https://github.com/pb33f/libopenapi-validator) and
+records that the operation now has spec-validated coverage. It lives in its own
+package (rather than `internal/testutils`, which imports `internal/server`) so
+that `internal/server` tests can import it without an import cycle.
+
+Three gates in `internal/server` build on it, and all of them run under
+`make backend-test` and the CI `unit` job:
+
+| Gate | File | What it enforces |
+| --- | --- | --- |
+| Route drift | `openapi_drift_test.go` | Mounted routes and documented paths agree. |
+| Payload-coverage ledger | `openapi_payload_coverage_test.go` | Every documented operation is either spec-validated or carries an explicit ledger entry. Shrink only: delete entries, never add. |
+| Required arrays never null | `required_array_null_test.go` | A spec-required array response field never serializes as `null`. |
+
+:::caution
+The ledger check is enforced in `TestMain`, **after** the full package suite,
+and it is skipped on partial runs (`-run`, `-skip`, `-list`, `-short`). A green
+`go test -run TestFoo` therefore proves nothing about it.
+:::
+
+See [Response conformance](/developer-guide/backend/api-and-openapi/#response-conformance)
+for how to convert a domain.
 
 ## Before you commit
 

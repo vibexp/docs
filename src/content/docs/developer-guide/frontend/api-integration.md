@@ -77,6 +77,13 @@ whether a response is enveloped depends on the handler:
 Check the operation's `responses.200.content['application/json']` in the
 generated `schema.d.ts` to know which. Don't assume.
 
+Since v0.11.0 the read paths of prompts, blueprints, artifacts and memories
+generate their response types from the spec, so the generated type is now an
+accurate guide rather than a best guess. Prompts is the one domain whose
+**list** operation still answers with the legacy `PromptListEnvelope`
+`{status, message, data}` wrapper, which no other domain has; the rest of the
+converted reads return their payload raw.
+
 ## Recipes
 
 - **Multipart upload:** pass the typed body (the spec types the binary part as
@@ -93,7 +100,10 @@ generated `schema.d.ts` to know which. Don't assume.
   than editing every importer.
 - **Cancellation + timeout:** `generatedClient` combines the caller's
   `AbortSignal` with a 30s timeout via `AbortSignal.any`, so passing
-  `{ signal }` still cancels in-flight requests.
+  `{ signal }` still cancels in-flight requests. For the few operations the
+  backend lets run longer (the AI Summary call), use `longRunningClient`, the
+  same client with a 90s timeout (`LONG_RUNNING_REQUEST_TIMEOUT_MS`). Both are
+  built by `createTimeoutFetch` in `src/lib/apiClientGenerated.ts`.
 
 ## What is NOT generated (intentional exceptions)
 

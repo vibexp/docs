@@ -51,6 +51,14 @@ VibeXP exposes a single, team-agnostic MCP endpoint:
 https://<your-mcp-host>/mcp/v1/common
 ```
 
+In the app, open **Integrations → MCP Server** in the sidebar. The **Endpoint**
+section shows your instance's own URL with a **Copy endpoint** button, so you do
+not have to work out `<your-mcp-host>` yourself: unless an operator overrides
+it, the URL is the VibeXP backend's own origin plus `/mcp/v1/common`. Below it,
+**Connect your client** has ready-to-copy setup for **Claude Code CLI**,
+**Cursor IDE** (`~/.cursor/mcp.json`), **VSCode** (`.vscode/mcp.json`), and
+**Gemini CLI** (`~/.gemini/settings.json`), already filled in with that URL.
+
 To connect, you **paste only this URL** into your MCP client. There is no API key, no `client_id`, and no `client_secret` to enter — the client discovers the authorization server and runs the login flow automatically (see [How OAuth Connect Works](#how-oauth-connect-works)).
 
 Team context is **not** part of the URL — instead, team-scoped tools accept a `team_id` parameter on each call (see [Working With Teams](#working-with-teams) below).
@@ -69,6 +77,9 @@ Add the VibeXP MCP server (no auth flag — Claude Code runs the OAuth login on 
 claude mcp add --transport http vibexp_io_common \
   https://<your-mcp-host>/mcp/v1/common
 ```
+
+The server name (`vibexp_io_common` here) is only a local label in your client;
+the app's snippets suggest `vibexp_io_<team name>`.
 
 The first time the server is used, Claude Code opens VibeXP's consent page in your browser. If you are not already signed in to VibeXP, you are taken to the VibeXP login page first (pick one of your instance's configured sign-in providers) and returned to the consent screen automatically. Approve it once and Claude Code stores the resulting token; subsequent sessions reconnect automatically.
 
@@ -162,20 +173,19 @@ You: "List my prompts in the acme-engineering team"
 AI: *Calls a prompt tool with team_id="acme-engineering"*
 ```
 
+If `team_id` is missing, or does not match a team you belong to, the tool returns an error telling the assistant to call `vibexp_io_list_teams_and_projects` and pick a valid identifier. For anti-enumeration reasons, "no such team" and "you are not a member of that team" are deliberately indistinguishable: both produce the same access-denied message, so a caller cannot probe for the existence of teams it cannot see.
+
 :::tip
 You only need a team identifier once per conversation. After the AI discovers your teams (see below), it can reuse the same `team_id` for subsequent calls in that session.
 :::
 
 ### Finding your team identifier
 
-There are two ways to get a team's UUID or slug:
+Ask your AI assistant to call **`vibexp_io_list_teams_and_projects`**. It returns every team you belong to with its `uuid`, `name`, `slug` and `project_count`, so the assistant can pick the right identifier without you leaving your editor. (The MCP Server page in the app no longer lists team identifiers, since v0.14.0.)
 
-1. **From the app** — Open the **MCP Connect** page in VibeXP. Each of your teams is listed with its UUID and slug, ready to copy.
-2. **From the MCP tool** — Ask your AI assistant to call **`vibexp_io_list_teams`**. It returns every team you belong to, so the assistant can pick the right identifier without you leaving your editor.
+### Discovering teams and projects with `vibexp_io_list_teams_and_projects`
 
-### Discovering teams with `vibexp_io_list_teams`
-
-The `vibexp_io_list_teams` tool returns the teams the authenticated user belongs to. Each entry includes the team's `uuid`, `name`, and `slug`:
+`vibexp_io_list_teams_and_projects` is the single workspace-discovery tool. Called with no arguments it returns the teams you belong to, each with the number of projects it holds:
 
 ```json
 {
@@ -183,30 +193,87 @@ The `vibexp_io_list_teams` tool returns the teams the authenticated user belongs
     {
       "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       "name": "Acme Engineering",
-      "slug": "acme-engineering"
+      "slug": "acme-engineering",
+      "project_count": 7
     },
     {
       "uuid": "9b2e6f1a-3c4d-4e5f-8a6b-1c2d3e4f5a6b",
       "name": "Personal",
-      "slug": "personal"
+      "slug": "personal",
+      "project_count": 2
     }
   ]
 }
 ```
 
-A typical flow looks like this:
+The same tool answers three questions, depending on what you already know:
+
+| Call | What you get |
+| --- | --- |
+| No arguments | Every team you belong to, with its project count (orientation) |
+| `query` | A ranked, cross-team search over team **and** project names, slugs, descriptions and project git URLs, with matching projects nested under their team |
+| `team_id`, no query | That one team's projects |
+
+Optional arguments:
+
+| Argument | Meaning |
+| --- | --- |
+| `query` | Search text, matched across every team you belong to. Typo tolerant: a single mistyped character still matches |
+| `team_id` | Team UUID or slug. Narrows the result to one team |
+| `scope` | `teams`, `projects`, or `both` (default `both`) |
+| `page` | Page number (default `1`) |
+| `limit` | Items per page (default `10`, max `25` per entity type) |
+
+A search response nests each matching project under the team that holds it:
+
+```json
+{
+  "teams": [
+    {
+      "uuid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "Acme Engineering",
+      "slug": "acme-engineering",
+      "project_count": 7,
+      "projects": [
+        {
+          "id": "3f1c9d20-8b7e-4a11-9d55-2c6f0b8e4a13",
+          "slug": "checkout-service",
+          "name": "Checkout Service",
+          "description": "Payments and checkout flow.",
+          "score": 0.84
+        }
+      ]
+    }
+  ]
+}
+```
+
+Project descriptions are truncated to 160 characters, and paging through search results reaches at most 100 results.
+
+A typical flow when you name the team looks like this:
 
 ```
 You: "Save this snippet to my Acme Engineering artifacts"
 
-AI: *Calls vibexp_io_list_teams to discover teams*
+AI: *Calls vibexp_io_list_teams_and_projects to discover teams*
     *Finds "Acme Engineering" → slug "acme-engineering"*
     *Calls vibexp_io_create_artifact with team_id="acme-engineering"*
     *Confirms: "Saved to Acme Engineering"*
 ```
 
+And when the agent knows only a repository or project name:
+
+```
+You: "Log this decision against the checkout-service project"
+
+AI: *Calls vibexp_io_list_teams_and_projects with query="checkout-service"*
+    *Gets one hit: project "checkout-service" nested under team "acme-engineering"*
+    *Calls vibexp_io_create_memory with team_id="acme-engineering"
+     and project_id="3f1c9d20-…"*
+```
+
 :::note
-`vibexp_io_list_teams` is the one tool that does **not** take a `team_id` — it exists precisely to help you (or the AI) discover one.
+`vibexp_io_list_teams_and_projects` and `vibexp_io_get_user` are the only tools that do **not** require a `team_id`. The discovery tool optionally **accepts** `team_id` to narrow its results to one team.
 :::
 
 ## Available Tools
@@ -214,19 +281,29 @@ AI: *Calls vibexp_io_list_teams to discover teams*
 Once connected, AI assistants can use these tools.
 
 :::note
-Tools that read or write team data require a `team_id` (UUID or slug) argument. Use `vibexp_io_list_teams` to discover valid identifiers — see [Working With Teams](#working-with-teams).
+Tools that read or write team data require a `team_id` (UUID or slug) argument. Use `vibexp_io_list_teams_and_projects` to discover valid identifiers (see [Working With Teams](#working-with-teams)).
 :::
 
 ### Workspace and Context
 
 - **vibexp_io_get_user**: Get basic information about the currently authenticated user
-- **vibexp_io_list_teams**: List the teams you belong to (returns `uuid`, `name`, `slug`). Use the result to supply `team_id` to other tools
-- **vibexp_io_list_projects**: List a team's projects, with optional search and pagination
+- **vibexp_io_list_teams_and_projects**: Discover the workspace. With no arguments it returns the teams you belong to with their project counts; with `query` it searches team and project names, slugs, descriptions and project git URLs across **all** your teams at once, returning matching projects nested under their team and ranked; with `team_id` and no query it lists that team's projects. Optional `scope` (`teams`, `projects`, `both`), `page` and `limit` (default 10, max 25). Typo tolerant
+- **vibexp_io_list_teams** *(deprecated)*: List the teams you belong to. Superseded by a no-argument `vibexp_io_list_teams_and_projects`
+- **vibexp_io_list_projects** *(deprecated)*: List a team's projects. Superseded by `vibexp_io_list_teams_and_projects` with a `team_id`
+
+:::caution[Deprecated: vibexp_io_list_teams and vibexp_io_list_projects]
+Both tools still work in v0.12.0, but they are superseded by `vibexp_io_list_teams_and_projects` and **will be removed in a future release**.
+
+- Replace `vibexp_io_list_teams` with a no-argument `vibexp_io_list_teams_and_projects` call.
+- Replace `vibexp_io_list_projects` with `vibexp_io_list_teams_and_projects` plus a `team_id`.
+
+Update any prompt, skill, or agent configuration that names the old tools now, so nothing breaks when they are removed.
+:::
 
 ### Search and resource reads
 
-- **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories — find knowledge by meaning, optionally narrowed by type or project
-- **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type` — a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`
+- **vibexp_io_search**: Semantic search across a team's prompts, artifacts, blueprints, and memories: find knowledge by meaning, optionally narrowed by type or project. Paginate with `page` (1 to 10000, default 1) and `limit` (1 to 100, default 10); since v0.14.0 an out-of-range value returns a tool error naming the allowed range instead of falling back to the default
+- **vibexp_io_get_resource**: Fetch a single resource with its full content, keyed by `resource_type`: a `memory` by `id`, or an `artifact`/`blueprint` by `project_id` and `slug`. Reads are scoped to the resolved `team_id`: any member can read a teammate's blueprint, and a blueprint in another team is not found
 - **vibexp_io_list_resources**: List a project's resources of one `resource_type` (`memory`, `artifact`, or `blueprint`) as slim items, filterable (status, type, text search, metadata) and paginated; call `vibexp_io_get_resource` for a single item's full content. The `metadata` parameter takes a JSON object of key to array of string values: keys are combined with AND, values within a key with OR, and an empty array means "the key exists"
 - **vibexp_io_list_resource_metadata**: Discover the metadata keys and values a team actually uses, so a metadata filter can be built from real data instead of guesses. Omit `key` to list the distinct metadata keys for a `resource_type` (`memory`, `artifact`, or `blueprint`); supply `key` to list that key's distinct values. Every value returned works directly in the `metadata` filter of `vibexp_io_list_resources`
 
@@ -234,6 +311,16 @@ One generic pair of read tools covers memories, artifacts, and blueprints (keyed
 
 :::note[Reads carry relations]
 `vibexp_io_get_resource` (and the four resource detail reads) also return a `related` array (the resource's typed relation neighborhood, up to 20 edges) and a `similar` array (up to 5 semantically similar resources computed from embeddings). Both arrays are optional. See [Relations](/user-guide/relations/).
+:::
+
+:::note[Reads carry a project summary, since v0.13.0]
+`vibexp_io_get_resource` also returns a `project` object (`id`, `name`, `slug`) on the four resource detail reads, so an assistant does not need a separate call to name the project a resource belongs to. It is absent wherever the server has not resolved it; `project_id` remains the field to rely on either way.
+:::
+
+:::note[Reads carry freshness, and are recorded]
+For memories, artifacts, and blueprints, `vibexp_io_get_resource` also returns a `freshness` object when the resource is **currently flagged stale** by your team's freshness rules. The field is absent when the resource is fresh, so an assistant can warn you before treating a stale document as current. See [Resource Freshness](/user-guide/resource-freshness/).
+
+A successful `vibexp_io_get_resource` also records a resource access event with source **MCP**, tracked separately from web and CLI reads. Those events feed [Access Analytics](/user-guide/resource-access-analytics/) and [Resource Freshness](/user-guide/resource-freshness/), whose rules can watch the `web`, `cli`, and `mcp` mediums independently. List tools (`vibexp_io_list_resources`, `vibexp_io_search`) do **not** record per-resource accesses: only fetching a resource's full content counts.
 :::
 
 ### Relations
@@ -246,28 +333,28 @@ Edges an AI creates are recorded as **suggested** for `governed-by` and `superse
 
 - **vibexp_io_create_prompt**: Create a new prompt
 - **vibexp_io_update_prompt**: Update an existing prompt
-- **vibexp_io_render_prompt**: Render a published, MCP-exposed prompt by slug, substituting values for its `{{placeholders}}` — returns the rendered body
+- **vibexp_io_render_prompt**: Render a published, MCP-exposed prompt by `team_id` and `slug`, substituting the values in `arguments` for its `{{placeholders}}`. Returns the rendered body, plus `placeholders_missing`, `references_used`, and `warnings` as structured content. `@references` resolve within the prompt's own team, and values are inserted as literal text
 
 To *read* prompts, use `vibexp_io_render_prompt`, the generic `vibexp_io_search` tool, or the native MCP prompts your client lists (see the note below).
 
 ### Artifact Management
 
-- **vibexp_io_create_artifact**: Create a new artifact
-- **vibexp_io_update_artifact**: Update an existing artifact
+- **vibexp_io_create_artifact**: Create a new artifact, with an optional `labels` array (since v0.13.0, up to 10, 50 characters each)
+- **vibexp_io_update_artifact**: Update an existing artifact, including its `labels`
 
 Read artifacts with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: artifact`).
 
 ### Blueprint Management
 
-- **vibexp_io_create_blueprint**: Create a new blueprint
-- **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug
+- **vibexp_io_create_blueprint**: Create a new blueprint, with an optional `labels` array (since v0.13.0, up to 10, 50 characters each)
+- **vibexp_io_update_blueprint**: Update an existing blueprint, located by project and slug, including its `labels`
 
 Read blueprints with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: blueprint`).
 
 ### Memory Operations
 
-- **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`)
-- **vibexp_io_update_memory**: Update a memory's text, status, or metadata
+- **vibexp_io_create_memory**: Store a new memory with text, metadata, and an optional lifecycle status (`active`, `draft`, `archived`); plus an optional `title` (up to 255 characters) and `labels` (up to 10, 50 characters each), both since v0.13.0
+- **vibexp_io_update_memory**: Update a memory's text, status, title, labels, or metadata
 
 Read memories with the generic `vibexp_io_get_resource` / `vibexp_io_list_resources` tools (`resource_type: memory`).
 
@@ -501,7 +588,7 @@ Because the MCP endpoint is now an OAuth 2.1 Resource Server and no longer accep
 
 ### Why do I need to pass a `team_id` now?
 
-The MCP endpoint used to embed your team UUID in the URL (`/mcp/v1/teams/{team_uuid}/common`). That URL has been removed. You now connect to a single team-agnostic URL (`/mcp/v1/common`) and tell each team-scoped tool which team to act on via the `team_id` parameter. This lets one MCP connection work across all of your teams. Use `vibexp_io_list_teams` to find a team's UUID or slug.
+The MCP endpoint used to embed your team UUID in the URL (`/mcp/v1/teams/{team_uuid}/common`). That URL has been removed. You now connect to a single team-agnostic URL (`/mcp/v1/common`) and tell each team-scoped tool which team to act on via the `team_id` parameter. This lets one MCP connection work across all of your teams. Use `vibexp_io_list_teams_and_projects` to find a team's UUID or slug, and to find which team holds a project when you only know the project or repository name.
 
 ### My MCP server stopped working after an update — what changed?
 

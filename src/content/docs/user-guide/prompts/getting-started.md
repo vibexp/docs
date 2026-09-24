@@ -155,7 +155,8 @@ Now that you've created your first prompt:
 
 ## Using the Prompt Gallery
 
-Not sure where to start? Explore the **Prompt Gallery** (accessible from the Prompts sidebar menu) to find pre-built templates organized by category:
+Not sure where to start? **Prompt Gallery** in the sidebar opens its own page
+(`/prompt-gallery`) with pre-built templates organized by category:
 
 - Customer Support
 - Data Analysis
@@ -163,4 +164,7 @@ Not sure where to start? Explore the **Prompt Gallery** (accessible from the Pro
 - Marketing
 - Product Management
 
-You can use these as starting points or inspiration for your own prompts.
+Click a category to see its templates, then click a template to open its
+detail page, where **Copy** and **Use this prompt** create your own prompt
+from it. You can use these as starting points or inspiration for your own
+prompts.

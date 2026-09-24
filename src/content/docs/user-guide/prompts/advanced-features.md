@@ -100,6 +100,19 @@ Tone: {{tone}}
 
 **No default values**: Variables don't currently support default values (feature planned)
 
+**Values are inserted as literal text** (since v0.14.0): references are expanded
+first, then every `{{variable}}` is filled in a single pass. A value is inserted
+exactly as you supply it: it is never scanned for `@references` and never
+substituted again, so values such as `git@github.com` or `@acme/pkg` come
+through unchanged. You cannot build a reference from a variable: `@{{which}}`
+does not resolve. The same values fill the placeholders of the prompt and of
+every prompt it references.
+
+**Unfilled variables are reported**: a `{{key}}` you did not supply stays in the
+output as written, and the render response lists it in `placeholders_missing`
+(including keys from referenced prompts). A key supplied as an empty string
+counts as filled.
+
 **Document expected formats** in your prompt:
 ```
 Write about {{topic}}.
@@ -126,6 +139,12 @@ behind it.
 3. Select a prompt to insert its reference
 4. The syntax is: `@prompt-slug`
 
+References resolve among the prompts of the **team that owns the prompt**,
+including prompts your teammates created, whoever renders it (since v0.14.0).
+A prompt in another team cannot be referenced, even one you belong to. To write
+a literal `@` that is not a reference, type `@@`. A prompt that references
+itself, directly or through a chain, cannot be rendered.
+
 ### Example Use Case
 
 **Base Instructions Prompt** (slug: `base-instructions`)
@@ -149,7 +168,7 @@ Length: {{word_count}} words
 Include: {{key_points}}
 ```
 
-When you use the Blog Post prompt, it automatically includes the content from `base-instructions`.
+When you use the Blog Post prompt, it automatically includes the content from `base-instructions`. A slug that does not exist in the prompt's team is left in the text as written, and the render response carries the warning `Reference not found: @slug`.
 
 ### Benefits of Prompt References
 
@@ -168,7 +187,7 @@ Write about {{topic}} following the above guidelines.
 ```
 
 **Team Standards**
-Share base prompts to ensure everyone follows the same guidelines:
+Keep base prompts in the team that uses them, so every teammate's prompts can reference them. A prompt in another team cannot, so copy the base prompt into each team that needs it:
 
 ```
 @coding-standards
@@ -192,8 +211,8 @@ Each base prompt should cover one aspect. Combine multiple references rather tha
 **Document Dependencies**
 In the prompt description, note which prompts it references. This helps prevent broken references.
 
-**Test Before Deleting**
-Before deleting a prompt, search your library for `@prompt-slug` to find all references.
+**Deleting a referenced prompt is blocked**
+VibeXP refuses to delete a prompt that another prompt in the team references. Remove those references first.
 
 ## Markdown Formatting
 
@@ -318,7 +337,7 @@ The **Available in MCP** toggle controls whether the prompt is exposed to connec
 
 ### Using MCP-Enabled Prompts
 
-Once enabled, the prompt appears in connected clients under its slug as a native MCP prompt. Clients that support MCP prompts (such as Claude Code) list your exposed prompts, show each prompt's `{{variable}}` placeholders as named arguments, and render the prompt with your values filled in. In Claude Code, for example, exposed prompts show up as slash commands you can invoke directly.
+Once enabled, the prompt appears in connected clients under its slug as a native MCP prompt; its `@references` resolve within the prompt's own team. Clients that support MCP prompts (such as Claude Code) list your exposed prompts, show each prompt's `{{variable}}` placeholders as named arguments, and render the prompt with your values filled in. In Claude Code, for example, exposed prompts show up as slash commands you can invoke directly.
 
 ### MCP Configuration
 
@@ -330,7 +349,7 @@ Over MCP, connected AI agents can work with your prompt library in three ways:
 
 - **Create and update prompts** — the `vibexp_io_create_prompt` and `vibexp_io_update_prompt` tools let agents write to your prompt library.
 - **Find prompt content** — the generic `vibexp_io_search` tool searches your prompts (alongside artifacts, blueprints, and memories) by meaning; narrow it to prompts with the `types` filter.
-- **List and render exposed prompts** — published prompts with **Available in MCP** enabled are served as native MCP prompts, with placeholder resolution handled by VibeXP. The most recently updated of these are exposed as native prompt primitives (slash commands); agents can render any exposed prompt on demand — including ones beyond that set — with the `vibexp_io_render_prompt` tool by passing its `slug` and placeholder values.
+- **List and render exposed prompts**: only **published** prompts with **Available in MCP** enabled are eligible. Up to **50 per session** are exposed as native MCP prompt primitives (slash commands), most recently updated first, across all your teams at once; a slug that collides across two teams is disambiguated with the team slug. Placeholder resolution is handled by VibeXP. Prompts past that 50 are still renderable on demand with the `vibexp_io_render_prompt` tool, by passing the prompt's `slug` and its placeholder values.
 
 There are no dedicated prompt read tools — reading goes through search or the native MCP prompts.
 

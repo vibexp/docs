@@ -38,10 +38,21 @@ Memories are text-based information snippets that provide context to AI conversa
 1. Navigate to **Memory** in the sidebar
 2. Click **Create New Memory**
 3. Enter memory details:
+   - **Title**: Optional short title, up to 255 characters (since v0.13.0)
    - **Text**: The memory content
    - **Project**: Organization grouping (optional)
+   - **Labels**: Optional, up to 10, 50 characters each (since v0.13.0)
    - **Metadata**: Tags, category, priority, custom fields
 4. Click **Save**
+
+### Title
+
+A memory's **title** is optional. If you leave it blank, VibeXP derives a
+display title from the memory's text (its first Markdown heading, or an
+excerpt) wherever a title is shown in a list. On the memory's own detail
+page, the heading is always derived from the text, whether or not a title is
+set. Sending an explicit `null` on update clears a title; omitting the field
+leaves it unchanged.
 
 ### Example Memory
 
@@ -105,16 +116,22 @@ Set importance levels:
 - `medium`: Important but context-dependent
 - `low`: Nice-to-have background information
 
-#### Custom Tags
+### Labels
 
-Add searchable tags:
+Since v0.13.0, memories carry the same **labels** taxonomy as prompts,
+artifacts, and blueprints: up to 10 short tags, 50 characters each, shown as
+chips in the taxonomy section and editable on the create/edit form. Add
+searchable labels such as:
 - Technology: `typescript`, `react`, `nodejs`
 - Domain: `frontend`, `backend`, `devops`
 - Purpose: `style-guide`, `architecture`, `deployment`
 
+Memories used to carry these as a `tags` array inside `metadata` instead; see
+[Advanced Filters](#advanced-filters) below for how that migrated.
+
 ### Linking Memories to What They Explain
 
-Tags group memories; relations connect them to specific resources. A memory that
+Labels group memories; relations connect them to specific resources. A memory that
 records why a decision was made can be attached to that resource, which is then
 `explained-by` the memory, so the reasoning surfaces next to the thing it
 justifies rather than only in search. See [Relations](/user-guide/relations/).
@@ -149,7 +166,7 @@ Search: "React hooks best practices"
 Surfaces memories about React hooks and best practices even when they use different wording. Semantic search is the default.
 
 :::note[Keyword fallback]
-Semantic search requires the deployment to have an embedding provider configured. When it doesn't, VibeXP automatically falls back to keyword full-text search — same search box, exact-word matching instead of matching by meaning.
+Semantic search requires your team to have an embedding provider configured (providers are per team, not instance wide). When there isn't one, VibeXP automatically falls back to keyword full-text search: same search box, exact-word matching instead of matching by meaning.
 :::
 
 #### Keyword search syntax
@@ -160,9 +177,10 @@ In keyword mode (no embedding provider) the search box supports these operators:
 - `word1 OR word2`: match either term (plain words are ANDed by default).
 - `term -excluded`: exclude results containing a term.
 
-Title matches rank highest, and ranking is length-normalized so a short,
-on-topic title beats a long document that merely mentions the term. A single
-mistyped word still matches by typo tolerance.
+A memory's title and body are matched together as one document, so a term is
+equally findable wherever it appears. Results are ordered by Postgres's standard
+full-text relevance score. A single mistyped word still matches, through a
+typo-tolerant fallback against resource titles.
 
 In **semantic mode** (embedding provider configured) the query is embedded as
 text, so these operators are treated as ordinary words rather than search
@@ -171,15 +189,31 @@ operators.
 ### Advanced Filters
 
 Filter memories by:
-- **Tag**: Custom tag filtering (tags come from memory metadata)
 - **Status**: Memory lifecycle status
+- **Freshness**: "Stale only" shows just the memories your team's freshness
+  rules currently flag. See [Resource Freshness](/user-guide/resource-freshness/)
 - **Metadata**: The metadata filter matches on any metadata key-value pairs.
   Pick a key, then one or more values (with typeahead from the values your
-  team actually uses). Keys combine with AND, values within a key with OR.
-  Tag filtering is the same mechanism applied to `metadata.tags`, and all of
-  it is applied server-side
+  team actually uses). Keys combine with AND, values within a key with OR
 - **Project**: Use the global project selector in the app header to scope the
   list to one project (or all)
+
+:::note[Tags moved into labels in v0.13.0]
+Memories used to be tagged through a `tags` array inside `metadata`, filtered
+with the metadata filter above. Since v0.13.0 memories carry a real
+**labels** field instead (the same shared taxonomy as prompts, artifacts, and
+blueprints: up to 10 labels, 50 characters each), shown as chips in the
+taxonomy section and on the create/edit form. Any `metadata.tags` a memory
+already had was moved into `labels` automatically when you upgrade, and the
+`tags` key is removed from `metadata`; the edit form's **Tags** input still
+works and writes into the same `labels` list. Filtering by the old
+`metadata.tags` key no longer finds anything, since the key is gone. Filter
+on labels through the API instead (below). Like artifacts and blueprints, the
+memory list page has no dedicated labels filter yet.
+:::
+
+A flagged memory carries a quiet **Stale** badge next to its title in the list.
+Hover it to see how long the memory has gone unused and how many rules flagged it.
 
 Fields like category and priority live in each memory's free-form metadata
 and are searchable.
@@ -247,12 +281,13 @@ The instance keeps the 20 most recent versions per memory by default
 vibexp_io_create_memory({
   team_id: "<team-uuid-or-slug>",
   project_id: "<project-uuid>",
+  title: "Testing framework preference", // optional, up to 255 characters, since v0.13.0
   text: "User's testing framework preference: Jest with React Testing Library",
   status: "active", // optional: active (default), draft, or archived
+  labels: ["jest", "react", "testing"], // optional, up to 10, 50 characters each, since v0.13.0
   metadata: {
     category: "testing",
-    priority: "medium",
-    tags: ["jest", "react", "testing"]
+    priority: "medium"
   }
 })
 ```
@@ -280,6 +315,10 @@ vibexp_io_get_resource({
   id: "<memory-uuid>"
 })
 ```
+
+The response carries the memory's full content, its `related` and `similar`
+neighborhoods, and a `freshness` object when the memory is currently flagged
+stale. See [Resource Freshness](/user-guide/resource-freshness/).
 
 ### Updating Memories
 
@@ -405,8 +444,11 @@ Code Review Guidelines:
 All memory endpoints are team-scoped:
 
 ```bash
-# List memories (optional filters: project_id, search, status, ...)
+# List memories (optional filters: project_id, search, status, freshness, ...)
 GET /api/v1/{team_id}/memories?project_id={project_id}
+
+# List only memories currently flagged stale
+GET /api/v1/{team_id}/memories?freshness=stale
 
 # Get specific memory
 GET /api/v1/{team_id}/memories/{memory_id}
@@ -420,6 +462,30 @@ PUT /api/v1/{team_id}/memories/{memory_id}
 # Delete memory
 DELETE /api/v1/{team_id}/memories/{memory_id}
 ```
+
+`freshness` accepts exactly one value, `stale`; anything else returns a `400`
+rather than silently returning the unfiltered list. Memory payloads also carry an
+optional `freshness` object, which is absent when the memory is fresh.
+
+The list endpoint also accepts `labels` (since v0.13.0):
+
+```bash
+GET /api/v1/{team_id}/memories?labels=jest,testing
+```
+
+A memory matches if it carries **any** of the listed labels (OR, not all of
+them). At most 25 labels, each at most 50 characters, or the request is
+rejected with `400`. Empty entries (`a,,b`, a trailing comma) are dropped
+rather than matching nothing, and a blank `labels` parameter filters on
+nothing at all.
+
+The list endpoint takes `page` (1 to 10000, default 1) and `limit` (1 to 100,
+default 10). Since v0.14.0 a value outside either range returns `400` naming the
+allowed range instead of silently falling back to the default.
+
+The single-memory GET also carries a `project` summary (`id`, `name`, `slug`)
+since v0.13.0, `null` in list responses; `project_id` remains the field to
+rely on when `project` is null.
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.
 

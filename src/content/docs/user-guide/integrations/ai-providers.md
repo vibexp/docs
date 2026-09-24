@@ -5,19 +5,20 @@ sidebar:
   order: 2
 ---
 
-Each team brings its own AI endpoints. Two provider types are configured under
-**Settings** → **Integration**:
+Each team brings its own AI endpoints. Two provider types have their own cards on
+your team's **Settings** hub:
 
 - **Embedding Providers** power semantic search across prompts, artifacts,
   blueprints, and memories.
 - **Model Providers** register OpenAI-compatible LLM endpoints for the team.
+  They power [AI Summary](/user-guide/search/#ai-summary) on search.
 
 Both are team-scoped, managed entirely in the app, and store API keys
 encrypted. Nothing is configured through server environment variables.
 
 :::caution[Owner or Admin, and a publicly routable URL]
 Adding or editing a provider needs the **Owner** or **Admin** role (the
-`team.settings.update` permission; see [Team roles and permissions](/user-guide/team-roles-and-permissions/)).
+`team.update` permission; see [Team roles and permissions](/user-guide/team-roles-and-permissions/)).
 The base URL must be publicly routable: VibeXP rejects loopback, private, and
 link-local addresses (including cloud metadata endpoints like `169.254.169.254`)
 with `destination_not_allowed`, and the check applies to the stored provider,
@@ -37,7 +38,8 @@ OpenAI, Ollama, LocalAI, vLLM, HuggingFace TEI, and similar.
 
 ### Adding a provider
 
-1. Open **Settings** → **Integration** → **Embedding Providers**
+1. Open **Settings** → **Embedding Providers**
+   (URL `/teams/<team>/settings/embedding-providers`)
 2. Click to add a provider and fill in:
 
 | Field | Default | Purpose |
@@ -58,12 +60,36 @@ Once saved, embedding starts automatically for the team's existing content.
 
 ### Coverage, reprocess, and clear
 
-The Embedding Providers page shows **coverage cards**: how much of the team's
-content is embedded, pending, or failed. Two actions are available:
+The Embedding Providers page shows **coverage cards**: **Embedded**, **Pending**,
+**% embedded**, and a per-type breakdown underneath. There is no failed count:
+anything VibeXP could not embed simply stays **Pending**. Two actions are
+available:
 
 - **Reprocess pending**: re-enqueue anything not yet embedded.
 - **Clear all embeddings**: delete every stored vector for the team. Content
   is untouched; embeddings are rebuilt on the next processing pass.
+
+### When an item never gets embedded
+
+VibeXP treats two kinds of provider failure differently:
+
+| Failure | Examples | What happens |
+| --- | --- | --- |
+| **Temporary** | timeout, `408`, `429`, network error, any `5xx` | Retried with backoff |
+| **Permanent** | any other `4xx`, such as a rejected model name or a bad API key | Attempted once, **never retried** |
+
+A permanently rejected item stays **Pending**, and **Reprocess pending** retries
+it once per press. Because the UI has no failed counter, a permanently rejected
+item looks exactly like a slow one. The distinction lives in the server logs,
+which carry the provider's own error message.
+
+:::tip[Long memories and artifacts now embed]
+Embedding requests are sent in batches of 32 chunks instead of one large request,
+so a long memory or artifact no longer trips a provider's request-size limit
+(HuggingFace TEI rejected oversized batches with `422`). If content stayed
+unembedded on an earlier version, press **Reprocess pending** after upgrading and
+it is picked up.
+:::
 
 :::caution[Changing a provider re-embeds everything]
 Changing a provider's identity (endpoint or model) wipes that team's vectors
@@ -82,11 +108,47 @@ is unavailable.
 
 Model providers let a team bring its own OpenAI-compatible LLM endpoint.
 
-1. Open **Settings** → **Integration** → **Model Providers**
-2. Add the endpoint URL, API key, and model details
+1. Open **Settings** → **Model Providers**
+   (URL `/teams/<team>/settings/model-providers`)
+2. Add the endpoint URL and API key, then pick the model. Click **Load models**
+   to fetch the endpoint's model list and choose from it (**Search models…**).
+   If the endpoint does not list models, or the list cannot be loaded, type the
+   model id instead; a failed list never blocks saving.
 3. Save. The provider's connectivity is **validated on save**.
 
-API keys are stored encrypted and can be updated or removed anytime.
+API keys are stored encrypted and can be updated or removed anytime. Tick
+**Use as default** to make a provider the team's default; AI Summary uses the
+default provider unless its settings name another one.
+
+### Listing a provider's models
+
+**Load models** calls the provider's own `GET {base_url}/models` and shows
+every model it reports, sorted by id and unfiltered. Nothing is saved, so it
+works before the provider exists; when editing a saved provider with the key
+field left blank, the stored key is reused. Many gateways expose only
+`/chat/completions`, and then the dialog falls back to typing the model id.
+Failures are reported as a fixed category (`connection_failed`,
+`unauthorized`, `misconfigured_provider`, `destination_not_allowed`), never as
+the provider's raw response.
+
+### AI Summary settings
+
+Below the provider list, the **AI Summary** card controls how this team's
+search summaries are generated: **Enable AI Summary**, **Provider** (or **Team
+default**), **Style**, **Results to read**, and **Response length (tokens)**.
+See [Search → AI Summary](/user-guide/search/#ai-summary) for what each one does
+and who can change them.
+
+## Copying a provider from another team
+
+Both provider settings pages have a **Copy from…** button that brings a
+provider over from another team you own or administer, stored credential
+included (the key travels as ciphertext and is never shown). The copy always
+lands as non-default, and you can override the name, model, endpoint, and
+tuning fields before confirming. Every copy is recorded in the destination
+team's settings audit log.
+
+→ [Copying settings between teams](/user-guide/copying-team-settings/)
 
 ## API access
 
@@ -96,6 +158,7 @@ Both provider types have team-scoped REST endpoints:
 # Embedding providers
 GET|POST   /api/v1/{team_id}/settings/embedding-providers
 GET|PUT|DELETE /api/v1/{team_id}/settings/embedding-providers/{id}
+POST       /api/v1/{team_id}/settings/embedding-providers/copy
 POST       /api/v1/{team_id}/settings/embedding-providers/validate
 GET        /api/v1/{team_id}/settings/embedding-providers/coverage
 POST       /api/v1/{team_id}/settings/embedding-providers/{id}/reprocess
@@ -104,7 +167,16 @@ DELETE     /api/v1/{team_id}/settings/embedding-providers/embeddings
 # Model providers
 GET|POST   /api/v1/{team_id}/settings/model-providers
 GET|PUT|DELETE /api/v1/{team_id}/settings/model-providers/{id}
+POST       /api/v1/{team_id}/settings/model-providers/copy
 POST       /api/v1/{team_id}/settings/model-providers/validate
+POST       /api/v1/{team_id}/settings/model-providers/models
+
+# AI Summary settings
+GET|PUT|DELETE /api/v1/{team_id}/settings/ai-summary
+
+# Custom types and the settings audit log
+POST       /api/v1/{team_id}/settings/types/copy
+GET        /api/v1/{team_id}/settings/audit
 ```
 
 See [API Keys](/user-guide/integrations/api-keys) for authentication.
@@ -113,5 +185,8 @@ See [API Keys](/user-guide/integrations/api-keys) for authentication.
 
 - [Memory](/user-guide/memory) and [Artifacts](/user-guide/artifacts) explain
   how semantic search is used day to day.
+- [Resource Freshness](/user-guide/resource-freshness/) is a separate signal from
+  embedding coverage. It flags resources nobody has used lately, not resources
+  missing a vector.
 - Self-hosters: see
   [Self-Hosting → Search and embeddings](/user-guide/self-hosting/#search-and-embeddings).

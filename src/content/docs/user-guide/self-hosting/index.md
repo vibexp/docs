@@ -11,7 +11,7 @@ This page summarizes the deployment setup in the [`vibexp/vibexp`](https://githu
 
 ## Prerequisites
 
-- **Docker + Docker Compose** (for the quick start), **or** Node 20+ / Go 1.25+ for local dev.
+- **Docker + Docker Compose** (for the quick start), **or** Node 22.22+ / Go 1.26+ for local dev.
 - **PostgreSQL with the [`pgvector`](https://github.com/pgvector/pgvector) extension** (the bundled compose file uses `pgvector/pgvector:pg17`). On managed Postgres the connecting role must be allowed to `CREATE EXTENSION` for `vector`, `pg_trgm`, `pgcrypto`, and `uuid-ossp`, or migrations fail at startup. Already running the bundled Postgres on a populated volume? See [Upgrading Postgres to 17](/user-guide/self-hosting/postgres-pg17-migration/) before you pull.
 - A **login provider** for production sign-in — Google, GitHub, or any OIDC provider (see [Authentication](#authentication)) — or use the dev-login bypass for local evaluation.
 - *(For semantic search)* an OpenAI-compatible embeddings endpoint configured in-app — see [Search and embeddings](#search-and-embeddings). No external embedding service is required to boot.
@@ -35,7 +35,7 @@ docker run -p 8080:8080 \
   -e DB_HOST=your-db-host -e DB_PASSWORD=secret \
   -e ENCRYPTION_KEY="$(openssl rand -base64 24 | cut -c1-32)" \
   -e FRONTEND_BASE_URL=http://localhost:8080 \
-  ghcr.io/vibexp/vibexp:0.10.0
+  ghcr.io/vibexp/vibexp:0.14.0
 ```
 
 The localhost `FRONTEND_BASE_URL` enables the dev-login bypass so you can sign in immediately. For a real deployment, set `FRONTEND_BASE_URL` to your public URL **and** configure a login provider (`AUTH_PROVIDER` + its client credentials + `SESSION_ENCRYPTION_KEY` — see [Authentication](#authentication)); otherwise the instance boots but has no way to sign in.
@@ -67,7 +67,12 @@ bump. The published image is multi-arch (`linux/amd64` + `linux/arm64`).
 Upgrading to v0.9.0 drops the retired billing/subscription, AI-tool activity
 ingestion, and web-push tables automatically, and moves GitHub App
 configuration from `config.yaml` to per-team setup (re-register the App on
-each team after upgrading).
+each team after upgrading). Upgrading to v0.11.0 from v0.10.0 or any earlier
+published release needs no action: its consolidated `013_consolidated`
+migration applies automatically on boot, and so do v0.12.0's
+`014_embedding_jobs` and `015_team_settings_audit`, v0.13.0's
+`016_consolidated`, and v0.14.0's `017_team_ai_summary_settings` and
+`018_prompt_references_team_scope`.
 :::
 
 There is no embedding env var: embedding and model providers are configured
@@ -95,7 +100,7 @@ For **local evaluation without a provider**, point `FRONTEND_BASE_URL` at localh
 
 ## Search and embeddings
 
-Embeddings are generated **in-process** — an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`.
+Embeddings are generated **in-process**: an event-bus worker chunks, embeds, and stores content in pgvector. There is **no external AI service** to run and no `AI_SERVICE_URL`. Since v0.12.0 pending work is held in a durable `embedding_jobs` table rather than in memory, so restarting the container no longer drops queued embeddings.
 
 The embedding provider (any OpenAI-compatible embeddings endpoint: OpenAI, Ollama, vLLM, TEI, …) is configured **per team, in-app**, not via environment variables: Settings → Integration → **Embedding Providers**. Each provider stores the endpoint, encrypted API key, model id, chunk sizing, request concurrency, and optional query/document prefixes. Providers are validated on save and must return **1024-dimension** vectors; the width is locked to the pgvector column and is not configurable.
 
@@ -113,7 +118,7 @@ Prefixes are added only to the text sent to the provider; nothing extra is store
 
 The settings page also shows embedding **coverage** per team, with one-click **Reprocess pending** and **Clear all embeddings** actions. Changing a provider's identity (endpoint or model) wipes and re-embeds that team's data automatically.
 
-Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save).
+Teams can also bring their own OpenAI-compatible LLM endpoints under Settings → Integration → **Model Providers** (encrypted API keys, connectivity validation on save). Since v0.14.0 a model provider also powers [AI Summary](/user-guide/search/#ai-summary) on search.
 
 :::caution[Running the endpoint on your own private network?]
 An SSRF guard refuses outbound calls to loopback and private addresses, so a sidecar on a Docker subnet or on localhost is unreachable by default. Declare its range in `OUTBOUND_ALLOWED_CIDRS` (for example `172.16.0.0/12` for Docker bridge networks, or `127.0.0.1/32` for a same-host Ollama). Link-local (cloud metadata) and multicast ranges can never be allowlisted, and an entry that overlaps them fails startup. Local development is already exempt.
@@ -125,16 +130,18 @@ Without a configured embedding provider, CRUD operations still work, but **seman
 
 ## Optional integrations
 
-All disabled by default, enabled via env vars or a mounted `config.yaml` (see `backend/config.example.yaml`):
+Configured via env vars or a mounted `config.yaml` (see `backend/config.example.yaml`). All are disabled by default except resource freshness and AI Summary, which ship on:
 
 | Integration | Enable via | Behavior when off |
 | --- | --- | --- |
-| **Object storage** (attachments) | GCS-compatible storage: `GCS_RESOURCE_ATTACHMENTS_BUCKET` (+ `STORAGE_EMULATOR_HOST` for an emulator) | Uploads return `503` |
+| **Object storage** (attachments) | `STORAGE_BACKEND` picks the store: `filesystem` (+ `STORAGE_FS_ROOT_DIR`, mount a volume there), `s3` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`, `S3_REGION`, and for MinIO `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY`), or `gcs` (+ `GCS_RESOURCE_ATTACHMENTS_BUCKET`; leaving `STORAGE_BACKEND` unset auto-detects this from the bucket). MinIO also needs path-style addressing, `S3_PATH_STYLE=true`, which since v0.12.0 is an env var, so no mounted `config.yaml` is required | Uploads return `503` |
 | **Email** | `EMAIL_PROVIDER` (`smtp`, `mailgun`, `postmark`, `sendgrid`) + the provider's credentials | Email features disabled |
 | **Analytics** | `VITE_GTM_ID` / `VITE_GA4_MEASUREMENT_ID` (Google Tag Manager / GA4). Setting `VITE_GTM_ID` **is** the opt-in; there is no separate enable flag, and VibeXP ships no cookie-consent gate of its own | No analytics |
 | **Private-network outbound calls** | `OUTBOUND_ALLOWED_CIDRS` (comma-separated, e.g. `172.16.0.0/12`) so the SSRF guard may reach a self-hosted embedding or model sidecar | Loopback and private destinations are refused |
 | **Telemetry** | `otel.*` in a mounted `config.yaml` (any OTLP collector) | No telemetry |
 | **GitHub App** | Not an env var: each team registers its own App in-app under Settings → GitHub Integration ([setup](/user-guide/integrations/github-app/)) | Team has no GitHub integration |
+| **AI Summary** | On by default, but runs only for a team with a model provider, and each summary is a call to that provider. `AI_SUMMARY_ENABLED` / `AI_SUMMARY_TOP_N` / `AI_SUMMARY_STYLE` / `AI_SUMMARY_REQUEST_TIMEOUT` set the defaults teams inherit; `AI_SUMMARY_ENABLED=false` turns it off for every team that has not saved its own AI Summary settings ([details](/developer-guide/backend/configuration/#ai-summary)) | No summary on search |
+| **Resource freshness** | On by default. Rules and the evaluation interval are configured per team in the app ([Resource Freshness](/user-guide/resource-freshness/)); the instance kill switch is `SCHEDULER_ENABLED=false` | No freshness evaluation runs |
 
 ## Branding
 

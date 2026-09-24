@@ -26,8 +26,10 @@ automatically if `config.yaml` is missing).
    service fails closed on a bad config rather than running misconfigured.
    Sections removed in past releases fail loudly: a leftover top-level
    `github:` block aborts startup with guidance to re-register the App per
-   team (removed in v0.9.0), while a leftover `embedding:` block is silently
-   ignored.
+   team (removed in v0.9.0). Unknown keys elsewhere are ignored silently, so a
+   pre-v0.4.0 `embedding:` block does not abort. Note that since v0.12.0
+   `embedding:` is a live section again: it holds the durable queue's
+   `embedding.queue.*` knobs.
 
 The published Docker image bakes a production-neutral default config
 (`config.docker.yaml`) at `/app/config.yaml` and sets `VIBEXP_CONFIG_FILE`
@@ -40,8 +42,9 @@ own file over that path to take full control.
   service refuses to start otherwise. Generate one with `openssl rand -hex 16`
   (32 hex chars = 32 bytes).
 - Rate limits must be ≥ 1, retention windows must be in `1..3650` days,
-  search-ranking weights must be valid, and the OAuth-AS token lifespans must
-  be positive and ordered. All are validated at startup.
+  search-ranking weights must be valid, the `ai_summary` budgets and caps must
+  be in range, and the OAuth-AS token lifespans must be positive and ordered.
+  All are validated at startup.
 :::
 
 ## Interpolation grammar
@@ -100,7 +103,7 @@ whenever you change the `Config` struct.
 | --- | --- | --- | --- |
 | `database.host` | `localhost` | **Yes** | Postgres host. May be a Unix socket path (Cloud SQL) when it starts with `/`. |
 | `database.port` | `5432` | **Yes** | Postgres port. |
-| `database.user` | `vibexp_app` | **Yes** | Database user. |
+| `database.user` | `postgres` | **Yes** | Database user. The code default is `postgres`; `config.example.yaml` sets `vibexp_app` for local dev and the published image resolves `${DB_USER:-vibexp}`. |
 | `database.password` | `${DB_PASSWORD}` | **Yes** | Database password (secret — resolved from the environment). |
 | `database.name` | `vibexp_io` | **Yes** | Database name. |
 | `database.sslmode` | `disable` | No | Connection TLS mode. `disable` (no TLS) or `require` (encrypt, no cert verification). Set `require` for managed Postgres that mandates TLS. |
@@ -232,7 +235,7 @@ embedded Authorization Server. See
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `mcp.oauth_issuer` | _(empty; defaults to `auth.oauth_as.issuer_url` when the AS is enabled)_ | Issuer the MCP endpoint trusts; JWKS is fetched from `<issuer>/oauth2/jwks.json`. If set explicitly it must equal the AS issuer. Empty with no AS disables the endpoint (rejects all tokens with 401). |
+| `mcp.oauth_issuer` | _(empty; defaults to `auth.oauth_as.issuer_url` when the AS is enabled)_ | Issuer the MCP endpoint trusts. With the embedded AS enabled, tokens are verified against the AS's **in-process** signing keys, so no HTTP JWKS fetch happens and the public issuer URL need not be reachable from inside the container. With an external IdP issuer, keys are fetched from `<issuer>/oauth2/jwks.json`. If set explicitly it must equal the AS issuer. Empty with no AS disables the endpoint (rejects all tokens with 401). |
 | `mcp.resource_uri` | _(empty; auto-derived locally as `<issuer>/mcp/v1/common`)_ | Canonical MCP resource identifier and required token audience (RFC 8707). Required when the AS is enabled. |
 
 In local development both fields are auto-derived — leave them empty. In
@@ -252,7 +255,7 @@ built-in defaults.
 | `frontend.site_name` / `frontend.site_legal_name` / `frontend.site_url` | _(empty)_ | Branding shown by the SPA. |
 | `frontend.terms_url` / `frontend.privacy_url` / `frontend.support_email` | _(empty)_ | Legal/support links. |
 | `frontend.brand_logo_url` | _(empty)_ | Logo URL. |
-| `frontend.mcp_endpoint` | _(empty)_ | MCP endpoint URL shown in the connect UI. |
+| `frontend.mcp_endpoint` | _(empty)_ | MCP endpoint URL shown in the connect UI. Empty uses the backend's own origin plus `/mcp/v1/common`, so a self-hosted instance shows its own URL without configuration. |
 | `frontend.error_type_base_uri` | _(empty)_ | RFC 9457 base URI the SPA links error codes to. |
 | `frontend.gtm_id` / `frontend.ga4_measurement_id` | _(empty)_ | Optional analytics. Setting `gtm_id` **is** the opt-in: the SPA loads Google Tag Manager only when it is non-empty. There is no separate enable flag, and VibeXP ships no cookie-consent gate of its own, so configure consent inside your own tag container. |
 
@@ -282,17 +285,57 @@ is instance-only and never team-overridable.
 | `search.rank_half_life_days` | `90.0` | Freshness decay half-life (max 36500). |
 | `search.rank_candidate_cap` | `200` | Re-rank candidate pool size (max 5000). |
 
+## AI Summary
+
+The `ai_summary` block (v0.14.0) configures [AI Summary](/user-guide/search/#ai-summary),
+the cited answer generated from a team's top search results by that team's own
+model provider. It holds two kinds of value:
+
+- **Team defaults**: `enabled`, `top_n`, `style`, and `max_output_tokens`.
+  A team inherits them until it saves its own profile (Settings → Model
+  Providers → AI Summary, or `/api/v1/{team_id}/settings/ai-summary`).
+- **Instance-only limits**: `max_top_n`, `max_output_tokens_ceiling`, the two
+  context budgets, and `request_timeout`. No team can change them.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `ai_summary.enabled` | `true` | `AI_SUMMARY_ENABLED` | Default on/off for teams that have not saved their own AI Summary settings. |
+| `ai_summary.top_n` | `5` | `AI_SUMMARY_TOP_N` | Default number of top results given to the model. Must be `1..max_top_n`. |
+| `ai_summary.max_top_n` | `10` | _(literal)_ | Ceiling on `top_n`, for teams too. Must be `1..10` (the database `CHECK`). |
+| `ai_summary.per_document_chars` | `8000` | _(literal)_ | Each document is truncated to this many characters. |
+| `ai_summary.total_context_chars` | `32000` | _(literal)_ | Budget across all documents. Must be at least `per_document_chars`. |
+| `ai_summary.max_output_tokens` | `800` | _(literal)_ | Default answer length in tokens. Must not exceed the ceiling. |
+| `ai_summary.max_output_tokens_ceiling` | `4096` | _(literal)_ | Ceiling on `max_output_tokens`, for teams too. Must be `1..32768`. |
+| `ai_summary.request_timeout` | `60s` | `AI_SUMMARY_REQUEST_TIMEOUT` | Time limit for one call to the model. Must be above 0. |
+| `ai_summary.style` | `balanced` | `AI_SUMMARY_STYLE` | Default style: `concise`, `balanced`, or `detailed`. |
+
+Everything is validated at startup and an invalid block stops the boot: a
+`top_n` above `max_top_n` is rejected, not clamped, and so is a non-integer
+`AI_SUMMARY_TOP_N`. A team's saved `top_n` and `max_output_tokens` are checked
+against the caps when saved; if you lower a cap later, values saved earlier are
+clamped at request time. The published image wires only the four env vars above;
+the literal keys need a mounted `config.yaml`.
+
+:::caution[`enabled` is a default, not a kill switch]
+`ai_summary.enabled: false` (or `AI_SUMMARY_ENABLED=false`) turns AI Summary off
+for every team **that has not saved its own AI Summary settings**. A team whose
+owner or admin saved a profile with **Enable AI Summary** on keeps it on. A team
+also needs at least one model provider before any summary can run.
+:::
+
 ## Embeddings
 
 Embeddings are generated in-process by an async event-bus worker: text is
 chunked in Go, embedded via the active provider, and stored in pgvector. There
 is **no** external AI service and **no** message broker.
 
-:::caution[Not in config.yaml since v0.4.0]
-There is **no `embedding` block** in `config.yaml`. All embedding settings are
-**per-team embedding providers**, managed in the app (Settings) or via
-`/api/v1/{team_id}/settings/embedding-providers`. A leftover `embedding:` block
-in an old config file is silently ignored.
+:::caution[Providers are per team, not in config.yaml]
+Embedding **providers** (endpoint, model, chunking, concurrency, prefixes) are
+not in `config.yaml`: they are **per-team settings**, managed in the app
+(Settings) or via `/api/v1/{team_id}/settings/embedding-providers`. The
+`embedding` block in `config.yaml` holds only the queue knobs below
+(`embedding.queue.*`, added in v0.12.0); a pre-v0.4.0 `embedding:` block with
+provider fields is ignored key by key.
 :::
 
 Each per-team embedding provider stores:
@@ -318,7 +361,27 @@ Provider behavior:
 
 Per-team **model providers** (bring-your-own OpenAI-compatible LLM endpoints)
 are also managed in-app, under `/api/v1/{team_id}/settings/model-providers`,
-not in `config.yaml`.
+not in `config.yaml`. Since v0.14.0 they also power [AI Summary](#ai-summary).
+`POST /api/v1/{team_id}/settings/model-providers/models` lists the models an
+OpenAI-compatible provider offers.
+
+### Embedding job queue (`embedding.queue`)
+
+Since v0.12.0 embedding work is held in a **durable, leased job queue** in the
+`embedding_jobs` table: every accepted event is written to the table before it
+is acknowledged, so a restart resumes its backlog instead of discarding it.
+Durability is not a knob. These keys only tune how the queue is drained.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `embedding.queue.lease_duration` | `30m` | `EMBEDDING_QUEUE_LEASE_DURATION` | How long a claimed job is held before another worker may reclaim it. Must be greater than 0. A lease expiring under a running job costs a duplicate embed, not wrong data. |
+| `embedding.queue.max_attempts` | `5` | `EMBEDDING_QUEUE_MAX_ATTEMPTS` | How many times one job may be **claimed** before it is retired as a poison pill. Claims are counted, not failures, so a job that kills its worker still converges on the bound. Must be at least 1. |
+| `embedding.queue.batch_size` | `20` | `EMBEDDING_QUEUE_BATCH_SIZE` | Caps how many jobs one claim leases. Must be at least 1. |
+| `embedding.queue.poll_interval` | `30s` | `EMBEDDING_QUEUE_POLL_INTERVAL` | How often the queue is swept for work no enqueue announced: jobs orphaned by a dead process, and jobs backing off after a retryable failure. An enqueue wakes the poller directly, so this is not common-path latency. Must be greater than 0. |
+| `embedding.queue.retry_backoff` | `2m` | `EMBEDDING_QUEUE_RETRY_BACKOFF` | Holds a job back after a retryable failure so it does not consume a claim slot on every poll. Must not be negative. |
+
+All five are validated at startup: an out-of-range value fails the boot rather
+than falling back to the default.
 
 ## Email
 
@@ -379,11 +442,50 @@ team. (`auth.github`, the web-login OAuth client, is unaffected.)
 Team-admin setup is in [GitHub App](/user-guide/integrations/github-app/); the
 one-time instance upgrade is [Migrating to per-team GitHub Apps](/user-guide/self-hosting/github-app-migration/).
 
-## Attachments (GCS)
+## Attachments (object storage)
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `storage.attachments_bucket` | _(empty)_ | GCS bucket for attachments. Empty disables attachments (upload/download/delete return 503). |
+`storage.backend` selects the object store backing file attachments. Accepted
+values: `gcs`, `s3` (covers MinIO and any S3-compatible store), `filesystem`,
+or empty. Empty preserves the pre-selector behaviour: GCS when
+`storage.attachments_bucket` is set, otherwise attachments are disabled and
+upload/download/delete return 503.
+
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `storage.backend` | _(empty)_ | `STORAGE_BACKEND` | Store selector: `gcs`, `s3`, `filesystem`, or empty to infer. |
+| `storage.attachments_bucket` | _(empty)_ | `GCS_RESOURCE_ATTACHMENTS_BUCKET` | Bucket name for the `gcs` and `s3` backends. |
+| `storage.s3_endpoint` | _(empty)_ | `S3_ENDPOINT` | S3 API endpoint (e.g. `http://minio:9000`). Empty targets AWS S3 in `s3_region`. |
+| `storage.s3_region` | _(empty)_ | `S3_REGION` | S3 region. Required by the SDK even for MinIO, which ignores the value. |
+| `storage.s3_access_key` | _(empty)_ | `S3_ACCESS_KEY` | Static S3 access key (secret). |
+| `storage.s3_secret_key` | _(empty)_ | `S3_SECRET_KEY` | Static S3 secret key (secret). Both empty falls back to the AWS SDK default credential chain (env vars, shared config, IAM). |
+| `storage.s3_path_style` | `false` | `S3_PATH_STYLE` | Force path-style addressing (`endpoint/bucket/key`), required by MinIO and most self-hosted S3-compatible stores. AWS S3 works on the default. A non-boolean value fails startup naming `storage.s3_path_style`. |
+| `storage.fs_root_dir` | _(empty)_ | `STORAGE_FS_ROOT_DIR` | Root directory for the `filesystem` backend. Created at startup if missing, so mount a volume at this path or attachments vanish with the container. |
+
+Validation fails startup (fail closed, so a typo surfaces at boot rather than
+as 503s at upload time) when:
+
+- `storage.backend` is not one of the four accepted values,
+- `gcs` or `s3` is selected without `storage.attachments_bucket`,
+- `s3` is selected without `storage.s3_region`,
+- exactly one of the two S3 credentials is set (they are both-or-neither),
+- `filesystem` is selected without `storage.fs_root_dir`.
+
+A valid configuration whose client still fails to initialize (bad credentials,
+unreachable endpoint) logs a warning and disables attachments rather than
+crashing the server, so uploads return 503 and the rest of the instance keeps
+running.
+
+:::note[MinIO is env-only since v0.12.0]
+`storage.s3_path_style` used to be the one storage knob with no environment
+variable. It is now wired as `${S3_PATH_STYLE:-false}` in the baked image
+config, so `S3_PATH_STYLE=true` is all MinIO needs and no mounted `config.yaml`
+is required. A value that is not a boolean fails startup naming
+`storage.s3_path_style` rather than silently defaulting.
+:::
+
+`STORAGE_EMULATOR_HOST` is not a VibeXP config key: it is read directly by the
+Google Cloud Storage SDK and only applies when you point the `gcs` backend at
+a GCS emulator.
 
 ## Rate limiting
 
@@ -421,32 +523,41 @@ does not matter. A job that panics, fails, or times out is logged and the
 schedule still advances; on shutdown the loop waits for the job in flight to
 return before exiting.
 
-Nothing has moved onto it yet, so the externally driven
-[internal job endpoints](#internal-jobs-pubsub-oidc) (`/internal/jobs/*`,
-retention and digests) still need their external scheduler.
+Schedules live in the `schedules` table and their interval has a **1-hour
+floor**, enforced both in code and by a database check constraint.
 
-Schedules live in the `schedules` table (migration `012_schedules`) and their
-interval has a **1-hour floor**, enforced both in code and by a database check
-constraint.
+| Key | Default | Env var (published image) | Purpose |
+| --- | --- | --- | --- |
+| `scheduler.enabled` | `true` | `SCHEDULER_ENABLED` | Turns the loop on. `false` means nothing is claimed or run. |
+| `scheduler.tick_interval` | `1m` | `SCHEDULER_TICK_INTERVAL` | How often the loop looks for due schedules. A polling cadence, not a job cadence. Must be > 0. |
+| `scheduler.job_timeout` | `10m` | `SCHEDULER_JOB_TIMEOUT` | Bounds a single job handler invocation. Must be > 0. |
+| `scheduler.due_limit` | `100` | `SCHEDULER_DUE_LIMIT` | Caps how many due schedules one tick claims. Must be ≥ 1. |
 
-| Key | Default | Purpose |
-| --- | --- | --- |
-| `scheduler.enabled` | `true` | Turns the loop on. `false` means nothing is claimed or run. |
-| `scheduler.tick_interval` | `1m` | How often the loop looks for due schedules. A polling cadence, not a job cadence. |
-| `scheduler.job_timeout` | `10m` | Bounds a single job handler invocation. |
-| `scheduler.due_limit` | `100` | Caps how many due schedules one tick claims. |
-
-:::note
-These four keys have **no `${VAR}` wiring in the image's baked config**, so they
-cannot be set with an environment variable. Mount your own `config.yaml` to
-change them.
+:::note[Settable by environment since v0.11.0]
+All four keys are wired as `${VAR:-default}` in the image's baked config, so
+`SCHEDULER_ENABLED=false` (or any of the other three) takes effect with no
+mounted `config.yaml`. Values are parsed and validated at startup: a
+non-boolean `SCHEDULER_ENABLED`, an undecodable duration, or an out-of-range
+`SCHEDULER_DUE_LIMIT` fails startup rather than falling back to the default.
 :::
 
-:::caution[No user-facing schedules yet]
-As of v0.10.0 this is platform plumbing only. No job types are registered, no
-schedule rows are created, and there is no API, MCP tool, or UI for schedules.
-The engine runs and does nothing until a feature registers a handler.
-:::
+### What runs on it
+
+One job type is registered: **`freshness_evaluate`**, which evaluates a team's
+[resource freshness](/user-guide/resource-freshness/) rules. Schedule rows are
+created, updated, and deleted automatically as a team edits its freshness rules
+and settings in the app, so there is nothing to provision by hand.
+
+A team's cadence comes from its own freshness `interval_seconds` setting
+(default `86400`, one day; floor 1 hour, ceiling 365 days), **not** from
+`scheduler.tick_interval`, which only governs how often the loop polls for work
+that is already due.
+
+`SCHEDULER_ENABLED=false` stops freshness evaluation instance-wide.
+
+The externally driven [internal job endpoints](#internal-jobs-pubsub-oidc)
+(`/internal/jobs/*`, retention and digests) have **not** moved onto the
+scheduler and still need their external scheduler.
 
 ## Deployment environment detection
 

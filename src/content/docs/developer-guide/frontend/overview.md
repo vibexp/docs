@@ -43,7 +43,10 @@ The API client is generated from the backend spec. The change flow is: update
 ```text
 frontend/src/
 ├── pages/        Route-level views (one per screen)
-├── components/   Reusable presentational components (layout/ holds the app header and its global project selector)
+├── components/   Reusable presentational components
+│   ├── layout/           The app shell: header, sidebar, mobile drawer, ShellContext
+│   ├── patterns/         Cross-page patterns (reading-page/: the shared article + details layout)
+│   └── resource-detail/  ResourceReadingPage, the layout every resource detail page renders through
 ├── features/     Feature modules (domain-grouped UI + logic)
 ├── hooks/        Custom React hooks
 ├── contexts/     React context providers (auth, theme, …)
@@ -54,6 +57,8 @@ frontend/src/
 ├── constants/    Shared constants
 ├── styles/       Global styles
 ├── types/        Shared TypeScript types
+├── assets/       Static assets imported by the bundler
+├── __tests__/    Top-level test suites (co-located tests also live beside their code)
 └── routes.tsx    The route table
 ```
 
@@ -71,8 +76,75 @@ frontend/src/
   `can('member.role.update')`.
 - **Team information architecture**: team pages live at top-level `/teams/**`
   (`pages/teams/TeamRoutes.tsx`) with team-scoped settings under
-  `/teams/:id/settings/*` (GitHub App, search ranking, email provider, model
-  and embedding providers); `/settings` is personal settings only.
+  `/teams/:id/settings/*` (GitHub App, search ranking, freshness, email
+  provider, model and embedding providers); `/settings` is personal settings
+  only.
+- **Resource freshness** (new in v0.11.0): a `FreshnessBadge` plus a
+  `FreshnessFilterSelect` ("stale only") on the prompt, artifact, blueprint and
+  memory list pages, and a team-settings section at
+  `/teams/:id/settings/freshness` with rule management, an analytics tab
+  (over-time, by-type, by-project, by-rule) and an audit tab whose entries
+  deep-link to all four resource types. Files:
+  `components/FreshnessBadge.tsx`, `components/FreshnessFilterSelect.tsx`,
+  `pages/teams/settings/freshness/`, `services/freshnessService.ts`. See
+  [Resource Freshness](/user-guide/resource-freshness/).
+- **App shell** (new in v0.12.0): `components/layout/` holds a `ShellContext`
+  owning two collapsible rails, navigation and the reading-page details column.
+  Each is independent and remembered per browser (`vx_nav_collapsed`,
+  `vx_details_collapsed`). Desktop (`lg`+) gets both rails, tablet (`md`) a
+  details side sheet with the switchers in the header, phone a bottom sheet plus
+  a nav drawer hosting the team/project switchers, search and the theme toggle.
+  Every resource detail page (artifact, blueprint, memory, prompt, prompt
+  gallery) renders through one `ReadingPage` / `ResourceReadingPage`, so add
+  detail sections there rather than per page.
+- **Reading shell, descriptor-driven** (new in v0.13.0):
+  `components/patterns/reading-page/` builds on the app shell with a shared
+  body renderer (`ResourceBody` / `useBodyViewMode`) offering a
+  **Rendered / Raw** toggle, persisted per browser, and a
+  `presentation="editing"` mode that renders a resource's edit form inside the
+  identical shell instead of a separate page. What each resource type looks
+  like (fields, list filters/columns/sorting, form layout) is data, not
+  per-page code: `components/patterns/resource/types.ts` defines
+  `ResourceDescriptor`, and `components/patterns/resource/registry.ts` lists
+  the six kinds (`prompt`, `artifact`, `blueprint`, `memory`, `gallery-prompt`,
+  `agent`). Feed items and AI agents render through the same
+  `ResourceReadingPage` as the four core resource types and the prompt
+  gallery.
+- **Unified taxonomy section** (new in v0.13.0):
+  `components/patterns/resource/ResourceTaxonomySection.tsx` (read view) and
+  `form/TaxonomyInput.tsx` (chip editor) replace what used to be three
+  separate ad hoc renderings (a prompt "Labels" card, a memory "Tags" card, a
+  metadata "Additional data" card at three call sites). Every resource
+  descriptor with a `labels` field (artifact, blueprint, memory, prompt) now
+  renders one "Labels & metadata" panel the same way. Memory is the one
+  exception still carrying a legacy `tags` extension slot bound to
+  `metadata.tags`, which the backend folds into the real `labels` column on
+  write.
+- **Prompt Gallery, its own pages** (new in v0.13.0): `/prompt-gallery`
+  (category cards), `/prompt-gallery/:category` (a filterable list on the
+  shared list pattern), and `/prompt-gallery/:category/:id` (a full
+  `ResourceReadingPage` detail view with Copy and "Use this prompt" actions),
+  under `pages/prompt-gallery/`. The retired `/prompt-gallery/prompt/:id` path
+  self-corrects to the categorized URL client-side once the payload's real
+  category is known, since the old URL cannot carry it.
+- **Integrations section** (new in v0.14.0): the sidebar group
+  **Integrations** (`components/layout/nav-items.ts`) holds **MCP Server**
+  (`/mcp-servers/vibexp-mcp`, `pages/mcp/`), **CLI** (`/integrations/cli`),
+  **REST APIs** (`/integrations/rest-apis`, linking the instance's
+  `/openapi.yaml` and `/openapi.json`), and **API Client**
+  (`/integrations/api-client`, the Go and TypeScript clients), the last three
+  under `pages/integrations/`. **System** now holds only Teams and Settings.
+  The MCP Server page shows one endpoint, per-client setup tabs, and the tools
+  reference; it no longer lists team identifiers. URLs that must reach the
+  backend rather than the SPA (the MCP endpoint default, the OpenAPI links) use
+  `getBackendOrigin()` (`src/utils/environment.ts`).
+- **AI Summary** (new in v0.14.0): the collapsible section on the search page
+  (`pages/search/AiSummary.tsx`, its open state kept in localStorage under
+  `vx_search_ai_summary_expanded`), a compact row in the header search dialog
+  (`components/layout/SearchModalAiSummary.tsx`) sharing one summary cache, and
+  the settings card on the Model Providers page
+  (`pages/teams/settings/model-providers/AiSummarySettings.tsx`). The Model
+  Provider dialog gains a **Load models** combobox (`ModelCombobox.tsx`).
 - **Metadata filter**: `MetadataFilter` (`components/metadata/`), a key/value
   popover with value typeahead, on the Blueprint, Artifact, and Memory list
   pages.
@@ -151,6 +223,14 @@ make frontend-type-check  # tsc
 make frontend-test        # tests
 make frontend-build       # production build
 ```
+
+The react-hooks ESLint config is `recommended` minus four React-Compiler
+strictness rules. Two you are most likely to hit are enforced as errors:
+`react-hooks/refs` (no reading or writing `ref.current` during render) and
+`react-hooks/purity` (no `Date.now()` or `Math.random()`-style impure calls
+during render). `exhaustive-deps` is a warning and does not fail the build.
+`eslint-disable` is blocked by a pre-commit hook, so fix the pattern rather
+than suppressing it.
 
 ## Next
 

@@ -74,18 +74,19 @@ No. Variables cannot contain other variables. This syntax is not supported:
 {{var_{{other_var}}}}
 ```
 
-Each variable must be a standalone placeholder.
+Each variable must be a standalone placeholder. A value you supply is inserted as literal text: if it contains `{{other}}` or `@slug`, that text appears unchanged in the output.
 
-### What happens if I reference a deleted prompt?
+### Can I delete a prompt that other prompts reference?
 
-If you delete a prompt that's referenced by others using the `@` syntax, those references will fail to resolve. Before deleting a prompt:
-1. Search your library for `@prompt-slug` to find all references
-2. Update or remove those references
-3. Or keep the prompt as a Draft instead of deleting
+No. VibeXP refuses to delete a prompt that another prompt in the same team references with the `@` syntax, including a teammate's prompt. To remove it:
+1. Update or remove those references
+2. Or keep the prompt as a Draft instead of deleting
+
+A reference whose target never existed, or was renamed, stays in the rendered text as written and produces the warning `Reference not found: @slug`.
 
 ### Can I reference prompts from other users?
 
-Prompt references work with any prompt in your team's library, including prompts created by your teammates.
+Yes, within the same team. References resolve among all prompts in the team that owns the prompt, including prompts created by your teammates, so everyone who renders it gets the same result. They never resolve to a prompt in another team, even one you belong to (since v0.14.0).
 
 ### How many prompts can I reference in a single prompt?
 
@@ -128,7 +129,7 @@ No. MCP is currently supported by Claude Code, Cursor, VS Code, and other tools 
 ### How do I get an API key?
 
 1. Log into your VibeXP instance (your deployed VibeXP app)
-2. Go to **Settings** → **Integration** → **API Keys**
+2. Go to **Settings** → **API Keys** (URL `/settings/api-keys`)
 3. Click **Generate API Key**
 
 See the [API Keys guide](/user-guide/integrations/api-keys) for detailed instructions.
@@ -177,9 +178,11 @@ Yes. Edit the prompt and modify the Slug field in the Settings panel. However, c
 
 Only change slugs when necessary, and update all references.
 
-### How do I find unused prompts?
+### How do I find prompts nobody uses any more?
 
-Use [Resource Access Analytics](/user-guide/resource-access-analytics): each prompt has an Access activity view showing when and from where (web, MCP, API, CLI) it was last accessed. You can also:
+Set the freshness dropdown on the prompts list to **Stale only**. It shows the prompts your team's [Resource Freshness](/user-guide/resource-freshness/) rules currently flag, and each one carries a quiet **Stale** badge in the list. Nothing is flagged until your team has at least one rule.
+
+For a single prompt, [Resource Access Analytics](/user-guide/resource-access-analytics) has an Access activity view showing when and from where (web, MCP, API, CLI) it was last accessed. You can also:
 - Sort by "Updated" date to find old prompts
 - Use labels like `deprecated` to mark prompts you no longer use
 
@@ -219,8 +222,8 @@ The preview is a guide, not an exact replica of AI tool output.
 ### I can't find a prompt I created. Where is it?
 
 Check:
-1. **Status filter**: It might be filtered out (switch to "All Status")
-2. **Label filter**: Reset filters to show all prompts
+1. **Status filter**: It might be filtered out (switch to "All statuses")
+2. **Sharing and freshness filters**: Reset both to "All" to show every prompt
 3. **Search**: Try searching for keywords from the prompt
 4. **Deleted**: If deleted, prompts cannot be recovered
 

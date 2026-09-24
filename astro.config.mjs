@@ -132,8 +132,10 @@ export default defineConfig({
             { slug: 'user-guide/feeds' },
             { slug: 'user-guide/comments' },
             { slug: 'user-guide/resource-access-analytics' },
+            { slug: 'user-guide/resource-freshness' },
             { slug: 'user-guide/search' },
             { slug: 'user-guide/team-roles-and-permissions' },
+            { slug: 'user-guide/copying-team-settings' },
             {
               label: 'Integrations',
               collapsed: false,

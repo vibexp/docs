@@ -16,7 +16,7 @@ spec-first workflow see [API & OpenAPI](/developer-guide/backend/api-and-openapi
 
 | Concern | Technology |
 | --- | --- |
-| Language / toolchain | Go `1.25.12` (pinned via `GOTOOLCHAIN`) |
+| Language / toolchain | Go `1.26.8` (pinned via `GOTOOLCHAIN`) |
 | Entrypoint / CLI | [cobra](https://github.com/spf13/cobra) |
 | HTTP router | [chi v5](https://github.com/go-chi/chi) |
 | Database | PostgreSQL + [pgvector](https://github.com/pgvector/pgvector) |
@@ -61,6 +61,8 @@ internal/
                    (authkit/, mcptoken/)
   authz/           pure team RBAC permission matrix (owner/admin/member);
                    single source of truth consumed by services
+  blueprintpath/   bidirectional map between a repo-relative file path and a
+                   blueprint's (type, subtype)
   cache/           in-process / shared caching helpers
   config/          koanf-based config.yaml loading, interpolation, validation
   container/       Wire dependency-injection wiring (wire_gen.go committed)
@@ -76,8 +78,9 @@ internal/
                    locks, per-job-type handler registry
   server/          chi router, middleware, generated handlers
   services/        business logic interfaces + implementations
-  specconformance/ tests that the running server matches the OpenAPI spec
-  storage/         attachment storage (GCS)
+  specconformance/ spec-validation helpers for handler tests (payload drift
+                   detection + coverage recording)
+  storage/         pluggable attachment storage (GCS, S3/MinIO, filesystem)
   testutils/       shared test helpers
   utils/           small shared helpers
 ```
@@ -106,7 +109,10 @@ bus**. Worker goroutines drain the bus with bounded retries (see the
 `event_bus.*` settings on the
 [Configuration](/developer-guide/backend/configuration/#event-bus) page). The
 embedding pipeline is one of these workers: there is no external AI service and
-no message broker.
+no message broker. Since v0.12.0 the embedding path is nonetheless **durable**:
+the bus handler only enqueues into the `embedding_jobs` table (Postgres is the
+queue) and leased workers drain it, so a restart resumes the backlog rather
+than losing it.
 
 :::note
 The MCP server (`/mcp/v1/common`) and the embedded OAuth 2.1 Authorization

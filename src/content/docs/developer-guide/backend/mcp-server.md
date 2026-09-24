@@ -25,7 +25,7 @@ Two config keys point the resource server at the AS (see
 
 | Key | Purpose |
 | --- | --- |
-| `mcp.oauth_issuer` | The trusted issuer. Signing keys are fetched from `<issuer>/oauth2/jwks.json` — the `jwks_uri` the embedded AS publishes in its RFC 8414 metadata. Empty (with the AS disabled) disables the endpoint: every token is rejected with 401. |
+| `mcp.oauth_issuer` | The trusted issuer. With the embedded AS enabled, the resource server verifies tokens against the AS's **in-process** signing keys (both run in one process), so no HTTP JWKS round-trip is made. With an external IdP issuer, keys are fetched from `<issuer>/oauth2/jwks.json`, the `jwks_uri` in its RFC 8414 metadata. Empty (with the AS disabled) disables the endpoint: every token is rejected with 401. |
 | `mcp.resource_uri` | Canonical MCP resource identifier and required token audience. |
 
 In **local development both are auto-derived**: the AS auto-enables at
@@ -34,6 +34,17 @@ and `mcp.resource_uri` to `<issuer>/mcp/v1/common` — a fresh checkout boots a
 connectable MCP endpoint with zero auth configuration. In production set them
 explicitly; if `mcp.oauth_issuer` is set it must equal
 `auth.oauth_as.issuer_url`.
+
+:::note[No self-fetch of your own public URL, since v0.12.0]
+The resource server no longer fetches its own JWKS over HTTP. When the embedded
+AS is enabled, the verifier is handed the AS's in-process public keys
+(`internal/server/mcp_oauth.go`), so a container that publishes a different port
+than it listens on, or that cannot reach its own public hostname (split-horizon
+DNS, egress restrictions), still validates MCP tokens. The same wiring covers
+the `/api/v1` bearer path, so `vibexp auth login` works under the same
+conditions. With an **external** IdP issuer the AS is nil and the JWKS-over-HTTP
+path is kept.
+:::
 
 ## Audience binding (RFC 8707)
 
@@ -83,29 +94,71 @@ for endpoints, token TTLs, key rotation, and the consent flow in detail.
 
 ## Exposed tool groups
 
-The MCP server exposes tools across these resource groups:
+`MCPToolsManager.AddAllTools` (`internal/server/mcp_tools.go`) registers
+fourteen groups:
 
-- `prompts`
-- `memories`
-- `artifacts`
-- `blueprints`
-- `relations` (the `link_resources` write tool, `vibexp_io_link_resources`)
-- `metadata` (the `list_resource_metadata` key/value discovery tool; the
-  `metadata` filter parameter on `vibexp_io_list_resources`)
-- `feeds`
-- `search`
-- `attachments`
-- `projects`
-- `teams`
-- `user`
+| Group | Notes |
+| --- | --- |
+| `user` | User-scoped identity (`vibexp_io_get_user`). No `team_id`. |
+| `workspace` | The merged discovery tool `vibexp_io_list_teams_and_projects` (`mcp_workspace_tools.go`). User-scoped, so it is callable before any team is known; an optional `team_id` narrows the result to one team. |
+| `resources` | The generic reads `vibexp_io_get_resource` / `vibexp_io_list_resources` (`mcp_read_tools.go`). Since v0.14.0 a blueprint read goes through the team-enforcing `GetBlueprintByProjectIDAndSlugInTeam`, so it is scoped to the resolved team. |
+| `prompts` | `vibexp_io_render_prompt` renders through `PromptService.RenderPrompt`: `@references` resolve within the prompt's owning team (`GetBySlugInTeam`), and values are substituted literally after expansion (v0.14.0). |
+| `memories` | |
+| `artifacts` | |
+| `blueprints` | |
+| `relations` | The `vibexp_io_link_resources` write tool. |
+| `metadata` | The `vibexp_io_list_resource_metadata` key/value discovery tool, plus the `metadata` filter parameter on `vibexp_io_list_resources`. |
+| `feeds` | |
+| `search` | `vibexp_io_search` validates `page`/`limit` with the same bounds as REST (page 1 to 10000, limit 1 to 100) and returns a tool error when out of range (v0.14.0). The list tools (`list_resources`, the feed lists, workspace) still cap `limit` silently. |
+| `attachments` | |
+| `delete` | The generic `vibexp_io_delete_resource`. |
+| `teams` / `projects` | **Deprecated aliases** serving `vibexp_io_list_teams` and `vibexp_io_list_projects`. The v0.11.0 code comment introducing the deprecation said "kept for one release"; still registered three releases later, as of v0.14.0, with no removal date set. Use the `workspace` tool instead. |
 
-A single generic **`delete_resource`** tool (`vibexp_io_delete_resource`)
-handles deletion across types — `resource_type` is one of `memory`,
-`artifact`, `blueprint`, or `prompt` — so the tool surface stays small instead
-of growing one delete tool per type.
+The generic **`vibexp_io_delete_resource`** handles deletion across types
+(`resource_type` is one of `memory`, `artifact`, `blueprint` or `prompt`), so
+the tool surface stays small instead of growing one delete tool per type.
 
 For the public-facing server, tools follow the `vibexp_io_*` naming convention
 (for example `vibexp_io_create_prompt`, `vibexp_io_search`).
+
+Across those fourteen groups the server registers **27 individual tools**
+(including the two deprecated aliases above). Since v0.13.0,
+`internal/server/mcp_catalog_parity_test.go`
+(`TestMCPCatalogMatchesRegisteredTools`) builds the real server and diffs its
+tool names against the frontend's curated catalog
+(`frontend/src/pages/mcp/mcp-tools*.ts`), which the user-facing [MCP
+Server](/user-guide/mcp-server/) page in the app renders directly. The two can
+no longer drift the way they had (the test's own comment notes it once
+documented 18 of the 27 tools, #939).
+
+## Per-team scoping
+
+Every team-scoped handler calls `resolveTeam`
+(`internal/server/mcp_team_resolution.go`) as its **first** statement. It
+resolves an untrusted `team_id` (a UUID **or** a slug) to the canonical team
+UUID and validates membership in the same pass, by delegating to
+`TeamRepository.ResolveByIdentifier`, which enforces owner-OR-member access in
+the SQL. Because the query only ever considers the caller's own teams, a
+successful match implicitly proves membership: there is no separate
+`IsUserMemberOfTeam` call to forget.
+
+Two properties are load-bearing:
+
+- **One query regardless of team count.** This runs before every team-scoped
+  tool call, and the previous implementation paged through every team on each
+  one.
+- **Anti-enumeration.** "Team does not exist" and "you are not a member" return
+  the same generic access-denied text, so a caller cannot probe for teams they
+  are not in.
+
+## Server instructions
+
+The server sends a fixed instructions string (`mcpServerInstructions` in
+`mcp_tools.go`, wired into `mcp.ServerOptions`) to every client at `initialize`.
+It explains team scoping once, centrally, instead of repeating it in every
+tool's `team_id` description, and it is what steers clients to the merged
+discovery tool. Renaming or replacing a tool means updating that string in the
+same change, or clients keep being pointed at a name that no longer exists.
 
 :::note
 The MCP mount is intentionally **not** documented in `openapi.yaml` — it speaks

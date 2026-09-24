@@ -11,6 +11,18 @@ The same filter works in three places:
 - the **web app**, through the metadata filter control on the Artifacts, Memory, and Blueprints list pages
 - the **MCP server**, so a connected AI tool can filter without going through the UI
 
+:::note[Not the same as labels]
+Since v0.13.0, prompts, artifacts, blueprints, and memories also carry
+**labels**: a simpler, first-class taxonomy (up to 10 short tags per
+resource, 50 characters each), separate from free-form metadata. A resource
+matches a `labels` filter if it carries **any** of the listed labels (never
+an AND-across-keys structure the way metadata is). See the Labels section on
+[Artifacts](/user-guide/artifacts/#labels),
+[Blueprints](/user-guide/blueprints/#labels), and
+[Memory](/user-guide/memory/#labels), and [Prompts → API Integration](/user-guide/prompts/api-integration/)
+for the `labels` query parameter on each resource type.
+:::
+
 ## The `metadata` query parameter
 
 `metadata` takes a **JSON object mapping each key to an array of accepted values**, URL-encoded.
@@ -34,6 +46,8 @@ It is accepted on:
 | `GET /api/v1/{team_id}/memories` | memories |
 | `GET /api/v1/{team_id}/blueprints` | blueprints |
 | `GET /api/v1/{team_id}/blueprints/{project_id}` | blueprints in one project |
+
+`metadata` composes with the other list filters on those endpoints (`project_id`, `status`, `search`, `type`, and `freshness=stale`). Every filter you pass must match.
 
 ### Keys are ANDed, values are ORed
 
@@ -126,9 +140,9 @@ The semantics are identical to the REST parameter, including the empty-array key
 
 This is what lets an agent build a filter from real keys instead of guessing at them.
 
-## Removed in this release
+## Removed query parameters
 
-Three earlier query parameters were **removed** and no longer filter anything. Requests carrying them still succeed, so an old client or a bookmarked URL degrades to an unfiltered list rather than an error. Nothing is silently mis-filtered, but nothing is filtered either.
+Three query parameters were **removed in an earlier release** and no longer filter anything. Requests carrying them still succeed, so an old client or a bookmarked URL degrades to an unfiltered list rather than an error. Nothing is silently mis-filtered, but nothing is filtered either.
 
 | Removed | Was used on | Replacement |
 | --- | --- | --- |
