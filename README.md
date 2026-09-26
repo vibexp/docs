@@ -1,5 +1,13 @@
 # VibeXP Documentation
 
+> [!WARNING]
+> **This repository is archived and no longer maintained.**
+> The VibeXP documentation now lives in the `docs/` directory of
+> [vibexp/website](https://github.com/vibexp/website/tree/main/docs) and is
+> published at **[vibexp.io/docs](https://vibexp.io/docs/)**.
+> Open issues and pull requests for the documentation there. The open issues
+> from this repository were transferred to vibexp/website.
+
 [![CI](https://github.com/vibexp/docs/actions/workflows/ci.yml/badge.svg)](https://github.com/vibexp/docs/actions/workflows/ci.yml)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 
